@@ -7,7 +7,7 @@ website:
     left:
       - text: Home
         file: index.qmd
-      - text: Projections
+      - text: Projections1
         file: projections.qmd
 
 format:
