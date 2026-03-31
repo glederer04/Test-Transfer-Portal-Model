@@ -1,0 +1,19 @@
+---
+title: "Player Projections"
+---
+
+## Player Projections
+
+This page will display model outputs and projections.
+
+```{r}
+library(tidyverse)
+
+# TEMP example
+data <- tibble(
+  player = c("Player A", "Player B"),
+  proj_efficiency = c(15.2, 18.7)
+)
+
+data
+```
