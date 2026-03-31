@@ -1,0 +1,1261 @@
+---
+title: "Transfer Portal Models v1"
+author: "Gregory Lederer"
+date: "2025-07-03"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = "/Users/gregorylederer/Desktop/Transfer Portal Model")
+```
+
+#packages
+```{r}
+library(httr2)
+library(jsonlite)
+library(data.table)
+library(dplyr)
+library(purrr)
+library(hoopR)
+library(cbbdata)
+library(tidyverse)
+library(stringr)
+library(readr)
+library(forcats)
+library(broom)
+library(pROC)
+library(caret)
+library(car)
+library(ggplot2)
+library(boot)
+library(scales)
+library(nnet)
+library(glmnet)
+```
+
+2026 player data
+```{r, eval=FALSE}
+url <- "https://www.barttorvik.com/getadvstats.php?year=2026"
+
+txt <- request(url) |>
+  req_user_agent("cbb-analytics (personal use)") |>
+  req_perform() |>
+  resp_body_string()
+
+rows <- fromJSON(txt, simplifyVector = FALSE)
+
+df <- rbindlist(lapply(rows, as.list), fill = TRUE, use.names = FALSE)
+df <- as.data.frame(df)
+
+cn67 <- c(
+  'player', 'team', 'conf', 'GP', 'MIN.', 'ORTG', 'USG', 'eFG.', 'TS.', 'ORB.', 'DRB.', 'AST.', 'TO.',
+  'FTM', 'FTA', 'FT.', 'TWO_Make', 'TWO_Att', 'TWO.', 'TPM', 'TPA', 'TP.', 'BLK.', 'STL.', 'FTR',
+  'class', 'height', 'num', 'PORPAG', 'DELETE3', 'DELETE4', 'year', 'pid', 'Hometown', 'DELETE1', 'AST_TOV',
+  'RIM_Make', 'RIM_Att', 'MID_Make', 'MID_Att', 'Rim.', 'Mid.', 'DUNKS_Made', 'DUNKS_Att', 'DUNK.',
+  'DELETE2', 'DELETE9', 'ADV_DRTG', 'D_PORPAG', 'DELETE5', 'DELETE6', 'DELETE7', 'DELETE8', 
+  'BPM', 'MP', 'OBPM', 'DBPM', 'ORB', 'DRB', 'REB', 'AST', 'STL', 'BLK', 'PTS', 'Role', 'DELETE10', 'Birthdate'
+)
+
+stopifnot(ncol(df) == length(cn67))
+names(df) <- cn67
+
+df <- df %>%
+  select(-starts_with("DELETE"))
+```
+
+2015 - 25 player data
+```{r}
+cn67 <- c(
+  'player', 'team', 'conf', 'GP', 'MIN.', 'ORTG', 'USG', 'eFG.', 'TS.', 'ORB.', 'DRB.', 'AST.', 'TO.',
+  'FTM', 'FTA', 'FT.', 'TWO_Make', 'TWO_Att', 'TWO.', 'TPM', 'TPA', 'TP.', 'BLK.', 'STL.', 'FTR',
+  'class', 'height', 'num', 'PORPAG', 'DELETE3', 'DELETE4', 'year', 'pid', 'DELETE11', 'DELETE1', 'AST_TOV',
+  'RIM_Make', 'RIM_Att', 'MID_Make', 'MID_Att', 'Rim.', 'Mid.', 'DUNKS_Made', 'DUNKS_Att', 'DUNK.',
+  'DELETE2', 'DELETE9', 'ADV_DRTG', 'D_PORPAG', 'DELETE5', 'DELETE6', 'DELETE7', 'DELETE8',
+  'BPM', 'MP', 'OBPM', 'DBPM', 'ORB', 'DRB', 'REB', 'AST', 'STL', 'BLK', 'PTS', 'Role', 'DELETE10', 'Birthdate'
+)
+
+get_torvik_advstats <- function(season_year, cn = cn67) {
+  url <- sprintf("https://www.barttorvik.com/getadvstats.php?year=%d", season_year)
+
+  txt <- request(url) |>
+    req_user_agent("cbb-analytics (personal use)") |>
+    req_perform() |>
+    resp_body_string()
+
+  rows <- fromJSON(txt, simplifyVector = FALSE)
+
+  df <- rbindlist(lapply(rows, as.list), fill = TRUE, use.names = FALSE) |>
+    as.data.frame(stringsAsFactors = FALSE)
+
+  stopifnot(ncol(df) == length(cn))
+  names(df) <- cn
+
+  df %>%
+    select(-starts_with("DELETE"))
+}
+
+years <- 2015:2025
+
+all_players_by_season <- map_dfr(
+  years,
+  ~ get_torvik_advstats(.x),
+  .id = "season_id"
+) %>%
+  select(-season_id)
+```
+
+team data
+```{r}
+cbb <- map_df(years, function(y){
+  read_csv(paste0("https://barttorvik.com/", y, "_team_results.csv")) %>%
+    mutate(season = y) %>%
+    select(1:43, season)
+})
+```
+
+join
+```{r}
+players_model <- all_players_by_season %>%
+  select(-matches("^Unnamed")) %>%
+  mutate(year = as.integer(year), team = str_trim(team), conf = str_trim(conf))
+
+teams_model <- cbb %>%
+  select(team, conf, season, record, `Con Rec.`, barthag, adjoe, `oe Rank`, adjde, `de Rank`, sos, ncsos, consos, `Qual Barthag`, `Qual Games`, `Conf Win%`, WAB, `WAB Rk`) %>%
+  mutate(season = as.integer(season), team = str_trim(team), conf = str_trim(conf)) %>%
+  separate(record, into = c("team_wins", "team_losses"), sep = "-", remove = FALSE, convert = TRUE) %>%
+  separate(`Con Rec.`, into = c("conf_wins", "conf_losses"), sep = "-", remove = FALSE, convert = TRUE)
+
+model_table_START <- players_model %>%
+  left_join(teams_model, by = c("team", "conf", "year" = "season"))
+
+#write.csv(model_table, 'Modeling Table 2015-25.csv')
+#write.csv(model_table[1:10,], 'Modeling Table 2015-25 Sample.csv')
+```
+
+transfer likelihood model
+```{r, eval=FALSE}
+model_table <- model_table_START %>%
+  mutate(
+    year = as.integer(year),
+    pid = as.character(pid),
+    player = str_squish(player),
+    team = str_squish(team),
+
+    conf = str_squish(conf),
+    conf = str_to_lower(conf),
+    conf = if_else(conf == "ind", "independent", conf),
+
+    major = case_when(
+      conf %in% c("b12", "acc", "b10", "sec", "be", "p12") ~ "high",
+      TRUE ~ "mid"
+    ),
+
+    conf = factor(conf),
+    major = factor(major, levels = c("high", "mid")),
+
+    class = str_squish(class),
+    class = na_if(class, ""),
+    class = na_if(class, "N/A"),
+    class = na_if(class, "--"),
+    class = case_when(
+      class %in% c("Fr", "So", "Jr", "Sr") ~ class,
+      TRUE ~ NA_character_
+    ),
+
+    Role = str_squish(Role),
+    Role = na_if(Role, ""),
+
+    Birthdate = as.character(Birthdate),
+
+    underclass = case_when(
+      class %in% c("Fr", "So") ~ "Underclassmen",
+      class %in% c("Jr", "Sr") ~ "Upperclassmen",
+      TRUE ~ NA_character_
+    ),
+    
+    player_team_gap = BPM - barthag
+  ) %>%
+  group_by(team, year) %>%
+  mutate(
+    mp_rank = min_rank(desc(MP)),
+    bpm_rank = min_rank(desc(BPM)),
+    usage_rank = min_rank(desc(USG))
+  ) %>%
+  ungroup() %>%
+  group_by(conf, year) %>%
+  mutate(
+    bpm_pct_conf = percent_rank(BPM),
+    porpag_pct_conf = percent_rank(PORPAG)
+  ) %>%
+  ungroup() %>%
+  group_by(major, year) %>%
+  mutate(
+    usg_rank_c1 = min_rank(desc(USG)),
+    porpag_rank_c1 = min_rank(desc(PORPAG)),
+    bpm_rank_c1 = min_rank(desc(BPM))
+  ) %>%
+  ungroup() %>%
+  mutate(
+    underused_star = if_else(BPM > 5 & mp_rank > 5, 1, 0)
+  ) %>%
+  group_by(team, year) %>%
+  mutate(
+    team_total_mp = sum(MP, na.rm = TRUE),
+    minutes_share = MP / team_total_mp,
+    mp_pct_team = percent_rank(MP),
+    bpm_pct_team = percent_rank(BPM),
+    usg_pct_team = percent_rank(USG)
+  ) %>%
+  ungroup() %>%
+  mutate(
+    bpm_minutes_gap = BPM - minutes_share,
+    mid_major_star = if_else(major == "mid" & bpm_pct_conf > 0.9, 1, 0),
+    low_role_high_output = if_else(porpag_pct_conf >= 0.75 & mp_pct_team <= 0.40, 1L, 0L),
+    mid_major_star = if_else(major == "mid" & bpm_pct_conf >= 0.90, 1L, 0L),
+    high_major_low_role = if_else(major == "high" & mp_pct_team <= 0.25, 1L, 0L),
+
+    winning_team = if_else(!is.na(team_wins) & !is.na(team_losses) & team_wins > team_losses, 1L, 0L),
+    conf_winning_team = if_else(
+      !is.na(conf_wins) & !is.na(conf_losses) & conf_wins > conf_losses,
+      1L, 0L
+    )
+  )
+
+next_year_lookup <- model_table %>%
+  select(
+    pid, year, player, Birthdate,
+    next_team = team,
+    next_conf = conf,
+    next_class = class,
+    next_role = Role
+  ) %>%
+  distinct() %>%
+  mutate(year = year - 1)
+
+transfer_table <- model_table %>%
+  left_join(
+    next_year_lookup,
+    by = c("pid", "year", "player", "Birthdate")
+  ) %>%
+  mutate(
+    returned_next_year = if_else(!is.na(next_team), 1L, 0L),
+    transfer_next_year = case_when(
+      is.na(next_team) ~ NA_integer_,
+      next_team != team ~ 1L,
+      next_team == team ~ 0L
+    ),
+    transfer_status = case_when(
+      is.na(next_team) ~ "no_next_year_row",
+      next_team != team ~ "transferred",
+      next_team == team ~ "stayed"
+    )
+  )
+
+# start modeling
+# only use rows where transfer outcome is actually known
+model_data <- transfer_table %>%
+  filter(year <= 2024) %>%
+  filter(!is.na(transfer_next_year))
+
+train <- model_data %>% filter(year <= 2022)
+valid <- model_data %>% filter(year == 2023)
+test  <- model_data %>% filter(year == 2024)
+
+# force factor levels to be based only on training data
+class_levels <- sort(unique(na.omit(train$class)))
+role_levels  <- sort(unique(na.omit(train$Role)))
+
+train <- train %>%
+  mutate(
+    class = factor(class, levels = class_levels),
+    Role = factor(Role, levels = role_levels)
+  )
+
+valid <- valid %>%
+  mutate(
+    class = factor(class, levels = class_levels),
+    Role = factor(Role, levels = role_levels)
+  )
+
+test <- test %>%
+  mutate(
+    class = factor(class, levels = class_levels),
+    Role = factor(Role, levels = role_levels)
+  )
+
+# drop rows with missing predictors
+train_model <- train %>%
+  filter(
+    complete.cases(
+      transfer_next_year, class, MP, BPM, USG, ORTG,
+      team_wins, barthag, `Conf Win%`, Role
+    )
+  )
+
+valid_model <- valid %>%
+  filter(
+    complete.cases(
+      class, MP, BPM, USG, ORTG,
+      team_wins, barthag, `Conf Win%`, Role
+    )
+  )
+
+test_model <- test %>%
+  filter(
+    complete.cases(
+      class, MP, BPM, USG, ORTG,
+      team_wins, barthag, `Conf Win%`, Role
+    )
+  )
+
+glm_fit <- glm(
+  transfer_next_year ~ GP + ORTG + USG + ORB. + TP. + major*PORPAG + adjoe*adjde + `Conf Win%` + Role + class + MP*BPM + major*BPM + player_team_gap*bpm_minutes_gap + mid_major_star*underused_star,
+  data = train_model,
+  family = binomial()
+)
+
+valid_model$pred_glm <- predict(glm_fit, newdata = valid_model, type = "response")
+test_model$pred_glm  <- predict(glm_fit, newdata = test_model, type = "response")
+
+#eval
+
+#tidy(glm_fit, exponentiate = TRUE, conf.int = TRUE)
+
+auc_valid <- roc(valid_model$transfer_next_year, valid_model$pred_glm)
+auc_valid
+plot(auc_valid)
+
+valid_model <- valid_model %>%
+  mutate(pred_class = ifelse(pred_glm > 0.33, 1, 0))
+table(
+  Actual = valid_model$transfer_next_year,
+  Predicted = valid_model$pred_class
+)
+confusionMatrix(
+  factor(valid_model$pred_class),
+  factor(valid_model$transfer_next_year)
+)
+
+valid_model <- valid_model %>%
+  mutate(prob_bin = ntile(pred_glm, 10))
+valid_model %>%
+  group_by(prob_bin) %>%
+  summarise(
+    avg_pred = mean(pred_glm),
+    actual_rate = mean(transfer_next_year),
+    n = n()
+  )
+
+vif(glm_fit)
+
+tidy(glm_fit) %>%
+  filter(term != "(Intercept)") %>%
+  mutate(abs_coef = abs(estimate)) %>%
+  arrange(desc(abs_coef))
+
+valid_model %>%
+  arrange(desc(pred_glm)) %>%
+  select(player, team, class, MP, BPM, USG, team_wins, pred_glm) %>%
+  head(25)
+
+valid_model %>%
+  filter(transfer_next_year == 1) %>%
+  arrange(pred_glm) %>%
+  select(player, team, class, MP, BPM, USG, team_wins, pred_glm) %>%
+  head(25)
+
+ggplot(valid_model, aes(pred_glm, fill = factor(transfer_next_year))) +
+  geom_histogram(bins = 40, alpha = 0.6, position = "identity") +
+  labs(fill = "Transfer")
+
+test_model$pred_class <- ifelse(test_model$pred_glm > 0.33, 1, 0)
+confusionMatrix(
+  factor(test_model$pred_class),
+  factor(test_model$transfer_next_year)
+)
+roc(test_model$transfer_next_year, test_model$pred_glm)
+
+#confidence
+
+boot_pred <- function(data, indices) {
+  d <- data[indices,]
+
+  fit <- glm(
+    transfer_next_year ~ GP + ORTG + USG + ORB. + TP. +
+      major*PORPAG + adjoe*adjde + `Conf Win%` +
+      Role + class + MP*BPM +
+      major*BPM +
+      player_team_gap*bpm_minutes_gap +
+      mid_major_star*underused_star,
+    data = d,
+    family = binomial()
+  )
+
+  predict(fit, newdata = valid_model, type = "response")
+}
+
+boot_results <- boot(
+  data = train_model,
+  statistic = boot_pred,
+  R = 200
+)
+
+pred_matrix <- boot_results$t
+
+valid_model <- valid_model %>%
+  mutate(
+    prob_mean = colMeans(pred_matrix),
+    lower_ci = apply(pred_matrix, 2, quantile, 0.025),
+    upper_ci = apply(pred_matrix, 2, quantile, 0.975)
+  )
+
+valid_model <- valid_model %>%
+  mutate(
+    uncertainty = upper_ci - lower_ci,
+    confidence_score = 1 - uncertainty
+  ) %>%
+  mutate(
+    confidence_score = scales::rescale(confidence_score, to=c(0,1))
+  )
+
+boot_pred_test <- function(data, indices) {
+  d <- data[indices,]
+
+  fit <- glm(
+    transfer_next_year ~ GP + ORTG + USG + ORB. + TP. +
+      major*PORPAG + adjoe*adjde + `Conf Win%` +
+      Role + class + MP*BPM +
+      major*BPM +
+      player_team_gap*bpm_minutes_gap +
+      mid_major_star*underused_star,
+    data = d,
+    family = binomial()
+  )
+
+  predict(fit, newdata = test_model, type = "response")
+}
+
+boot_results_test <- boot(
+  data = train_model,
+  statistic = boot_pred_test,
+  R = 200
+)
+
+pred_matrix_test <- boot_results_test$t
+
+test_model <- test_model %>%
+  mutate(
+    prob_mean = colMeans(pred_matrix_test),
+    lower_ci = apply(pred_matrix_test, 2, quantile, 0.025),
+    upper_ci = apply(pred_matrix_test, 2, quantile, 0.975)
+  )
+
+test_model <- test_model %>%
+  mutate(
+    uncertainty = upper_ci - lower_ci,
+    confidence_score = 1 - uncertainty
+  ) %>%
+  mutate(
+    confidence_score = scales::rescale(confidence_score, to = c(0,1))
+  )
+```
+
+return vs leave
+```{r, eval=FALSE}
+return_leave_base <- model_table_START %>%
+  mutate(
+    year = as.integer(year),
+    pid = as.character(pid),
+    player = str_squish(player),
+    team = str_squish(team),
+
+    conf = str_squish(conf),
+    conf = str_to_lower(conf),
+    conf = if_else(conf == "ind", "independent", conf),
+
+    major = case_when(
+      conf %in% c("b12", "acc", "b10", "sec", "be", "p12") ~ "high",
+      TRUE ~ "mid"
+    ),
+
+    class = str_squish(class),
+    class = na_if(class, ""),
+    class = na_if(class, "N/A"),
+    class = na_if(class, "--"),
+    class = case_when(
+      class %in% c("Fr", "So", "Jr", "Sr") ~ class,
+      TRUE ~ NA_character_
+    ),
+
+    Role = str_squish(Role),
+    Role = na_if(Role, ""),
+
+    Birthdate = as.character(Birthdate),
+    Birthdate = na_if(Birthdate, ""),
+    birth_date = suppressWarnings(mdy(Birthdate)),
+    age = if_else(
+      !is.na(birth_date),
+      as.numeric(interval(birth_date, ymd(paste0(year, "-11-01"))) / years(1)),
+      NA_real_
+    ),
+
+    class_num = case_when(
+      class == "Fr" ~ 1,
+      class == "So" ~ 2,
+      class == "Jr" ~ 3,
+      class == "Sr" ~ 4,
+      TRUE ~ NA_real_
+    ),
+
+    underclass = case_when(
+      class %in% c("Fr", "So") ~ "Underclassmen",
+      class %in% c("Jr", "Sr") ~ "Upperclassmen",
+      TRUE ~ NA_character_
+    ),
+
+    player_team_gap = BPM - barthag
+  ) %>%
+  group_by(team, year) %>%
+  mutate(
+    team_total_mp = sum(MP, na.rm = TRUE),
+    team_total_gp = sum(GP, na.rm = TRUE),
+
+    minutes_share = if_else(team_total_mp > 0, MP / team_total_mp, NA_real_),
+    games_share = if_else(team_total_gp > 0, GP / team_total_gp, NA_real_),
+
+    mp_rank_team = min_rank(desc(MP)),
+    bpm_rank_team = min_rank(desc(BPM)),
+    usg_rank_team = min_rank(desc(USG)),
+    porpag_rank_team = min_rank(desc(PORPAG)),
+
+    mp_pct_team = percent_rank(MP),
+    bpm_pct_team = percent_rank(BPM),
+    usg_pct_team = percent_rank(USG),
+    porpag_pct_team = percent_rank(PORPAG)
+  ) %>%
+  ungroup() %>%
+  group_by(conf, year) %>%
+  mutate(
+    bpm_pct_conf = percent_rank(BPM),
+    porpag_pct_conf = percent_rank(PORPAG),
+    mp_pct_conf = percent_rank(MP),
+    usg_pct_conf = percent_rank(USG)
+  ) %>%
+  ungroup() %>%
+  mutate(
+    bpm_minutes_gap = BPM - minutes_share,
+
+    underused_good_player = if_else(BPM > 4 & mp_rank_team > 5, 1L, 0L),
+    low_role_high_output = if_else(porpag_pct_conf >= 0.75 & mp_pct_team <= 0.40, 1L, 0L),
+    mid_major_star = if_else(major == "mid" & bpm_pct_conf >= 0.90, 1L, 0L),
+    high_major_low_role = if_else(major == "high" & mp_pct_team <= 0.25, 1L, 0L),
+
+    winning_team = if_else(!is.na(team_wins) & !is.na(team_losses) & team_wins > team_losses, 1L, 0L),
+    conf_winning_team = if_else(
+      !is.na(conf_wins) & !is.na(conf_losses) & conf_wins > conf_losses,
+      1L, 0L
+    )
+  ) %>%
+  mutate(
+    conf = factor(conf),
+    major = factor(major, levels = c("high", "mid")),
+    class = factor(class, levels = c("Fr", "So", "Jr", "Sr")),
+    underclass = factor(underclass, levels = c("Underclassmen", "Upperclassmen")),
+    Role = factor(Role)
+  )
+
+next_year_lookup <- return_leave_base %>%
+  select(
+    pid, year, player, Birthdate,
+    next_team = team,
+    next_conf = conf,
+    next_class = class,
+    next_role = Role
+  ) %>%
+  distinct() %>%
+  mutate(year = year - 1)
+
+return_leave_table <- return_leave_base %>%
+  left_join(
+    next_year_lookup,
+    by = c("pid", "year", "player", "Birthdate")
+  ) %>%
+  mutate(
+    returned_next_year = if_else(!is.na(next_team), 1L, 0L),
+    left_next_year = if_else(is.na(next_team), 1L, 0L),
+
+    return_leave_status = case_when(
+      returned_next_year == 1L ~ "returned",
+      returned_next_year == 0L ~ "left",
+      TRUE ~ NA_character_
+    ),
+
+    same_team_next_year = case_when(
+      is.na(next_team) ~ NA_integer_,
+      next_team == team ~ 1L,
+      next_team != team ~ 0L
+    ),
+
+    transferred_if_returned = case_when(
+      is.na(next_team) ~ NA_integer_,
+      next_team != team ~ 1L,
+      next_team == team ~ 0L
+    )
+  ) %>%
+  mutate(
+    return_leave_status = factor(return_leave_status, levels = c("returned", "left"))
+  )
+
+last_observed_year <- max(return_leave_table$year, na.rm = TRUE)
+
+model_data_return_leave <- return_leave_table %>%
+  filter(year < last_observed_year)
+
+train_return <- model_data_return_leave %>% filter(year <= 2022)
+valid_return <- model_data_return_leave %>% filter(year == 2023)
+test_return <- model_data_return_leave %>% filter(year == 2024)
+
+class_levels <- levels(droplevels(train_return$class))
+role_levels  <- levels(droplevels(train_return$Role))
+conf_levels  <- levels(droplevels(train_return$conf))
+major_levels <- levels(droplevels(train_return$major))
+underclass_levels <- levels(droplevels(train_return$underclass))
+
+train_return <- train_return %>%
+  mutate(
+    class = factor(class, levels = class_levels),
+    Role = factor(Role, levels = role_levels),
+    conf = factor(conf, levels = conf_levels),
+    major = factor(major, levels = major_levels),
+    underclass = factor(underclass, levels = underclass_levels)
+  )
+
+valid_return <- valid_return %>%
+  mutate(
+    class = factor(class, levels = class_levels),
+    Role = factor(Role, levels = role_levels),
+    conf = factor(conf, levels = conf_levels),
+    major = factor(major, levels = major_levels),
+    underclass = factor(underclass, levels = underclass_levels)
+  )
+
+test_return <- test_return %>%
+  mutate(
+    class = factor(class, levels = class_levels),
+    Role = factor(Role, levels = role_levels),
+    conf = factor(conf, levels = conf_levels),
+    major = factor(major, levels = major_levels),
+    underclass = factor(underclass, levels = underclass_levels)
+  )
+
+glm_return <- glm(
+  returned_next_year ~ GP + ORTG + USG + ORB. + major*PORPAG + adjoe*adjde + `Conf Win%` + Role + class + MP*BPM + major*BPM + bpm_minutes_gap + mid_major_star*underused_good_player,
+  data = train_return,
+  family = binomial()
+)
+
+summary(glm_return)
+
+valid_return$pred_glm <- predict(glm_return, newdata = valid_return, type = "response")
+test_return$pred_glm  <- predict(glm_return, newdata = test_return, type = "response")
+
+auc_valid_return <- roc(valid_return$returned_next_year, valid_return$pred_glm)
+auc_valid_return
+plot(auc_valid_return)
+
+auc_test_return <- roc(test_return$returned_next_year, test_return$pred_glm)
+auc_test_return
+plot(auc_test_return)
+
+valid_model_return <- valid_return %>%
+  mutate(pred_class = ifelse(pred_glm > 0.50, 1, 0))
+
+table(
+  Actual = valid_model_return$returned_next_year,
+  Predicted = valid_model_return$pred_class
+)
+
+confusionMatrix(
+  factor(valid_model_return$pred_class),
+  factor(valid_model_return$returned_next_year)
+)
+
+test_model_return <- test_return %>%
+  mutate(pred_class = ifelse(pred_glm > 0.50, 1, 0))
+
+table(
+  Actual = test_model_return$returned_next_year,
+  Predicted = test_model_return$pred_class
+)
+
+confusionMatrix(
+  factor(test_model_return$pred_class),
+  factor(test_model_return$returned_next_year)
+)
+
+valid_model_return %>%
+  mutate(prob_bin = ntile(pred_glm, 10)) %>%
+  group_by(prob_bin) %>%
+  summarise(
+    avg_pred = mean(pred_glm),
+    actual_rate = mean(returned_next_year),
+    n = n(),
+    .groups = "drop"
+  )
+
+test_model_return %>%
+  mutate(prob_bin = ntile(pred_glm, 10)) %>%
+  group_by(prob_bin) %>%
+  summarise(
+    avg_pred = mean(pred_glm),
+    actual_rate = mean(returned_next_year),
+    n = n(),
+    .groups = "drop"
+  )
+
+# tidy(glm_return, exponentiate = TRUE, conf.int = TRUE) %>%
+#   arrange(p.value)
+# 
+# tidy(glm_return) %>%
+#   filter(term != "(Intercept)") %>%
+#   mutate(abs_coef = abs(estimate)) %>%
+#   arrange(desc(abs_coef))
+
+vif(glm_return)
+
+auc_valid_return
+auc_test_return
+
+#confidence
+
+boot_pred_return_valid <- function(data, indices) {
+  d <- data[indices, ]
+
+  fit <- glm(
+    returned_next_year ~ GP + ORTG + USG + ORB. + TP. +
+      major*PORPAG + adjoe*adjde + `Conf Win%` +
+      Role + class + MP*BPM +
+      major*BPM +
+      bpm_minutes_gap +
+      mid_major_star*underused_good_player,
+    data = d,
+    family = binomial()
+  )
+
+  predict(fit, newdata = valid_model_return, type = "response")
+}
+set.seed(123)
+
+boot_results_valid_return <- boot(
+  data = train_return,
+  statistic = boot_pred_return_valid,
+  R = 200
+)
+
+pred_matrix_valid_return <- boot_results_valid_return$t
+
+valid_model_return <- valid_model_return %>%
+  mutate(
+    prob_mean = colMeans(pred_matrix_valid_return, na.rm = TRUE),
+    lower_ci = apply(pred_matrix_valid_return, 2, quantile, probs = 0.025, na.rm = TRUE),
+    upper_ci = apply(pred_matrix_valid_return, 2, quantile, probs = 0.975, na.rm = TRUE)
+  ) %>%
+  mutate(
+    uncertainty = upper_ci - lower_ci,
+    confidence_score = 1 - uncertainty
+  ) %>%
+  mutate(
+    confidence_score = rescale(confidence_score, to = c(0, 1))
+  )
+
+boot_pred_return_test <- function(data, indices) {
+  d <- data[indices, ]
+
+  fit <- glm(
+    returned_next_year ~ GP + ORTG + USG + ORB. + TP. +
+      major*PORPAG + adjoe*adjde + `Conf Win%` +
+      Role + class + MP*BPM +
+      major*BPM +
+      bpm_minutes_gap +
+      mid_major_star*underused_good_player,
+    data = d,
+    family = binomial()
+  )
+
+  predict(fit, newdata = test_model_return, type = "response")
+}
+set.seed(123)
+
+boot_results_test_return <- boot(
+  data = train_return,
+  statistic = boot_pred_return_test,
+  R = 200
+)
+
+pred_matrix_test_return <- boot_results_test_return$t
+
+test_model_return <- test_model_return %>%
+  mutate(
+    prob_mean = colMeans(pred_matrix_test_return, na.rm = TRUE),
+    lower_ci = apply(pred_matrix_test_return, 2, quantile, probs = 0.025, na.rm = TRUE),
+    upper_ci = apply(pred_matrix_test_return, 2, quantile, probs = 0.975, na.rm = TRUE)
+  ) %>%
+  mutate(
+    uncertainty = upper_ci - lower_ci,
+    confidence_score = 1 - uncertainty
+  ) %>%
+  mutate(
+    confidence_score = rescale(confidence_score, to = c(0, 1))
+  )
+```
+
+destination conference model
+```{r, eval=FALSE}
+model_table <- model_table_START %>%
+  mutate(
+    year = as.integer(year),
+    pid = as.character(pid),
+    player = str_squish(player),
+    team = str_squish(team),
+
+    conf = str_squish(conf),
+    conf = str_to_lower(conf),
+    conf = if_else(conf == "ind", "independent", conf),
+
+    class = str_squish(class),
+    class = na_if(class, ""),
+    class = na_if(class, "N/A"),
+    class = na_if(class, "--"),
+    class = case_when(
+      class %in% c("Fr", "So", "Jr", "Sr") ~ class,
+      TRUE ~ NA_character_
+    ),
+
+    Role = str_squish(Role),
+    Role = na_if(Role, "")
+  )
+
+high_major_confs <- c("acc", "b10", "b12", "sec", "be", "p12") #6 really 5
+upper_mid_confs  <- c("amer", "a10", "wcc", "mwc", "mvc", 'wac', 'caa', 'ivy', 'mac', 'cusa') #10
+low_major_confs  <- c("ae", "asun", "bsth", "bsky", "bw", "horz", "maac", "meac", "nec", "ovc", "pat", "sb", "sc", "slnd", "sum", "swac", "ind", "independent") #18
+
+get_conf_tier <- function(conf) {
+  case_when(
+    conf %in% high_major_confs ~ "high_major",
+    conf %in% upper_mid_confs  ~ "mid_major",
+    conf %in% low_major_confs  ~ "low_major",
+    is.na(conf)                ~ NA_character_
+  )
+}
+
+model_table <- model_table %>%
+  mutate(
+    conf_tier = get_conf_tier(conf),
+    conf_tier = factor(conf_tier,
+                       levels = c("high_major", "mid_major", "low_major"))
+  )
+
+next_year_lookup <- model_table %>%
+  transmute(
+    pid,
+    year = year - 1,
+    next_team = team,
+    next_conf = conf,
+    next_conf_tier = conf_tier
+  )
+
+model_table <- model_table %>%
+  left_join(next_year_lookup, by = c("pid", "year"))
+
+model_table <- model_table %>%
+  mutate(
+    has_next_year = !is.na(next_team),
+    transfer_next_year = if_else(has_next_year & next_team != team, 1, 0, missing = 0),
+    stayed_next_year   = if_else(has_next_year & next_team == team, 1, 0, missing = 0),
+
+    destination_conf = if_else(transfer_next_year == 1, next_conf, NA_character_),
+    destination_tier = if_else(transfer_next_year == 1,
+                               as.character(next_conf_tier),
+                               NA_character_),
+
+    same_conf_transfer = if_else(
+      transfer_next_year == 1 & conf == next_conf, 1, 0, missing = 0
+    )
+  )
+
+tier_num_map <- c(
+  "low_major" = 1,
+  "mid_major" = 2,
+  "high_major" = 3
+)
+
+model_table <- model_table %>%
+  mutate(
+    current_tier_num = tier_num_map[as.character(conf_tier)],
+    dest_tier_num    = tier_num_map[as.character(destination_tier)],
+    movement_type = case_when(
+      transfer_next_year == 1 & dest_tier_num > current_tier_num ~ "up",
+      transfer_next_year == 1 & dest_tier_num < current_tier_num ~ "down",
+      transfer_next_year == 1 & dest_tier_num == current_tier_num ~ "lateral",
+      TRUE ~ NA_character_
+    )
+  )
+
+model_table <- model_table %>%
+  group_by(team, year) %>%
+  mutate(
+    team_total_mp = sum(MP, na.rm = TRUE),
+    minutes_share = if_else(team_total_mp > 0, MP / team_total_mp, NA_real_),
+
+    mp_rank_team = min_rank(desc(MP)),
+    bpm_rank_team = min_rank(desc(BPM)),
+    usg_rank_team = min_rank(desc(USG)),
+    porpag_rank_team = min_rank(desc(PORPAG)),
+
+    bpm_pct_team = percent_rank(BPM),
+    mp_pct_team = percent_rank(MP),
+    usg_pct_team = percent_rank(USG),
+    porpag_pct_team = percent_rank(PORPAG),
+
+    bpm_minutes_gap = bpm_pct_team - mp_pct_team
+  ) %>%
+  ungroup() %>%
+  group_by(conf, year) %>%
+  mutate(
+    bpm_pct_conf = percent_rank(BPM),
+    porpag_pct_conf = percent_rank(PORPAG),
+    mp_pct_conf = percent_rank(MP)
+  ) %>%
+  ungroup() %>%
+  mutate(
+    underclass = if_else(class %in% c("Fr", "So"), 1, 0, missing = 0),
+    mid_major_star = if_else(conf_tier %in% c("mid_major", "low_major") &
+                               BPM >= 8 & PORPAG >= 2.5, 1, 0, missing = 0),
+    underused_star = if_else(BPM >= 6 & mp_rank_team > 5, 1, 0, missing = 0),
+    high_major_role_player = if_else(conf_tier == "high_major" &
+                                       MP >= 10 & MP <= 25 &
+                                       BPM >= 0, 1, 0, missing = 0)
+  )
+
+destination_model_table <- model_table %>%
+  filter(transfer_next_year == 1) %>%
+  filter(!is.na(destination_conf), !is.na(destination_tier)) %>%
+  filter(!is.na(BPM), !is.na(MP), !is.na(PORPAG), !is.na(USG), !is.na(ORTG)) %>%
+  mutate(
+    destination_tier = factor(destination_tier,
+                              levels = c("high_major", "mid_major", "low_major")),
+    class = factor(class, levels = c("Fr", "So", "Jr", "Sr")),
+    Role = fct_lump_min(as.factor(Role), min = 25),
+    conf_tier = factor(conf_tier,
+                       levels = c("high_major", "mid_major", "low_major"))
+  )
+
+train_dest <- destination_model_table %>% filter(year <= 2022)
+valid_dest <- destination_model_table %>% filter(year == 2023)
+test_dest  <- destination_model_table %>% filter(year == 2024)
+
+dest_tier_model <- multinom(
+  destination_tier ~ BPM + MP + PORPAG + USG + ORTG +
+    conf_tier + class + Role +
+    minutes_share + bpm_minutes_gap +
+    bpm_pct_team + porpag_pct_team + bpm_pct_conf +
+    team_wins + `Conf Win%` + barthag +
+    mid_major_star + underused_star + high_major_role_player,
+  data = train_dest,
+  trace = FALSE
+)
+
+summary(dest_tier_model)
+
+valid_tier_probs <- predict(dest_tier_model, newdata = valid_dest, type = "probs")
+test_tier_probs  <- predict(dest_tier_model, newdata = test_dest, type = "probs")
+
+valid_pred_class <- colnames(valid_tier_probs)[max.col(valid_tier_probs, ties.method = "first")]
+test_pred_class  <- colnames(test_tier_probs)[max.col(test_tier_probs, ties.method = "first")]
+
+valid_results <- valid_dest %>%
+  bind_cols(as.data.frame(valid_tier_probs)) %>%
+  mutate(pred_destination_tier = valid_pred_class)
+
+test_results <- test_dest %>%
+  bind_cols(as.data.frame(test_tier_probs)) %>%
+  mutate(pred_destination_tier = test_pred_class)
+
+confusionMatrix(
+  data = factor(valid_results$pred_destination_tier,
+                levels = levels(valid_results$destination_tier)),
+  reference = valid_results$destination_tier
+)
+
+confusionMatrix(
+  data = factor(test_results$pred_destination_tier,
+                levels = levels(test_results$destination_tier)),
+  reference = test_results$destination_tier
+)
+
+top_k_accuracy <- function(probs, actual, k = 3) {
+  probs <- as.data.frame(probs)
+
+  topk <- apply(probs, 1, function(x) {
+    names(sort(x, decreasing = TRUE))[1:k]
+  })
+
+  # transpose so each row = one observation
+  topk <- t(topk)
+
+  mean(sapply(1:nrow(topk), function(i) {
+    actual[i] %in% topk[i, ]
+  }))
+}
+
+log_loss <- function(actual, probs) {
+  probs <- as.matrix(probs)
+  actual <- as.factor(actual)
+
+  # create one-hot encoding
+  actual_mat <- model.matrix(~ actual - 1)
+
+  # align column names
+  colnames(actual_mat) <- levels(actual)
+
+  # reorder probs to match
+  probs <- probs[, colnames(actual_mat)]
+
+  eps <- 1e-15
+  probs <- pmax(pmin(probs, 1 - eps), eps)
+
+  -mean(rowSums(actual_mat * log(probs)))
+}
+
+top3_acc <- top_k_accuracy(
+  probs = valid_tier_probs,
+  actual = valid_dest$destination_tier,
+  k = 3
+)
+top3_acc
+
+ll <- log_loss(
+  actual = valid_dest$destination_tier,
+  probs = valid_tier_probs
+)
+ll
+
+top3_test <- top_k_accuracy(
+  probs = test_tier_probs,
+  actual = test_dest$destination_tier,
+  k = 3
+)
+top3_test
+
+ll_test <- log_loss(
+  actual = test_dest$destination_tier,
+  probs = test_tier_probs
+)
+ll_test
+```
+
+#projected stats
+```{r, eval=FALSE}
+high_major_confs <- c("acc", "b10", "b12", "sec", "be", "p12")
+upper_mid_confs  <- c("amer", "a10", "wcc", "mwc", "mvc", "wac", "caa", "ivy", "mac", "cusa")
+low_major_confs  <- c("ae", "asun", "bsth", "bsky", "bw", "horz", "maac", "meac", "nec", "ovc", 
+                      "pat", "sb", "sc", "slnd", "sum", "swac", "ind", "independent")
+
+mt <- model_table_START %>%
+  mutate(
+    conf  = tolower(trimws(conf)),
+    team  = trimws(team),
+    player = trimws(player),
+    class = trimws(class)
+  )
+
+next_year_lookup <- mt %>%
+  select(
+    pid,
+    year,
+    team_next   = team,
+    conf_next   = conf,
+    BPM_next    = BPM,
+    PORPAG_next = PORPAG,
+    MP_next     = MP,
+    USG_next    = USG,
+    team_wins_next = team_wins,
+    barthag_next   = barthag
+  ) %>%
+  mutate(year = year - 1)   # so year t row joins to year t+1 info
+
+mt2 <- mt %>%
+  left_join(next_year_lookup, by = c("pid", "year"))
+
+mt2 <- mt2 %>%
+  mutate(
+    transfer = if_else(!is.na(team_next) & team != team_next, 1, 0),
+    
+    conf_tier_next = case_when(
+      conf_next %in% high_major_confs ~ "high",
+      conf_next %in% upper_mid_confs  ~ "upper_mid",
+      conf_next %in% low_major_confs  ~ "low",
+      TRUE ~ NA_character_
+    ),
+    
+    conf_tier_current = case_when(
+      conf %in% high_major_confs ~ "high",
+      conf %in% upper_mid_confs  ~ "upper_mid",
+      conf %in% low_major_confs  ~ "low",
+      TRUE ~ NA_character_
+    ),
+    
+    conf_tier_next = factor(conf_tier_next, levels = c("low", "upper_mid", "high")),
+    conf_tier_current = factor(conf_tier_current, levels = c("low", "upper_mid", "high")),
+    
+    underclass = if_else(class %in% c("Fr", "So"), 1, 0)
+  )
+
+model_data <- mt2 %>%
+  filter(transfer == 1) %>%
+  filter(!is.na(BPM_next)) %>%
+  filter(!is.na(conf_tier_next)) %>%
+  filter(!is.na(BPM), !is.na(PORPAG), !is.na(MP), !is.na(USG),
+         !is.na(adjoe), !is.na(adjde), !is.na(barthag)) %>%
+  filter(class %in% c("Fr", "So", "Jr", "Sr"))
+
+model_data <- model_data %>%
+  group_by(team, year) %>%
+  mutate(
+    minutes_share = MP / sum(MP, na.rm = TRUE),
+    mp_rank_team  = min_rank(desc(MP)),
+    bpm_rank_team = min_rank(desc(BPM)),
+    porpag_rank_team = min_rank(desc(PORPAG))
+  ) %>%
+  ungroup()
+
+train <- model_data %>% filter(year <= 2022)
+valid <- model_data %>% filter(year == 2023)
+test  <- model_data %>% filter(year == 2024)
+
+# quick size check
+cat("Train n:", nrow(train), "\n")
+cat("Valid n:", nrow(valid), "\n")
+cat("Test n :", nrow(test), "\n")
+
+form <- BPM_next ~ 
+  BPM * conf_tier_next +
+  PORPAG * conf_tier_next +
+  minutes_share +
+  MP +
+  USG +
+  adjoe +
+  adjde +
+  barthag +
+  mp_rank_team +
+  bpm_rank_team +
+  porpag_rank_team +
+  underclass +
+  class +
+  conf_tier_current
+
+x_train <- model.matrix(form, data = train)[, -1]
+y_train <- train$BPM_next
+
+x_valid <- model.matrix(form, data = valid)[, -1]
+y_valid <- valid$BPM_next
+
+x_test  <- model.matrix(form, data = test)[, -1]
+y_test  <- test$BPM_next
+
+set.seed(123)
+
+cv_fit <- cv.glmnet(
+  x = x_train,
+  y = y_train,
+  alpha = 0,          # ridge
+  family = "gaussian",
+  nfolds = 5
+)
+
+best_lambda <- cv_fit$lambda.min
+best_lambda
+
+valid_pred <- as.numeric(predict(cv_fit, s = best_lambda, newx = x_valid))
+test_pred  <- as.numeric(predict(cv_fit, s = best_lambda, newx = x_test))
+
+rmse_fun <- function(actual, pred) {
+  sqrt(mean((actual - pred)^2, na.rm = TRUE))
+}
+
+mae_fun <- function(actual, pred) {
+  mean(abs(actual - pred), na.rm = TRUE)
+}
+
+r2_fun <- function(actual, pred) {
+  ss_res <- sum((actual - pred)^2, na.rm = TRUE)
+  ss_tot <- sum((actual - mean(actual, na.rm = TRUE))^2, na.rm = TRUE)
+  1 - ss_res / ss_tot
+}
+
+eval_metrics <- function(actual, pred) {
+  tibble(
+    RMSE = rmse_fun(actual, pred),
+    MAE  = mae_fun(actual, pred),
+    R2   = r2_fun(actual, pred)
+  )
+}
+
+# overall
+valid_results <- eval_metrics(y_valid, valid_pred)
+test_results  <- eval_metrics(y_test, test_pred)
+
+valid_results
+test_results
+
+valid_out <- valid %>%
+  mutate(pred_BPM_next = valid_pred)
+
+test_out <- test %>%
+  mutate(pred_BPM_next = test_pred)
+
+valid_by_tier <- valid_out %>%
+  group_by(conf_tier_next) %>%
+  summarise(
+    n = n(),
+    RMSE = rmse_fun(BPM_next, pred_BPM_next),
+    MAE  = mae_fun(BPM_next, pred_BPM_next),
+    R2   = r2_fun(BPM_next, pred_BPM_next),
+    .groups = "drop"
+  )
+
+test_by_tier <- test_out %>%
+  group_by(conf_tier_next) %>%
+  summarise(
+    n = n(),
+    RMSE = rmse_fun(BPM_next, pred_BPM_next),
+    MAE  = mae_fun(BPM_next, pred_BPM_next),
+    R2   = r2_fun(BPM_next, pred_BPM_next),
+    .groups = "drop"
+  )
+
+valid_by_tier
+test_by_tier
+
+coef_table <- coef(cv_fit, s = "lambda.min") %>%
+  as.matrix() %>%
+  as.data.frame() %>%
+  tibble::rownames_to_column("term")
+
+# rename the ONLY non-term column automatically
+names(coef_table)[2] <- "coef"
+
+coef_table <- coef_table %>%
+  arrange(desc(abs(coef)))
+
+head(coef_table, 25)
+
+test_predictions_table <- test_out %>%
+  select(player, team, conf, team_next, conf_next, conf_tier_next, BPM, BPM_next, pred_BPM_next) %>%
+  mutate(error = BPM_next - pred_BPM_next) %>%
+  arrange(desc(pred_BPM_next))
+
+head(test_predictions_table, 25)
+```
+
