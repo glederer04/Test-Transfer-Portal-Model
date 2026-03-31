@@ -11,6 +11,7 @@ knitr::opts_knit$set(root.dir = "/Users/gregorylederer/Desktop/Transfer Portal M
 ```
 
 #packages
+
 ```{r}
 library(httr2)
 library(jsonlite)
@@ -35,6 +36,7 @@ library(glmnet)
 ```
 
 2026 player data
+
 ```{r, eval=FALSE}
 url <- "https://www.barttorvik.com/getadvstats.php?year=2026"
 
@@ -65,6 +67,7 @@ df <- df %>%
 ```
 
 2015 - 25 player data
+
 ```{r}
 cn67 <- c(
   'player', 'team', 'conf', 'GP', 'MIN.', 'ORTG', 'USG', 'eFG.', 'TS.', 'ORB.', 'DRB.', 'AST.', 'TO.',
@@ -106,6 +109,7 @@ all_players_by_season <- map_dfr(
 ```
 
 team data
+
 ```{r}
 cbb <- map_df(years, function(y){
   read_csv(paste0("https://barttorvik.com/", y, "_team_results.csv")) %>%
@@ -115,6 +119,7 @@ cbb <- map_df(years, function(y){
 ```
 
 join
+
 ```{r}
 players_model <- all_players_by_season %>%
   select(-matches("^Unnamed")) %>%
@@ -134,6 +139,7 @@ model_table_START <- players_model %>%
 ```
 
 transfer likelihood model
+
 ```{r, eval=FALSE}
 model_table <- model_table_START %>%
   mutate(
@@ -462,6 +468,7 @@ test_model <- test_model %>%
 ```
 
 return vs leave
+
 ```{r, eval=FALSE}
 return_leave_base <- model_table_START %>%
   mutate(
@@ -811,6 +818,7 @@ test_model_return <- test_model_return %>%
 ```
 
 destination conference model
+
 ```{r, eval=FALSE}
 model_table <- model_table_START %>%
   mutate(
@@ -1056,6 +1064,7 @@ ll_test
 ```
 
 #projected stats
+
 ```{r, eval=FALSE}
 high_major_confs <- c("acc", "b10", "b12", "sec", "be", "p12")
 upper_mid_confs  <- c("amer", "a10", "wcc", "mwc", "mvc", "wac", "caa", "ivy", "mac", "cusa")
@@ -1258,4 +1267,3 @@ test_predictions_table <- test_out %>%
 
 head(test_predictions_table, 25)
 ```
-
