@@ -1,0 +1,9 @@
+---
+title: "Transfer Portal Projections"
+---
+
+## Welcome
+
+This is a rough draft of my transfer portal projections site.
+
+Right now, this site will be used to display player data, team data, and projections.
