@@ -10,6 +10,7 @@ format:
         <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
         <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
         <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 ---
 
 <style>
@@ -91,6 +92,7 @@ const viewColumns = {
     "PTS",
     "REB",
     "AST",
+    "PRA",
     "pred_transfer",
     "transfer_prob_mean",
     "transfer_prob_lo",
@@ -105,6 +107,7 @@ const viewColumns = {
     "PTS",
     "REB",
     "AST",
+    "PRA",
     "pred_return",
     "pred_leave"
   ],
@@ -117,7 +120,11 @@ const viewColumns = {
     "PTS",
     "REB",
     "AST",
-    "pred_destination_tier"
+    "PRA",
+    "pred_destination_tier",
+    "dest_prob_high",
+    "dest_prob_upper_mid",
+    "dest_prob_low"
   ],
   bpm: [
     "player",
@@ -128,6 +135,7 @@ const viewColumns = {
     "PTS",
     "REB",
     "AST",
+    "PRA",
     "pred_BPM_low",
     "pred_BPM_low_lo",
     "pred_BPM_low_hi",
@@ -140,24 +148,28 @@ const viewColumns = {
   ]
 };
 
-function parseCSV(text) {
-  const lines = text.trim().split(/\r?\n/);
-  const headers = lines[0].split(",").map(h => h.trim());
-
-  return lines.slice(1).map(line => {
-    const values = line.split(",");
-    const row = {};
-    headers.forEach((header, i) => {
-      row[header] = values[i] !== undefined ? values[i].trim() : "";
-    });
-    return row;
-  });
-}
-
 function prettifyLabel(col) {
   return col
     .replaceAll("_", " ")
     .replace(/\b\w/g, c => c.toUpperCase());
+}
+
+function toNumber(val) {
+  const num = parseFloat(val);
+  return isNaN(num) ? null : num;
+}
+
+function enrichData(data) {
+  return data.map(row => {
+    const pts = toNumber(row.PTS) || 0;
+    const reb = toNumber(row.REB) || 0;
+    const ast = toNumber(row.AST) || 0;
+
+    return {
+      ...row,
+      PRA: +(pts + reb + ast).toFixed(1)
+    };
+  });
 }
 
 function buildTable(viewName) {
@@ -183,21 +195,25 @@ function buildTable(viewName) {
     pageLength: 25,
     responsive: true,
     scrollX: true,
-    order: []
+    order: [],
+    autoWidth: false
   });
 }
 
-fetch("data/complete_2026_scored.csv")
-  .then(response => response.text())
-  .then(csvText => {
-    projectionData = parseCSV(csvText);
+Papa.parse("data/complete_2026_scored.csv", {
+  download: true,
+  header: true,
+  skipEmptyLines: true,
+  complete: function(results) {
+    projectionData = enrichData(results.data);
     buildTable("transfer");
-  })
-  .catch(error => {
+  },
+  error: function(error) {
     document.getElementById("projection-filters").innerText =
       "Could not load projection data.";
     console.error(error);
-  });
+  }
+});
 
 document.querySelectorAll(".proj-btn").forEach(button => {
   button.addEventListener("click", function() {
