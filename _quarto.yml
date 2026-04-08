@@ -1,5 +1,9 @@
 project:
   type: website
+  output-dir: docs
+  render:
+    - index.qmd
+    - projections.qmd
 
 website:
   title: "Transfer Portal Projections"

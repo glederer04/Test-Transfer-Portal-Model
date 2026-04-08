@@ -1,7 +1,58 @@
 ---
 title: "Projections"
-format: html
+format:
+  html:
+    include-in-header:
+      text: |
+        <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
+        <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.dataTables.min.css">
+
+        <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+        <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+        <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
 ---
+
+<style>
+.projection-button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.proj-btn {
+  background: #13294b;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.proj-btn:hover {
+  opacity: 0.9;
+}
+
+.proj-btn.active {
+  background: #4b9cd3;
+  color: #000;
+}
+
+#projection-filters {
+  margin-bottom: 18px;
+}
+
+#projection-table-wrapper {
+  overflow-x: auto;
+  margin-top: 10px;
+}
+
+table.dataTable thead th,
+table.dataTable tbody td {
+  white-space: nowrap;
+}
+</style>
 
 ## Transfer Portal Projections
 
@@ -15,7 +66,7 @@ Use the buttons below to switch between projection views.
 </div>
 
 <div id="projection-filters">
-  <!-- filters will go here next -->
+  Filters coming next.
 </div>
 
 <div id="projection-table-wrapper">

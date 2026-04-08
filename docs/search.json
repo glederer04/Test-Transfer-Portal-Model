@@ -23,9 +23,9 @@
   {
     "objectID": "projections.html",
     "href": "projections.html",
-    "title": "Player Projections",
+    "title": "Projections",
     "section": "",
-    "text": "This page will display model outputs and projections.\n\nlibrary(tidyverse)\n\n── Attaching core tidyverse packages ──────────────────────── tidyverse 2.0.0 ──\n✔ dplyr     1.1.4     ✔ readr     2.1.6\n✔ forcats   1.0.0     ✔ stringr   1.6.0\n✔ ggplot2   4.0.1     ✔ tibble    3.3.1\n✔ lubridate 1.9.4     ✔ tidyr     1.3.2\n✔ purrr     1.2.1     \n── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──\n✖ dplyr::filter() masks stats::filter()\n✖ dplyr::lag()    masks stats::lag()\nℹ Use the conflicted package (&lt;http://conflicted.r-lib.org/&gt;) to force all conflicts to become errors\n\n# TEMP example\ndata &lt;- tibble(\n  player = c(\"Player A\", \"Player B\"),\n  proj_efficiency = c(15.2, 18.7)\n)\n\ndata\n\n# A tibble: 2 × 2\n  player   proj_efficiency\n  &lt;chr&gt;              &lt;dbl&gt;\n1 Player A            15.2\n2 Player B            18.7"
+    "text": "Use the buttons below to switch between projection views.\n\nTransfer Likelihood Return / Leave Destination Tier Projected BPM\n\n\nFilters coming next."
   },
   {
     "objectID": "projections.html#player-projections",
@@ -33,5 +33,12 @@
     "title": "Player Projections",
     "section": "",
     "text": "This page will display model outputs and projections.\n\nlibrary(tidyverse)\n\n── Attaching core tidyverse packages ──────────────────────── tidyverse 2.0.0 ──\n✔ dplyr     1.1.4     ✔ readr     2.1.6\n✔ forcats   1.0.0     ✔ stringr   1.6.0\n✔ ggplot2   4.0.1     ✔ tibble    3.3.1\n✔ lubridate 1.9.4     ✔ tidyr     1.3.2\n✔ purrr     1.2.1     \n── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──\n✖ dplyr::filter() masks stats::filter()\n✖ dplyr::lag()    masks stats::lag()\nℹ Use the conflicted package (&lt;http://conflicted.r-lib.org/&gt;) to force all conflicts to become errors\n\n# TEMP example\ndata &lt;- tibble(\n  player = c(\"Player A\", \"Player B\"),\n  proj_efficiency = c(15.2, 18.7)\n)\n\ndata\n\n# A tibble: 2 × 2\n  player   proj_efficiency\n  &lt;chr&gt;              &lt;dbl&gt;\n1 Player A            15.2\n2 Player B            18.7"
+  },
+  {
+    "objectID": "projections.html#transfer-portal-projections",
+    "href": "projections.html#transfer-portal-projections",
+    "title": "Projections",
+    "section": "",
+    "text": "Use the buttons below to switch between projection views.\n\nTransfer Likelihood Return / Leave Destination Tier Projected BPM\n\n\nFilters coming next."
   }
 ]
