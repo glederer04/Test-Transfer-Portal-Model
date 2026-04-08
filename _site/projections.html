@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>Player Projections – Transfer Portal Projections</title>
+<title>Projections – Transfer Portal Projections</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -111,7 +111,7 @@ ul.task-list li input[type="checkbox"] {
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#player-projections" id="toc-player-projections" class="nav-link active" data-scroll-target="#player-projections">Player Projections</a></li>
+  <li><a href="#transfer-portal-projections" id="toc-transfer-portal-projections" class="nav-link active" data-scroll-target="#transfer-portal-projections">Transfer Portal Projections</a></li>
   </ul>
 </nav>
     </div>
@@ -120,7 +120,7 @@ ul.task-list li input[type="checkbox"] {
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">Player Projections</h1>
+<h1 class="title">Projections</h1>
 </div>
 
 
@@ -137,21 +137,23 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
-<section id="player-projections" class="level2">
-<h2 class="anchored" data-anchor-id="player-projections">Player Projections</h2>
-<p>This page will display model outputs and projections.</p>
-<pre class="{html}"><code>&lt;div class="projection-controls"&gt;
-  &lt;div class="projection-button-row"&gt;
-    &lt;button class="proj-btn active" data-table="transfer"&gt;Transfer Likelihood&lt;/button&gt;
-    &lt;button class="proj-btn" data-table="returnleave"&gt;Return / Leave&lt;/button&gt;
-    &lt;button class="proj-btn" data-table="destination"&gt;Destination Tier&lt;/button&gt;
-    &lt;button class="proj-btn" data-table="bpm"&gt;Projected BPM&lt;/button&gt;
-  &lt;/div&gt;
-
-  &lt;div id="projection-table-wrapper"&gt;
-    &lt;table id="projectionTable" class="display nowrap" style="width:100%"&gt;&lt;/table&gt;
-  &lt;/div&gt;
-&lt;/div&gt;</code></pre>
+<section id="transfer-portal-projections" class="level2">
+<h2 class="anchored" data-anchor-id="transfer-portal-projections">Transfer Portal Projections</h2>
+<p>Use the buttons below to switch between projection views.</p>
+<div class="projection-button-row">
+<p><button class="proj-btn active" data-view="transfer">Transfer Likelihood</button> <button class="proj-btn" data-view="return">Return / Leave</button> <button class="proj-btn" data-view="destination">Destination Tier</button> <button class="proj-btn" data-view="bpm">Projected BPM</button></p>
+</div>
+<div id="projection-filters">
+<p><!-- filters will go here next --></p>
+</div>
+<div id="projection-table-wrapper">
+<table id="projection-table" class="display nowrap" style="width:100%">
+<thead>
+</thead>
+<tbody>
+</tbody>
+</table>
+</div>
 
 
 </section>

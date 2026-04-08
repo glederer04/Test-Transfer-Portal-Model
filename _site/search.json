@@ -23,9 +23,9 @@
   {
     "objectID": "projections.html",
     "href": "projections.html",
-    "title": "Player Projections",
+    "title": "Projections",
     "section": "",
-    "text": "This page will display model outputs and projections.\n&lt;div class=\"projection-controls\"&gt;\n  &lt;div class=\"projection-button-row\"&gt;\n    &lt;button class=\"proj-btn active\" data-table=\"transfer\"&gt;Transfer Likelihood&lt;/button&gt;\n    &lt;button class=\"proj-btn\" data-table=\"returnleave\"&gt;Return / Leave&lt;/button&gt;\n    &lt;button class=\"proj-btn\" data-table=\"destination\"&gt;Destination Tier&lt;/button&gt;\n    &lt;button class=\"proj-btn\" data-table=\"bpm\"&gt;Projected BPM&lt;/button&gt;\n  &lt;/div&gt;\n\n  &lt;div id=\"projection-table-wrapper\"&gt;\n    &lt;table id=\"projectionTable\" class=\"display nowrap\" style=\"width:100%\"&gt;&lt;/table&gt;\n  &lt;/div&gt;\n&lt;/div&gt;"
+    "text": "Use the buttons below to switch between projection views.\n\nTransfer Likelihood Return / Leave Destination Tier Projected BPM"
   },
   {
     "objectID": "projections.html#player-projections",
@@ -33,5 +33,12 @@
     "title": "Player Projections",
     "section": "",
     "text": "This page will display model outputs and projections.\n&lt;div class=\"projection-controls\"&gt;\n  &lt;div class=\"projection-button-row\"&gt;\n    &lt;button class=\"proj-btn active\" data-table=\"transfer\"&gt;Transfer Likelihood&lt;/button&gt;\n    &lt;button class=\"proj-btn\" data-table=\"returnleave\"&gt;Return / Leave&lt;/button&gt;\n    &lt;button class=\"proj-btn\" data-table=\"destination\"&gt;Destination Tier&lt;/button&gt;\n    &lt;button class=\"proj-btn\" data-table=\"bpm\"&gt;Projected BPM&lt;/button&gt;\n  &lt;/div&gt;\n\n  &lt;div id=\"projection-table-wrapper\"&gt;\n    &lt;table id=\"projectionTable\" class=\"display nowrap\" style=\"width:100%\"&gt;&lt;/table&gt;\n  &lt;/div&gt;\n&lt;/div&gt;"
+  },
+  {
+    "objectID": "projections.html#transfer-portal-projections",
+    "href": "projections.html#transfer-portal-projections",
+    "title": "Projections",
+    "section": "",
+    "text": "Use the buttons below to switch between projection views.\n\nTransfer Likelihood Return / Leave Destination Tier Projected BPM"
   }
 ]

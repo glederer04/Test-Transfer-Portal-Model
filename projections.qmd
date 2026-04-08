@@ -1,23 +1,26 @@
 ---
-title: "Player Projections"
+title: "Projections"
+format: html
 ---
 
-## Player Projections
+## Transfer Portal Projections
 
-This page will display model outputs and projections.
+Use the buttons below to switch between projection views.
 
-```{html}
-<div class="projection-controls">
-  <div class="projection-button-row">
-    <button class="proj-btn active" data-table="transfer">Transfer Likelihood</button>
-    <button class="proj-btn" data-table="returnleave">Return / Leave</button>
-    <button class="proj-btn" data-table="destination">Destination Tier</button>
-    <button class="proj-btn" data-table="bpm">Projected BPM</button>
-  </div>
-
-  <div id="projection-table-wrapper">
-    <table id="projectionTable" class="display nowrap" style="width:100%"></table>
-  </div>
+<div class="projection-button-row">
+  <button class="proj-btn active" data-view="transfer">Transfer Likelihood</button>
+  <button class="proj-btn" data-view="return">Return / Leave</button>
+  <button class="proj-btn" data-view="destination">Destination Tier</button>
+  <button class="proj-btn" data-view="bpm">Projected BPM</button>
 </div>
-```
 
+<div id="projection-filters">
+  <!-- filters will go here next -->
+</div>
+
+<div id="projection-table-wrapper">
+  <table id="projection-table" class="display nowrap" style="width:100%">
+    <thead></thead>
+    <tbody></tbody>
+  </table>
+</div>
