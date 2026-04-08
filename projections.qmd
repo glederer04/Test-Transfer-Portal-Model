@@ -6,14 +6,18 @@ title: "Player Projections"
 
 This page will display model outputs and projections.
 
-```{r}
-library(tidyverse)
+```{html}
+<div class="projection-controls">
+  <div class="projection-button-row">
+    <button class="proj-btn active" data-table="transfer">Transfer Likelihood</button>
+    <button class="proj-btn" data-table="returnleave">Return / Leave</button>
+    <button class="proj-btn" data-table="destination">Destination Tier</button>
+    <button class="proj-btn" data-table="bpm">Projected BPM</button>
+  </div>
 
-# TEMP example
-data <- tibble(
-  player = c("Player A", "Player B"),
-  proj_efficiency = c(15.2, 18.7)
-)
-
-data
+  <div id="projection-table-wrapper">
+    <table id="projectionTable" class="display nowrap" style="width:100%"></table>
+  </div>
+</div>
 ```
+

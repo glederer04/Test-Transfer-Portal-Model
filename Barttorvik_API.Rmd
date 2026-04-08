@@ -99,7 +99,10 @@ get_torvik_advstats <- function(season_year, cn = cn67) {
   names(df) <- cn
 
   df %>%
-    select(-starts_with("DELETE"))
+    select(-starts_with("DELETE")) %>%
+    mutate(
+      num = as.character(num)
+    )
 }
 
 years <- 2015:2025
