@@ -172,6 +172,7 @@ ul.task-list li input[type="checkbox"] {
 
 #projection-filters {
   margin-bottom: 18px;
+  font-weight: 500;
 }
 
 #projection-table-wrapper {
@@ -191,7 +192,7 @@ table.dataTable tbody td {
 <p><button class="proj-btn active" data-view="transfer">Transfer Likelihood</button> <button class="proj-btn" data-view="return">Return / Leave</button> <button class="proj-btn" data-view="destination">Destination Tier</button> <button class="proj-btn" data-view="bpm">Projected BPM</button></p>
 </div>
 <div id="projection-filters">
-<p>Filters coming next.</p>
+<p>Sort by clicking any column header. Search/filter tools coming next.</p>
 </div>
 <div id="projection-table-wrapper">
 <table id="projection-table" class="display nowrap" style="width:100%">
@@ -201,6 +202,136 @@ table.dataTable tbody td {
 </tbody>
 </table>
 </div>
+<script>
+let projectionData = [];
+let currentTable = null;
+
+const viewColumns = {
+  transfer: [
+    "player",
+    "team",
+    "conf",
+    "height",
+    "GP",
+    "PTS",
+    "REB",
+    "AST",
+    "pred_transfer",
+    "transfer_prob_mean",
+    "transfer_prob_lo",
+    "transfer_prob_hi"
+  ],
+  return: [
+    "player",
+    "team",
+    "conf",
+    "height",
+    "GP",
+    "PTS",
+    "REB",
+    "AST",
+    "pred_return",
+    "pred_leave"
+  ],
+  destination: [
+    "player",
+    "team",
+    "conf",
+    "height",
+    "GP",
+    "PTS",
+    "REB",
+    "AST",
+    "pred_destination_tier"
+  ],
+  bpm: [
+    "player",
+    "team",
+    "conf",
+    "height",
+    "GP",
+    "PTS",
+    "REB",
+    "AST",
+    "pred_BPM_low",
+    "pred_BPM_low_lo",
+    "pred_BPM_low_hi",
+    "pred_BPM_upper_mid",
+    "pred_BPM_upper_mid_lo",
+    "pred_BPM_upper_mid_hi",
+    "pred_BPM_high",
+    "pred_BPM_high_lo",
+    "pred_BPM_high_hi"
+  ]
+};
+
+function parseCSV(text) {
+  const lines = text.trim().split(/\r?\n/);
+  const headers = lines[0].split(",").map(h => h.trim());
+
+  return lines.slice(1).map(line => {
+    const values = line.split(",");
+    const row = {};
+    headers.forEach((header, i) => {
+      row[header] = values[i] !== undefined ? values[i].trim() : "";
+    });
+    return row;
+  });
+}
+
+function prettifyLabel(col) {
+  return col
+    .replaceAll("_", " ")
+    .replace(/\b\w/g, c => c.toUpperCase());
+}
+
+function buildTable(viewName) {
+  const cols = viewColumns[viewName];
+
+  const validCols = cols.filter(col =>
+    projectionData.length > 0 && Object.prototype.hasOwnProperty.call(projectionData[0], col)
+  );
+
+  const columns = validCols.map(col => ({
+    title: prettifyLabel(col),
+    data: col
+  }));
+
+  if (currentTable) {
+    currentTable.destroy();
+    $('#projection-table').empty();
+  }
+
+  currentTable = $('#projection-table').DataTable({
+    data: projectionData,
+    columns: columns,
+    pageLength: 25,
+    responsive: true,
+    scrollX: true,
+    order: []
+  });
+}
+
+fetch("data/complete_2026_scored.csv")
+  .then(response => response.text())
+  .then(csvText => {
+    projectionData = parseCSV(csvText);
+    buildTable("transfer");
+  })
+  .catch(error => {
+    document.getElementById("projection-filters").innerText =
+      "Could not load projection data.";
+    console.error(error);
+  });
+
+document.querySelectorAll(".proj-btn").forEach(button => {
+  button.addEventListener("click", function() {
+    document.querySelectorAll(".proj-btn").forEach(btn => btn.classList.remove("active"));
+    this.classList.add("active");
+    buildTable(this.dataset.view);
+  });
+});
+</script>
 
 
 </section>
