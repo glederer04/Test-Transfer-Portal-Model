@@ -33,11 +33,13 @@ library(boot)
 library(scales)
 library(nnet)
 library(glmnet)
+library(lubridate)
+library(tibble)
 ```
 
 2026 player data
 
-```{r, eval=FALSE}
+```{r}
 url <- "https://www.barttorvik.com/getadvstats.php?year=2026"
 
 txt <- request(url) |>
@@ -64,6 +66,8 @@ names(df) <- cn67
 
 df <- df %>%
   select(-starts_with("DELETE"))
+
+player_data_2026 <- df
 ```
 
 2015 - 25 player data
@@ -116,12 +120,22 @@ cbb <- map_df(years, function(y){
     mutate(season = y) %>%
     select(1:43, season)
 })
+
+cbb_26 <- map_df(2026, function(y){
+  read_csv(paste0("https://barttorvik.com/", y, "_team_results.csv")) %>%
+    mutate(season = y) %>%
+    select(1:43, season)
+})
 ```
 
 join
 
 ```{r}
 players_model <- all_players_by_season %>%
+  select(-matches("^Unnamed")) %>%
+  mutate(year = as.integer(year), team = str_trim(team), conf = str_trim(conf))
+
+players_model_26 <- player_data_2026 %>%
   select(-matches("^Unnamed")) %>%
   mutate(year = as.integer(year), team = str_trim(team), conf = str_trim(conf))
 
@@ -136,6 +150,15 @@ model_table_START <- players_model %>%
 
 #write.csv(model_table, 'Modeling Table 2015-25.csv')
 #write.csv(model_table[1:10,], 'Modeling Table 2015-25 Sample.csv')
+
+teams_model_26 <- cbb_26 %>%
+  select(team, conf, season, record, `Con Rec.`, barthag, adjoe, `oe Rank`, adjde, `de Rank`, sos, ncsos, consos, `Qual Barthag`, `Qual Games`, `Conf Win%`, WAB, `WAB Rk`) %>%
+  mutate(season = as.integer(season), team = str_trim(team), conf = str_trim(conf)) %>%
+  separate(record, into = c("team_wins", "team_losses"), sep = "-", remove = FALSE, convert = TRUE) %>%
+  separate(`Con Rec.`, into = c("conf_wins", "conf_losses"), sep = "-", remove = FALSE, convert = TRUE)
+
+complete_data_2026 <- players_model_26 %>%
+  left_join(teams_model_26, by = c("team", "conf", "year" = "season"))
 ```
 
 transfer likelihood model
@@ -465,6 +488,8 @@ test_model <- test_model %>%
   mutate(
     confidence_score = scales::rescale(confidence_score, to = c(0,1))
   )
+
+transfer_formula <- formula(glm_fit)
 ```
 
 return vs leave
@@ -815,6 +840,8 @@ test_model_return <- test_model_return %>%
   mutate(
     confidence_score = rescale(confidence_score, to = c(0, 1))
   )
+
+return_leave_formula <- formula(glm_return)
 ```
 
 destination conference model
@@ -1061,6 +1088,8 @@ ll_test <- log_loss(
   probs = test_tier_probs
 )
 ll_test
+
+destination_tier_formula <- formula(dest_tier_model)
 ```
 
 #projected stats
@@ -1266,4 +1295,668 @@ test_predictions_table <- test_out %>%
   arrange(desc(pred_BPM_next))
 
 head(test_predictions_table, 25)
+
+bpm_formula <- formula(form)
 ```
+
+save training metadata
+```{r}
+transfer_meta <- list(
+  formula = transfer_formula,
+  class_levels = levels(train_model$class),
+  role_levels = levels(train_model$Role),
+  threshold = 0.33
+)
+
+return_meta <- list(
+  formula = return_leave_formula,
+  class_levels = levels(train_return$class),
+  role_levels = levels(train_return$Role),
+  threshold = 0.50
+)
+
+dest_meta <- list(
+  formula = formula(dest_tier_model),
+  class_levels = levels(train_dest$class),
+  role_levels = levels(train_dest$Role),
+  conf_tier_levels = levels(train_dest$conf_tier),
+  destination_tier_levels = levels(train_dest$destination_tier)
+)
+
+bpm_meta <- list(
+  formula = bpm_formula,
+  lambda = best_lambda,
+  class_levels = c("Fr", "So", "Jr", "Sr"),
+  conf_tier_current_levels = c("low", "upper_mid", "high"),
+  conf_tier_next_levels = c("low", "upper_mid", "high"),
+  x_colnames = colnames(x_train)
+)
+```
+
+master feature engineering function
+```{r}
+engineer_portal_features <- function(df) {
+  high_major_confs <- c("b12", "acc", "b10", "sec", "be", "p12")
+  upper_mid_confs  <- c("amer", "a10", "wcc", "mwc", "mvc", "wac", "caa", "ivy", "mac", "cusa")
+  low_major_confs  <- c("ae", "asun", "bsth", "bsky", "bw", "horz", "maac", "meac", "nec", "ovc",
+                        "pat", "sb", "sc", "slnd", "sum", "swac", "ind", "independent")
+
+  out <- df %>%
+    mutate(
+      year = as.integer(year),
+      pid = as.character(pid),
+      player = str_squish(player),
+      team = str_squish(team),
+
+      conf = str_squish(conf),
+      conf = str_to_lower(conf),
+      conf = if_else(conf == "ind", "independent", conf),
+
+      class = str_squish(class),
+      class = na_if(class, ""),
+      class = na_if(class, "N/A"),
+      class = na_if(class, "--"),
+      class = case_when(
+        class %in% c("Fr", "So", "Jr", "Sr") ~ class,
+        TRUE ~ NA_character_
+      ),
+
+      Role = str_squish(Role),
+      Role = na_if(Role, ""),
+
+      Birthdate = as.character(Birthdate),
+      Birthdate = na_if(Birthdate, ""),
+      birth_date = suppressWarnings(mdy(Birthdate)),
+      age = if_else(
+        !is.na(birth_date),
+        as.numeric(interval(birth_date, ymd(paste0(year, "-11-01"))) / years(1)),
+        NA_real_
+      ),
+
+      major = case_when(
+        conf %in% high_major_confs ~ "high",
+        TRUE ~ "mid"
+      ),
+
+      conf_tier = case_when(
+        conf %in% high_major_confs ~ "high_major",
+        conf %in% upper_mid_confs  ~ "mid_major",
+        conf %in% low_major_confs  ~ "low_major",
+        TRUE ~ NA_character_
+      ),
+
+      class_num = case_when(
+        class == "Fr" ~ 1,
+        class == "So" ~ 2,
+        class == "Jr" ~ 3,
+        class == "Sr" ~ 4,
+        TRUE ~ NA_real_
+      ),
+
+      underclass = case_when(
+        class %in% c("Fr", "So") ~ "Underclassmen",
+        class %in% c("Jr", "Sr") ~ "Upperclassmen",
+        TRUE ~ NA_character_
+      ),
+
+      player_team_gap = BPM - barthag
+    ) %>%
+    group_by(team, year) %>%
+    mutate(
+      team_total_mp = sum(MP, na.rm = TRUE),
+      team_total_gp = sum(GP, na.rm = TRUE),
+
+      minutes_share = if_else(team_total_mp > 0, MP / team_total_mp, NA_real_),
+      games_share   = if_else(team_total_gp > 0, GP / team_total_gp, NA_real_),
+
+      mp_rank_team = min_rank(desc(MP)),
+      bpm_rank_team = min_rank(desc(BPM)),
+      usg_rank_team = min_rank(desc(USG)),
+      porpag_rank_team = min_rank(desc(PORPAG)),
+
+      mp_rank = min_rank(desc(MP)),
+      bpm_rank = min_rank(desc(BPM)),
+      usage_rank = min_rank(desc(USG)),
+
+      mp_pct_team = percent_rank(MP),
+      bpm_pct_team = percent_rank(BPM),
+      usg_pct_team = percent_rank(USG),
+      porpag_pct_team = percent_rank(PORPAG)
+    ) %>%
+    ungroup() %>%
+    group_by(conf, year) %>%
+    mutate(
+      bpm_pct_conf = percent_rank(BPM),
+      porpag_pct_conf = percent_rank(PORPAG),
+      mp_pct_conf = percent_rank(MP),
+      usg_pct_conf = percent_rank(USG)
+    ) %>%
+    ungroup() %>%
+    group_by(major, year) %>%
+    mutate(
+      usg_rank_c1 = min_rank(desc(USG)),
+      porpag_rank_c1 = min_rank(desc(PORPAG)),
+      bpm_rank_c1 = min_rank(desc(BPM))
+    ) %>%
+    ungroup() %>%
+    mutate(
+      bpm_minutes_gap = BPM - minutes_share,
+
+      underused_star = if_else(BPM > 5 & mp_rank > 5, 1L, 0L),
+      underused_good_player = if_else(BPM > 4 & mp_rank_team > 5, 1L, 0L),
+      low_role_high_output = if_else(porpag_pct_conf >= 0.75 & mp_pct_team <= 0.40, 1L, 0L),
+      mid_major_star = if_else(major == "mid" & bpm_pct_conf >= 0.90, 1L, 0L),
+      high_major_low_role = if_else(major == "high" & mp_pct_team <= 0.25, 1L, 0L),
+      high_major_role_player = if_else(conf_tier == "high_major" & MP >= 10 & MP <= 25 & BPM >= 0, 1L, 0L),
+
+      winning_team = if_else(!is.na(team_wins) & !is.na(team_losses) & team_wins > team_losses, 1L, 0L),
+      conf_winning_team = if_else(
+        !is.na(conf_wins) & !is.na(conf_losses) & conf_wins > conf_losses, 1L, 0L
+      )
+    )
+
+  out
+}
+
+attach_next_year_outcomes <- function(df) {
+  next_year_lookup <- df %>%
+    select(
+      pid, year, player, Birthdate,
+      next_team = team,
+      next_conf = conf,
+      next_class = class,
+      next_role = Role,
+      next_conf_tier = conf_tier,
+      BPM_next = BPM,
+      PORPAG_next = PORPAG,
+      MP_next = MP,
+      USG_next = USG,
+      team_wins_next = team_wins,
+      barthag_next = barthag
+    ) %>%
+    distinct() %>%
+    mutate(year = year - 1)
+
+  df %>%
+    left_join(next_year_lookup, by = c("pid", "year", "player", "Birthdate")) %>%
+    mutate(
+      returned_next_year = if_else(!is.na(next_team), 1L, 0L),
+      transfer_next_year = case_when(
+        is.na(next_team) ~ NA_integer_,
+        next_team != team ~ 1L,
+        next_team == team ~ 0L
+      ),
+      left_next_year = if_else(is.na(next_team), 1L, 0L),
+      destination_conf = if_else(transfer_next_year == 1, next_conf, NA_character_),
+      destination_tier = if_else(transfer_next_year == 1, next_conf_tier, NA_character_)
+    )
+}
+
+model_table_FE   <- engineer_portal_features(model_table_START)
+complete_2026_FE <- engineer_portal_features(complete_data_2026)
+
+historical_model_table <- model_table_FE %>%
+  attach_next_year_outcomes()
+```
+
+factor level alignment
+```{r}
+align_transfer_newdata <- function(df, meta) {
+  df %>%
+    mutate(
+      class = factor(class, levels = meta$class_levels),
+      Role  = factor(Role,  levels = meta$role_levels)
+    )
+}
+
+align_return_newdata <- function(df, meta) {
+  df %>%
+    mutate(
+      class = factor(class, levels = meta$class_levels),
+      Role  = factor(Role,  levels = meta$role_levels)
+    )
+}
+
+align_dest_newdata <- function(df, meta) {
+  df %>%
+    mutate(
+      class = factor(class, levels = meta$class_levels),
+      Role = factor(Role, levels = meta$role_levels),
+      conf_tier = factor(conf_tier, levels = meta$conf_tier_levels)
+    )
+}
+```
+
+score 2026 data with transfer model
+```{r}
+score_transfer_model <- function(newdata, fit, meta) {
+  newdata2 <- align_transfer_newdata(newdata, meta)
+
+  preds <- predict(fit, newdata = newdata2, type = "response")
+
+  newdata2 %>%
+    mutate(
+      pred_transfer = preds,
+      pred_transfer_flag = if_else(pred_transfer >= meta$threshold, 1L, 0L)
+    )
+}
+```
+
+bootstrap confidence intervals
+```{r}
+bootstrap_transfer_predictions <- function(train_data, newdata, R = 200, seed = 123) {
+  set.seed(seed)
+
+  boot_fun <- function(data, indices) {
+    d <- data[indices, ]
+
+    fit <- glm(
+      transfer_next_year ~ GP + ORTG + USG + ORB. + TP. +
+        major*PORPAG + adjoe*adjde + `Conf Win%` +
+        Role + class + MP*BPM +
+        major*BPM +
+        player_team_gap*bpm_minutes_gap +
+        mid_major_star*underused_star,
+      data = d,
+      family = binomial()
+    )
+
+    predict(fit, newdata = newdata, type = "response")
+  }
+
+  boot_out <- boot::boot(
+    data = train_data,
+    statistic = boot_fun,
+    R = R
+  )
+
+  pred_mat <- boot_out$t
+
+  tibble(
+    transfer_prob_mean = colMeans(pred_mat, na.rm = TRUE),
+    transfer_prob_lo   = apply(pred_mat, 2, quantile, probs = 0.025, na.rm = TRUE),
+    transfer_prob_hi   = apply(pred_mat, 2, quantile, probs = 0.975, na.rm = TRUE)
+  )
+}
+
+complete_2026_transfer_base <- complete_2026_FE %>%
+  align_transfer_newdata(transfer_meta) %>%
+  filter(
+    complete.cases(
+      class, MP, BPM, USG, ORTG,
+      team_wins, barthag, `Conf Win%`, Role
+    )
+  )
+
+complete_2026_transfer_preds <- score_transfer_model(
+  newdata = complete_2026_transfer_base,
+  fit = glm_fit,
+  meta = transfer_meta
+)
+
+transfer_ci_2026 <- bootstrap_transfer_predictions(
+  train_data = train_model,
+  newdata = complete_2026_transfer_base,
+  R = 200
+)
+
+complete_2026_transfer_preds <- bind_cols(
+  complete_2026_transfer_preds,
+  transfer_ci_2026
+)
+```
+
+score return v leave
+```{r}
+score_return_model <- function(newdata, fit, meta) {
+  newdata2 <- align_return_newdata(newdata, meta)
+
+  preds <- predict(fit, newdata = newdata2, type = "response")
+
+  newdata2 %>%
+    mutate(
+      pred_return = preds,
+      pred_leave = 1 - preds,
+      pred_return_flag = if_else(pred_return >= meta$threshold, 1L, 0L)
+    )
+}
+```
+
+score destination conference tier model
+```{r}
+score_destination_model <- function(newdata, fit, meta) {
+  newdata2 <- align_dest_newdata(newdata, meta)
+
+  probs <- predict(fit, newdata = newdata2, type = "probs")
+  probs <- as.data.frame(probs)
+
+  names(probs) <- paste0("dest_prob_", names(probs))
+
+  pred_class <- colnames(probs)[max.col(probs, ties.method = "first")]
+
+  bind_cols(newdata2, probs) %>%
+    mutate(pred_destination_tier = str_remove(pred_class, "^dest_prob_"))
+}
+```
+
+score bpm under possible destination tier
+```{r}
+make_bpm_design_matrix <- function(df, meta) {
+  rhs_terms <- delete.response(terms(meta$formula))
+  mm <- model.matrix(rhs_terms, data = df)
+
+  if ("(Intercept)" %in% colnames(mm)) {
+    mm <- mm[, colnames(mm) != "(Intercept)", drop = FALSE]
+  }
+
+  missing_cols <- setdiff(meta$x_colnames, colnames(mm))
+  if (length(missing_cols) > 0) {
+    zero_mat <- matrix(0, nrow = nrow(mm), ncol = length(missing_cols))
+    colnames(zero_mat) <- missing_cols
+    mm <- cbind(mm, zero_mat)
+  }
+
+  extra_cols <- setdiff(colnames(mm), meta$x_colnames)
+  if (length(extra_cols) > 0) {
+    mm <- mm[, !(colnames(mm) %in% extra_cols), drop = FALSE]
+  }
+
+  mm <- mm[, meta$x_colnames, drop = FALSE]
+  mm
+}
+
+score_bpm_by_tier <- function(newdata, fit, meta, tier_value) {
+  nd <- newdata %>%
+    mutate(
+      conf_tier_next = factor(tier_value, levels = meta$conf_tier_next_levels),
+      conf_tier_current = factor(conf_tier_current, levels = meta$conf_tier_current_levels),
+      class = factor(class, levels = meta$class_levels),
+      underclass = if_else(class %in% c("Fr", "So"), 1, 0)
+    )
+
+  x_new <- make_bpm_design_matrix(nd, meta)
+
+  as.numeric(predict(fit, s = meta$lambda, newx = x_new))
+}
+
+complete_2026_bpm_base <- complete_2026_FE %>%
+  mutate(
+    conf_tier_current = case_when(
+      conf %in% c("acc", "b10", "b12", "sec", "be", "p12") ~ "high",
+      conf %in% c("amer", "a10", "wcc", "mwc", "mvc", "wac", "caa", "ivy", "mac", "cusa") ~ "upper_mid",
+      conf %in% c("ae", "asun", "bsth", "bsky", "bw", "horz", "maac", "meac", "nec", "ovc",
+                  "pat", "sb", "sc", "slnd", "sum", "swac", "ind", "independent") ~ "low",
+      TRUE ~ NA_character_
+    ),
+    conf_tier_current = factor(conf_tier_current, levels = c("low", "upper_mid", "high")),
+    class = factor(class, levels = c("Fr", "So", "Jr", "Sr"))
+  ) %>%
+  filter(
+    !is.na(BPM), !is.na(PORPAG), !is.na(MP), !is.na(USG),
+    !is.na(adjoe), !is.na(adjde), !is.na(barthag),
+    !is.na(conf_tier_current), !is.na(class)
+  )
+
+complete_2026_bpm_preds <- complete_2026_bpm_base %>%
+  mutate(
+    pred_BPM_low = score_bpm_by_tier(., cv_fit, bpm_meta, "low"),
+    pred_BPM_upper_mid = score_bpm_by_tier(., cv_fit, bpm_meta, "upper_mid"),
+    pred_BPM_high = score_bpm_by_tier(., cv_fit, bpm_meta, "high")
+  )
+```
+
+bpm confidence intervals
+```{r}
+bootstrap_bpm_predictions <- function(train_data, newdata, meta, R = 200, seed = 123) {
+  set.seed(seed)
+
+  rhs_terms <- delete.response(terms(meta$formula))
+
+  one_boot_scenario <- function(tier_value) {
+    pred_mat <- replicate(
+      R,
+      simplify = "matrix",
+      expr = {
+        idx <- sample(seq_len(nrow(train_data)), replace = TRUE)
+        d <- train_data[idx, ] %>%
+          mutate(
+            conf_tier_next = factor(conf_tier_next, levels = meta$conf_tier_next_levels),
+            conf_tier_current = factor(conf_tier_current, levels = meta$conf_tier_current_levels),
+            class = factor(class, levels = meta$class_levels)
+          )
+
+        x_boot <- model.matrix(rhs_terms, data = d)
+        if ("(Intercept)" %in% colnames(x_boot)) {
+          x_boot <- x_boot[, colnames(x_boot) != "(Intercept)", drop = FALSE]
+        }
+
+        y_boot <- d$BPM_next
+
+        fit_boot <- glmnet(
+          x = x_boot,
+          y = y_boot,
+          alpha = 0,
+          lambda = meta$lambda,
+          family = "gaussian"
+        )
+
+        nd <- newdata %>%
+          mutate(
+            conf_tier_next = factor(tier_value, levels = meta$conf_tier_next_levels),
+            conf_tier_current = factor(conf_tier_current, levels = meta$conf_tier_current_levels),
+            class = factor(class, levels = meta$class_levels),
+            underclass = if_else(class %in% c("Fr", "So"), 1, 0)
+          )
+
+        x_new <- model.matrix(rhs_terms, data = nd)
+        if ("(Intercept)" %in% colnames(x_new)) {
+          x_new <- x_new[, colnames(x_new) != "(Intercept)", drop = FALSE]
+        }
+
+        missing_cols <- setdiff(colnames(x_boot), colnames(x_new))
+        if (length(missing_cols) > 0) {
+          zero_mat <- matrix(0, nrow = nrow(x_new), ncol = length(missing_cols))
+          colnames(zero_mat) <- missing_cols
+          x_new <- cbind(x_new, zero_mat)
+        }
+
+        extra_cols <- setdiff(colnames(x_new), colnames(x_boot))
+        if (length(extra_cols) > 0) {
+          x_new <- x_new[, !(colnames(x_new) %in% extra_cols), drop = FALSE]
+        }
+
+        x_new <- x_new[, colnames(x_boot), drop = FALSE]
+
+        as.numeric(predict(fit_boot, newx = x_new))
+      }
+    )
+
+    tibble(
+      !!paste0("pred_BPM_", tier_value, "_lo") := apply(pred_mat, 1, quantile, probs = 0.025, na.rm = TRUE),
+      !!paste0("pred_BPM_", tier_value, "_hi") := apply(pred_mat, 1, quantile, probs = 0.975, na.rm = TRUE)
+    )
+  }
+
+  bind_cols(
+    one_boot_scenario("low"),
+    one_boot_scenario("upper_mid"),
+    one_boot_scenario("high")
+  )
+}
+
+bpm_ci_2026 <- bootstrap_bpm_predictions(
+  train_data = train,
+  newdata = complete_2026_bpm_base,
+  meta = bpm_meta,
+  R = 200,
+  seed = 123
+)
+
+complete_2026_bpm_preds <- complete_2026_bpm_base %>%
+  mutate(
+    pred_BPM_low = score_bpm_by_tier(., cv_fit, bpm_meta, "low"),
+    pred_BPM_upper_mid = score_bpm_by_tier(., cv_fit, bpm_meta, "upper_mid"),
+    pred_BPM_high = score_bpm_by_tier(., cv_fit, bpm_meta, "high")
+  ) %>%
+  bind_cols(bpm_ci_2026)
+```
+
+re do final 2026 scoring table
+```{r}
+complete_2026_transfer_base <- complete_2026_FE %>%
+  align_transfer_newdata(transfer_meta) %>%
+  filter(
+    complete.cases(
+      class, MP, BPM, USG, ORTG,
+      team_wins, barthag, `Conf Win%`, Role
+    )
+  )
+
+complete_2026_transfer_preds <- score_transfer_model(
+  newdata = complete_2026_transfer_base,
+  fit = glm_fit,
+  meta = transfer_meta
+)
+
+transfer_ci_2026 <- bootstrap_transfer_predictions(
+  train_data = train_model,
+  newdata = complete_2026_transfer_base,
+  R = 200,
+  seed = 123
+)
+
+complete_2026_transfer_preds <- complete_2026_transfer_preds %>%
+  bind_cols(transfer_ci_2026) %>%
+  select(
+    pid, year,
+    pred_transfer,
+    pred_transfer_flag,
+    transfer_prob_mean,
+    transfer_prob_lo,
+    transfer_prob_hi
+  )
+
+complete_2026_return_base <- complete_2026_FE %>%
+  align_return_newdata(return_meta) %>%
+  filter(
+    complete.cases(
+      class, MP, BPM, USG, ORTG,
+      team_wins, barthag, `Conf Win%`, Role
+    )
+  )
+
+complete_2026_return_preds <- score_return_model(
+  newdata = complete_2026_return_base,
+  fit = glm_return,
+  meta = return_meta
+) %>%
+  select(
+    pid, year,
+    pred_return,
+    pred_leave,
+    pred_return_flag
+  )
+
+complete_2026_dest_base <- complete_2026_FE %>%
+  align_dest_newdata(dest_meta) %>%
+  filter(
+    !is.na(BPM),
+    !is.na(MP),
+    !is.na(PORPAG),
+    !is.na(USG),
+    !is.na(ORTG),
+    !is.na(conf_tier),
+    !is.na(class),
+    !is.na(Role),
+    !is.na(minutes_share),
+    !is.na(bpm_minutes_gap),
+    !is.na(bpm_pct_team),
+    !is.na(porpag_pct_team),
+    !is.na(bpm_pct_conf),
+    !is.na(team_wins),
+    !is.na(`Conf Win%`),
+    !is.na(barthag)
+  )
+
+complete_2026_dest_preds <- score_destination_model(
+  newdata = complete_2026_dest_base,
+  fit = dest_tier_model,
+  meta = dest_meta
+)
+
+complete_2026_dest_preds <- complete_2026_dest_preds %>%
+  rename_with(~ str_replace_all(., "high_major", "high"), starts_with("dest_prob_")) %>%
+  rename_with(~ str_replace_all(., "mid_major", "upper_mid"), starts_with("dest_prob_")) %>%
+  rename_with(~ str_replace_all(., "low_major", "low"), starts_with("dest_prob_")) %>%
+  select(
+    pid, year,
+    pred_destination_tier,
+    starts_with("dest_prob_")
+  )
+
+complete_2026_bpm_base <- complete_2026_FE %>%
+  mutate(
+    conf_tier_current = case_when(
+      conf %in% c("acc", "b10", "b12", "sec", "be", "p12") ~ "high",
+      conf %in% c("amer", "a10", "wcc", "mwc", "mvc", "wac", "caa", "ivy", "mac", "cusa") ~ "upper_mid",
+      conf %in% c("ae", "asun", "bsth", "bsky", "bw", "horz", "maac", "meac", "nec", "ovc",
+                  "pat", "sb", "sc", "slnd", "sum", "swac", "ind", "independent") ~ "low",
+      TRUE ~ NA_character_
+    ),
+    conf_tier_current = factor(conf_tier_current, levels = bpm_meta$conf_tier_current_levels),
+    class = factor(class, levels = bpm_meta$class_levels)
+  ) %>%
+  filter(
+    !is.na(BPM),
+    !is.na(PORPAG),
+    !is.na(MP),
+    !is.na(USG),
+    !is.na(adjoe),
+    !is.na(adjde),
+    !is.na(barthag),
+    !is.na(conf_tier_current),
+    !is.na(class),
+    !is.na(minutes_share),
+    !is.na(mp_rank_team),
+    !is.na(bpm_rank_team),
+    !is.na(porpag_rank_team)
+  )
+
+bpm_ci_2026 <- bootstrap_bpm_predictions(
+  train_data = train,
+  newdata = complete_2026_bpm_base,
+  meta = bpm_meta,
+  R = 200,
+  seed = 123
+)
+
+complete_2026_bpm_preds <- complete_2026_bpm_base %>%
+  mutate(
+    pred_BPM_low = score_bpm_by_tier(., cv_fit, bpm_meta, "low"),
+    pred_BPM_upper_mid = score_bpm_by_tier(., cv_fit, bpm_meta, "upper_mid"),
+    pred_BPM_high = score_bpm_by_tier(., cv_fit, bpm_meta, "high")
+  ) %>%
+  bind_cols(bpm_ci_2026) %>%
+  select(
+    pid, year,
+    pred_BPM_low,
+    pred_BPM_upper_mid,
+    pred_BPM_high,
+    pred_BPM_low_lo,
+    pred_BPM_low_hi,
+    pred_BPM_upper_mid_lo,
+    pred_BPM_upper_mid_hi,
+    pred_BPM_high_lo,
+    pred_BPM_high_hi
+  )
+
+complete_2026_scored <- complete_2026_FE %>%
+  left_join(complete_2026_transfer_preds, by = c("pid", "year")) %>%
+  left_join(complete_2026_return_preds,   by = c("pid", "year")) %>%
+  left_join(complete_2026_dest_preds,     by = c("pid", "year")) %>%
+  left_join(complete_2026_bpm_preds,      by = c("pid", "year"))
+
+#dir.create("docs/data", recursive = TRUE, showWarnings = FALSE)
+#write_csv(complete_2026_scored, "docs/data/complete_2026_scored.csv")
+```
+
