@@ -183,6 +183,103 @@ table.dataTable tbody td {
   background: #dfe3e8;
   color: #111;
 }
+
+#projection-filters {
+  margin-bottom: 18px;
+}
+
+.filter-toolbar-top {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+
+.filter-toggle-btn {
+  background: #13294b;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.filter-toggle-btn:hover {
+  opacity: 0.9;
+}
+
+.filter-help-text {
+  font-weight: 500;
+  color: #333;
+}
+
+.filter-panel {
+  background: #f8f9fa;
+  border: 1px solid #d9dee3;
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 8px;
+  display: none;
+}
+
+.filter-panel.show {
+  display: block;
+}
+
+.filter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.filter-group label {
+  font-weight: 600;
+  color: #222;
+}
+
+.filter-group select,
+.filter-group input {
+  padding: 8px 10px;
+  border: 1px solid #c9ced6;
+  border-radius: 8px;
+  background: #fff;
+  color: #111;
+}
+
+.filter-group select[multiple] {
+  min-height: 120px;
+}
+
+.filter-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.filter-action-btn {
+  border: none;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.apply-btn {
+  background: #4b9cd3;
+  color: #000;
+}
+
+.reset-btn {
+  background: #dfe3e8;
+  color: #111;
+}
 </style>
 
 ## Transfer Portal Projections
@@ -196,51 +293,7 @@ Use the buttons below to switch between projection views.
   <button class="proj-btn" data-view="bpm">Projected BPM</button>
 </div>
 
-<div id="projection-filters" class="filter-toolbar">
-  <div class="filter-toolbar-top">
-    <button id="toggle-filters-btn" class="filter-toggle-btn">Filters</button>
-    <div class="filter-help-text">Sort by clicking any column header.</div>
-  </div>
-
-  <div id="filter-panel" class="filter-panel hidden">
-    <div class="filter-grid">
-      <div class="filter-group">
-        <label for="team-filter">Team</label>
-        <select id="team-filter" multiple></select>
-      </div>
-
-      <div class="filter-group">
-        <label for="conf-filter">Conference</label>
-        <select id="conf-filter" multiple></select>
-      </div>
-
-      <div class="filter-group">
-        <label for="role-filter">Role</label>
-        <select id="role-filter" multiple></select>
-      </div>
-
-      <div class="filter-group">
-        <label for="gp-min-filter">Min GP</label>
-        <input type="number" id="gp-min-filter" min="0" placeholder="e.g. 10">
-      </div>
-
-      <div class="filter-group">
-        <label for="pts-min-filter">Min PTS</label>
-        <input type="number" id="pts-min-filter" min="0" step="0.1" placeholder="e.g. 8">
-      </div>
-
-      <div class="filter-group">
-        <label for="mp-min-filter">Min MP</label>
-        <input type="number" id="mp-min-filter" min="0" step="0.1" placeholder="e.g. 15">
-      </div>
-    </div>
-
-    <div class="filter-actions">
-      <button id="apply-filters-btn" class="filter-action-btn apply-btn">Apply Filters</button>
-      <button id="reset-filters-btn" class="filter-action-btn reset-btn">Reset Filters</button>
-    </div>
-  </div>
-</div>
+<div id="projection-filters"></div>
 
 <div id="projection-table-wrapper">
   <table id="projection-table" class="display nowrap" style="width:100%">
@@ -251,7 +304,9 @@ Use the buttons below to switch between projection views.
 
 <script>
 let projectionData = [];
+let filteredData = [];
 let currentTable = null;
+let currentView = "transfer";
 
 const viewColumns = {
   transfer: [
@@ -343,17 +398,148 @@ function enrichData(data) {
   });
 }
 
+function getSelectedValues(selectId) {
+  const select = document.getElementById(selectId);
+  return Array.from(select.selectedOptions).map(opt => opt.value);
+}
+
+function populateMultiSelect(selectId, values) {
+  const select = document.getElementById(selectId);
+  select.innerHTML = "";
+
+  values.forEach(value => {
+    const option = document.createElement("option");
+    option.value = value;
+    option.textContent = value;
+    select.appendChild(option);
+  });
+}
+
+function uniqueSortedValues(data, key) {
+  return [...new Set(
+    data.map(row => row[key]).filter(v => v !== null && v !== undefined && String(v).trim() !== "")
+  )].sort((a, b) => String(a).localeCompare(String(b)));
+}
+
+function renderFilterUI() {
+  const filtersContainer = document.getElementById("projection-filters");
+
+  filtersContainer.innerHTML = `
+    <div class="filter-toolbar-top">
+      <button id="toggle-filters-btn" class="filter-toggle-btn">Filters</button>
+      <div class="filter-help-text">Sort by clicking any column header.</div>
+    </div>
+
+    <div id="filter-panel" class="filter-panel">
+      <div class="filter-grid">
+        <div class="filter-group">
+          <label for="team-filter">Team</label>
+          <select id="team-filter" multiple></select>
+        </div>
+
+        <div class="filter-group">
+          <label for="conf-filter">Conference</label>
+          <select id="conf-filter" multiple></select>
+        </div>
+
+        <div class="filter-group">
+          <label for="role-filter">Role</label>
+          <select id="role-filter" multiple></select>
+        </div>
+
+        <div class="filter-group">
+          <label for="gp-min-filter">Min GP</label>
+          <input type="number" id="gp-min-filter" min="0" placeholder="e.g. 10">
+        </div>
+
+        <div class="filter-group">
+          <label for="pts-min-filter">Min PTS</label>
+          <input type="number" id="pts-min-filter" min="0" step="0.1" placeholder="e.g. 8">
+        </div>
+
+        <div class="filter-group">
+          <label for="mp-min-filter">Min MP</label>
+          <input type="number" id="mp-min-filter" min="0" step="0.1" placeholder="e.g. 15">
+        </div>
+      </div>
+
+      <div class="filter-actions">
+        <button id="apply-filters-btn" class="filter-action-btn apply-btn">Apply Filters</button>
+        <button id="reset-filters-btn" class="filter-action-btn reset-btn">Reset Filters</button>
+      </div>
+    </div>
+  `;
+
+  populateMultiSelect("team-filter", uniqueSortedValues(projectionData, "team"));
+  populateMultiSelect("conf-filter", uniqueSortedValues(projectionData, "conf"));
+  populateMultiSelect("role-filter", uniqueSortedValues(projectionData, "Role"));
+
+  const toggleBtn = document.getElementById("toggle-filters-btn");
+  const filterPanel = document.getElementById("filter-panel");
+  const applyBtn = document.getElementById("apply-filters-btn");
+  const resetBtn = document.getElementById("reset-filters-btn");
+
+  toggleBtn.addEventListener("click", function() {
+    filterPanel.classList.toggle("show");
+  });
+
+  applyBtn.addEventListener("click", function() {
+    applyFilters();
+  });
+
+  resetBtn.addEventListener("click", function() {
+    resetFilters();
+  });
+}
+
+function applyFilters() {
+  const selectedTeams = getSelectedValues("team-filter");
+  const selectedConfs = getSelectedValues("conf-filter");
+  const selectedRoles = getSelectedValues("role-filter");
+
+  const minGP = toNumber(document.getElementById("gp-min-filter").value);
+  const minPTS = toNumber(document.getElementById("pts-min-filter").value);
+  const minMP = toNumber(document.getElementById("mp-min-filter").value);
+
+  filteredData = projectionData.filter(row => {
+    const teamMatch = selectedTeams.length === 0 || selectedTeams.includes(row.team);
+    const confMatch = selectedConfs.length === 0 || selectedConfs.includes(row.conf);
+    const roleMatch = selectedRoles.length === 0 || selectedRoles.includes(row.Role);
+
+    const gpMatch = toNumber(row.GP) >= minGP;
+    const ptsMatch = toNumber(row.PTS) >= minPTS;
+    const mpMatch = toNumber(row.MP) >= minMP;
+
+    return teamMatch && confMatch && roleMatch && gpMatch && ptsMatch && mpMatch;
+  });
+
+  buildTable(currentView);
+}
+
+function resetFilters() {
+  ["team-filter", "conf-filter", "role-filter"].forEach(id => {
+    const select = document.getElementById(id);
+    Array.from(select.options).forEach(opt => opt.selected = false);
+  });
+
+  document.getElementById("gp-min-filter").value = "";
+  document.getElementById("pts-min-filter").value = "";
+  document.getElementById("mp-min-filter").value = "";
+
+  filteredData = [...projectionData];
+  buildTable(currentView);
+}
+
 function buildTable(viewName) {
-  if (!projectionData || projectionData.length === 0) return;
+  currentView = viewName;
+
+  const dataToUse = filteredData.length ? filteredData : projectionData;
+  if (!dataToUse || dataToUse.length === 0) return;
 
   const cols = viewColumns[viewName];
-
   const validCols = cols.filter(col =>
-    Object.prototype.hasOwnProperty.call(projectionData[0], col)
+    Object.prototype.hasOwnProperty.call(dataToUse[0], col)
   );
-
-  console.log("Building view:", viewName);
-  console.log("Columns used:", validCols);
 
   const columns = validCols.map(col => ({
     title: prettifyLabel(col),
@@ -367,7 +553,7 @@ function buildTable(viewName) {
   }
 
   currentTable = $('#projection-table').DataTable({
-    data: projectionData,
+    data: dataToUse,
     columns: columns,
     pageLength: 25,
     responsive: true,
@@ -378,32 +564,28 @@ function buildTable(viewName) {
   });
 }
 
-// Load CSV properly
 Papa.parse("data/complete_2026_scored.csv", {
   download: true,
   header: true,
   skipEmptyLines: true,
   complete: function(results) {
-    console.log("CSV loaded:", results.data.length, "rows");
-
     projectionData = enrichData(results.data);
+    filteredData = [...projectionData];
 
     if (!projectionData || projectionData.length === 0) {
-      document.getElementById("projection-filters").innerText =
-        "No data loaded.";
+      document.getElementById("projection-filters").innerText = "No data loaded.";
       return;
     }
 
+    renderFilterUI();
     buildTable("transfer");
   },
   error: function(error) {
-    document.getElementById("projection-filters").innerText =
-      "Error loading data.";
+    document.getElementById("projection-filters").innerText = "Error loading data.";
     console.error(error);
   }
 });
 
-// Button switching
 document.querySelectorAll(".proj-btn").forEach(button => {
   button.addEventListener("click", function() {
     document.querySelectorAll(".proj-btn").forEach(btn =>
@@ -411,15 +593,7 @@ document.querySelectorAll(".proj-btn").forEach(button => {
     );
 
     this.classList.add("active");
-
     buildTable(this.dataset.view);
   });
-});
-
-const toggleFiltersBtn = document.getElementById("toggle-filters-btn");
-const filterPanel = document.getElementById("filter-panel");
-
-toggleFiltersBtn.addEventListener("click", function() {
-  filterPanel.classList.toggle("hidden");
 });
 </script>
