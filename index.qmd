@@ -4,6 +4,8 @@ title: "Transfer Portal Projections"
 
 ## Welcome
 
-This is a rough draft of my transfer portal projections site.
+This is an extreme rough draft of my transfer portal projections site.
 
-Right now, this site will be used to display player data, team data, and projections.
+Right now, this site will be used to display player data and projections.
+
+In the future I hope for it to be much more interactive and much easier to understand including: player profile pages with historic data, future predictions, and the reasoning/confidence behind everything. However, as for right now, this primarily acts as a start to build upon and improve upon.
