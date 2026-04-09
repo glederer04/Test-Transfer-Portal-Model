@@ -72,6 +72,7 @@ ul.task-list li input[type="checkbox"] {
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
 
 </head>
@@ -180,9 +181,42 @@ ul.task-list li input[type="checkbox"] {
   margin-top: 10px;
 }
 
+/* force table to show clearly */
+#projection-table {
+  width: 100% !important;
+  border-collapse: collapse !important;
+  color: #111 !important;
+  background: #fff !important;
+}
+
+#projection-table thead th {
+  color: #111 !important;
+  background: #e9ecef !important;
+  border-bottom: 1px solid #ccc !important;
+  white-space: nowrap;
+  font-weight: 700;
+}
+
+#projection-table tbody td {
+  color: #111 !important;
+  background: #fff !important;
+  border-bottom: 1px solid #eee !important;
+  white-space: nowrap;
+}
+
 table.dataTable thead th,
 table.dataTable tbody td {
   white-space: nowrap;
+}
+
+.dataTables_wrapper {
+  color: #111 !important;
+}
+
+.dataTables_wrapper .dataTables_filter input,
+.dataTables_wrapper .dataTables_length select {
+  color: #111 !important;
+  background: #fff !important;
 }
 </style>
 <section id="transfer-portal-projections" class="level2">
@@ -216,6 +250,7 @@ const viewColumns = {
     "PTS",
     "REB",
     "AST",
+    "PRA",
     "pred_transfer",
     "transfer_prob_mean",
     "transfer_prob_lo",
@@ -230,6 +265,7 @@ const viewColumns = {
     "PTS",
     "REB",
     "AST",
+    "PRA",
     "pred_return",
     "pred_leave"
   ],
@@ -242,7 +278,11 @@ const viewColumns = {
     "PTS",
     "REB",
     "AST",
-    "pred_destination_tier"
+    "PRA",
+    "pred_destination_tier",
+    "dest_prob_high",
+    "dest_prob_upper_mid",
+    "dest_prob_low"
   ],
   bpm: [
     "player",
@@ -253,6 +293,7 @@ const viewColumns = {
     "PTS",
     "REB",
     "AST",
+    "PRA",
     "pred_BPM_low",
     "pred_BPM_low_lo",
     "pred_BPM_low_hi",
@@ -265,36 +306,46 @@ const viewColumns = {
   ]
 };
 
-function parseCSV(text) {
-  const lines = text.trim().split(/\r?\n/);
-  const headers = lines[0].split(",").map(h => h.trim());
-
-  return lines.slice(1).map(line => {
-    const values = line.split(",");
-    const row = {};
-    headers.forEach((header, i) => {
-      row[header] = values[i] !== undefined ? values[i].trim() : "";
-    });
-    return row;
-  });
-}
-
 function prettifyLabel(col) {
   return col
     .replaceAll("_", " ")
     .replace(/\b\w/g, c => c.toUpperCase());
 }
 
+function toNumber(val) {
+  const num = parseFloat(val);
+  return isNaN(num) ? 0 : num;
+}
+
+function enrichData(data) {
+  return data.map(row => {
+    const pts = toNumber(row.PTS);
+    const reb = toNumber(row.REB);
+    const ast = toNumber(row.AST);
+
+    return {
+      ...row,
+      PRA: +(pts + reb + ast).toFixed(1)
+    };
+  });
+}
+
 function buildTable(viewName) {
+  if (!projectionData || projectionData.length === 0) return;
+
   const cols = viewColumns[viewName];
 
   const validCols = cols.filter(col =>
-    projectionData.length > 0 && Object.prototype.hasOwnProperty.call(projectionData[0], col)
+    Object.prototype.hasOwnProperty.call(projectionData[0], col)
   );
+
+  console.log("Building view:", viewName);
+  console.log("Columns used:", validCols);
 
   const columns = validCols.map(col => ({
     title: prettifyLabel(col),
-    data: col
+    data: col,
+    defaultContent: ""
   }));
 
   if (currentTable) {
@@ -308,26 +359,46 @@ function buildTable(viewName) {
     pageLength: 25,
     responsive: true,
     scrollX: true,
-    order: []
+    order: [],
+    autoWidth: false,
+    deferRender: true
   });
 }
 
-fetch("data/complete_2026_scored.csv")
-  .then(response => response.text())
-  .then(csvText => {
-    projectionData = parseCSV(csvText);
-    buildTable("transfer");
-  })
-  .catch(error => {
-    document.getElementById("projection-filters").innerText =
-      "Could not load projection data.";
-    console.error(error);
-  });
+// Load CSV properly
+Papa.parse("data/complete_2026_scored.csv", {
+  download: true,
+  header: true,
+  skipEmptyLines: true,
+  complete: function(results) {
+    console.log("CSV loaded:", results.data.length, "rows");
 
+    projectionData = enrichData(results.data);
+
+    if (!projectionData || projectionData.length === 0) {
+      document.getElementById("projection-filters").innerText =
+        "No data loaded.";
+      return;
+    }
+
+    buildTable("transfer");
+  },
+  error: function(error) {
+    document.getElementById("projection-filters").innerText =
+      "Error loading data.";
+    console.error(error);
+  }
+});
+
+// Button switching
 document.querySelectorAll(".proj-btn").forEach(button => {
   button.addEventListener("click", function() {
-    document.querySelectorAll(".proj-btn").forEach(btn => btn.classList.remove("active"));
+    document.querySelectorAll(".proj-btn").forEach(btn =>
+      btn.classList.remove("active")
+    );
+
     this.classList.add("active");
+
     buildTable(this.dataset.view);
   });
 });
