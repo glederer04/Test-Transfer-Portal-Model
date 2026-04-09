@@ -4,6 +4,8 @@ project:
   render:
     - index.qmd
     - projections.qmd
+  resources:
+    - data/
 
 website:
   title: "Transfer Portal Projections"
