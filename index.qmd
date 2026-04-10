@@ -9,3 +9,7 @@ This is an extreme rough draft of my transfer portal projections site.
 Right now, this site will be used to display player data and projections.
 
 In the future I hope for it to be much more interactive and much easier to understand including: player profile pages with historic data, future predictions, and the reasoning/confidence behind everything. However, as for right now, this primarily acts as a start to build upon and improve upon.
+
+This project is built using publicly available college basketball data scraped from (Bart Torvik)[https://barttorvik.com/#], with player and team-level metrics such as usage, efficiency (BPM, ORTG), minutes share, and advanced impact stats. From this data, I've engineered additional features to capture player role, team context, and performance relative to teammates and within their conference. 
+
+The current version of the models use a combination of logistic and regression-based approaches to estimate outcomes such as transfer likelihood, potential destination tier, and projected post-transfer performance. While still in an early stage, the goal is to iteratively build toward a more robust and refined system, continuing to expand the feature set, improve model performance, and push the depth of the analysis even further.
