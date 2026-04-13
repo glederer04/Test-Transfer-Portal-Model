@@ -2008,6 +2008,13 @@ yo <- yo %>%
     
     TRUE ~ str_to_title(conf)  # fallback: just clean capitalization
   ))
+
+yo <- yo %>%
+  mutate(
+    PTS = round(PTS,1),
+    REB = round(REB,1),
+    AST = round(AST,1)
+  )
 #write_csv(yo, "docs/data/complete_2026_scored.csv")
 ```
 
