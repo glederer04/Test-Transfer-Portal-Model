@@ -411,6 +411,106 @@ table.dataTable tbody td {
   background: #dfe3e8;
   color: #111;
 }
+
+/* checkbox dropdown filters */
+.checkbox-dropdown {
+  position: relative;
+  width: 100%;
+}
+
+.checkbox-dropdown-btn {
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border: 1px solid #c9ced6;
+  border-radius: 8px;
+  background: #fff;
+  color: #111;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+.checkbox-dropdown-btn:hover {
+  background: #f5f7fa;
+}
+
+.checkbox-dropdown-menu {
+  display: none;
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  width: 100%;
+  background: #fff;
+  border: 1px solid #c9ced6;
+  border-radius: 10px;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.12);
+  z-index: 1000;
+  padding: 10px;
+}
+
+.checkbox-dropdown-menu.show {
+  display: block;
+}
+
+.checkbox-dropdown-search {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #c9ced6;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  font-size: 0.92rem;
+}
+
+.checkbox-actions-mini {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.checkbox-mini-btn {
+  border: 1px solid #c9ced6;
+  background: #f8f9fa;
+  color: #111;
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.checkbox-options {
+  max-height: 220px;
+  overflow-y: auto;
+  border-top: 1px solid #eef1f4;
+  padding-top: 8px;
+}
+
+.checkbox-options.team-options {
+  max-height: 320px;
+}
+
+.checkbox-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 2px;
+  font-size: 0.92rem;
+}
+
+.checkbox-option input {
+  margin: 0;
+}
+
+.filter-grid {
+  align-items: start;
+}
+
+@media (max-width: 768px) {
+  .checkbox-dropdown-menu {
+    position: static;
+    margin-top: 8px;
+    box-shadow: none;
+  }
+}
 </style>
 <section id="transfer-portal-projections" class="level2">
 <h2 class="anchored" data-anchor-id="transfer-portal-projections">Transfer Portal Projections</h2>
@@ -525,20 +625,216 @@ function enrichData(data) {
   });
 }
 
-function getSelectedValues(selectId) {
-  const select = document.getElementById(selectId);
-  return Array.from(select.selectedOptions).map(opt => opt.value);
+function getCheckedValues(filterName) {
+  return Array.from(document.querySelectorAll(`input[name="${filterName}"]:checked`))
+    .map(input => input.value);
 }
 
-function populateMultiSelect(selectId, values) {
-  const select = document.getElementById(selectId);
-  select.innerHTML = "";
+function createCheckboxDropdown({
+  id,
+  label,
+  values,
+  buttonText,
+  searchPlaceholder = "Search...",
+  large = false
+}) {
+  const optionsHtml = values.map(value => `
+    <label class="checkbox-option" data-value="${String(value).toLowerCase()}">
+      <input type="checkbox" name="${id}" value="${value}">
+      <span>${value}</span>
+    </label>
+  `).join("");
 
-  values.forEach(value => {
-    const option = document.createElement("option");
-    option.value = value;
-    option.textContent = value;
-    select.appendChild(option);
+  return `
+    <div class="filter-group">
+      <label>${label}</label>
+      <div class="checkbox-dropdown" id="${id}-dropdown">
+        <button type="button" class="checkbox-dropdown-btn" id="${id}-btn">
+          ${buttonText}
+        </button>
+        <div class="checkbox-dropdown-menu" id="${id}-menu">
+          <input
+            type="text"
+            class="checkbox-dropdown-search"
+            id="${id}-search"
+            placeholder="${searchPlaceholder}"
+          >
+          <div class="checkbox-actions-mini">
+            <button type="button" class="checkbox-mini-btn" data-action="select-all" data-target="${id}">
+              Select All
+            </button>
+            <button type="button" class="checkbox-mini-btn" data-action="clear-all" data-target="${id}">
+              Clear
+            </button>
+          </div>
+          <div class="checkbox-options ${large ? "team-options" : ""}" id="${id}-options">
+            ${optionsHtml}
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function updateDropdownButtonText(filterName, defaultText) {
+  const checked = getCheckedValues(filterName);
+  const btn = document.getElementById(`${filterName}-btn`);
+
+  if (!btn) return;
+
+  if (checked.length === 0) {
+    btn.textContent = defaultText;
+  } else if (checked.length <= 2) {
+    btn.textContent = checked.join(", ");
+  } else {
+    btn.textContent = `${checked.length} selected`;
+  }
+}
+
+function setupCheckboxDropdown(filterName, defaultText) {
+  const btn = document.getElementById(`${filterName}-btn`);
+  const menu = document.getElementById(`${filterName}-menu`);
+  const search = document.getElementById(`${filterName}-search`);
+  const optionsWrap = document.getElementById(`${filterName}-options`);
+
+  btn.addEventListener("click", function(e) {
+    e.stopPropagation();
+
+    document.querySelectorAll(".checkbox-dropdown-menu.show").forEach(openMenu => {
+      if (openMenu !== menu) openMenu.classList.remove("show");
+    });
+
+    menu.classList.toggle("show");
+  });
+
+  search.addEventListener("input", function() {
+    const term = this.value.toLowerCase().trim();
+    const options = optionsWrap.querySelectorAll(".checkbox-option");
+
+    options.forEach(option => {
+      const value = option.getAttribute("data-value");
+      option.style.display = value.includes(term) ? "flex" : "none";
+    });
+  });
+
+  optionsWrap.querySelectorAll(`input[name="${filterName}"]`).forEach(input => {
+    input.addEventListener("change", function() {
+      updateDropdownButtonText(filterName, defaultText);
+    });
+  });
+}
+
+function renderFilterUI() {
+  const filtersContainer = document.getElementById("projection-filters");
+
+  const teams = uniqueSortedValues(projectionData, "team");
+  const confs = uniqueSortedValues(projectionData, "conf");
+  const roles = uniqueSortedValues(projectionData, "Role");
+
+  filtersContainer.innerHTML = `
+    <div class="filter-toolbar-top">
+      <button id="toggle-filters-btn" class="filter-toggle-btn">Filters</button>
+      <div class="filter-help-text">Sort by clicking any column header.</div>
+    </div>
+
+    <div id="filter-panel" class="filter-panel">
+      <div class="filter-grid">
+        ${createCheckboxDropdown({
+          id: "team-filter",
+          label: "Team",
+          values: teams,
+          buttonText: "Select team(s)",
+          searchPlaceholder: "Search teams...",
+          large: true
+        })}
+
+        ${createCheckboxDropdown({
+          id: "conf-filter",
+          label: "Conference",
+          values: confs,
+          buttonText: "Select conference(s)",
+          searchPlaceholder: "Search conferences..."
+        })}
+
+        ${createCheckboxDropdown({
+          id: "role-filter",
+          label: "Role",
+          values: roles,
+          buttonText: "Select role(s)",
+          searchPlaceholder: "Search roles..."
+        })}
+
+        <div class="filter-group">
+          <label for="gp-min-filter">Min GP</label>
+          <input type="number" id="gp-min-filter" min="0" placeholder="e.g. 10">
+        </div>
+
+        <div class="filter-group">
+          <label for="pts-min-filter">Min PTS</label>
+          <input type="number" id="pts-min-filter" min="0" step="0.1" placeholder="e.g. 8">
+        </div>
+
+        <div class="filter-group">
+          <label for="mp-min-filter">Min MP</label>
+          <input type="number" id="mp-min-filter" min="0" step="0.1" placeholder="e.g. 15">
+        </div>
+      </div>
+
+      <div class="filter-actions">
+        <button id="apply-filters-btn" class="filter-action-btn apply-btn">Apply Filters</button>
+        <button id="reset-filters-btn" class="filter-action-btn reset-btn">Reset Filters</button>
+      </div>
+    </div>
+  `;
+
+  const toggleBtn = document.getElementById("toggle-filters-btn");
+  const filterPanel = document.getElementById("filter-panel");
+  const applyBtn = document.getElementById("apply-filters-btn");
+  const resetBtn = document.getElementById("reset-filters-btn");
+
+  toggleBtn.addEventListener("click", function() {
+    filterPanel.classList.toggle("show");
+  });
+
+  applyBtn.addEventListener("click", function() {
+    applyFilters();
+  });
+
+  resetBtn.addEventListener("click", function() {
+    resetFilters();
+  });
+
+  setupCheckboxDropdown("team-filter", "Select team(s)");
+  setupCheckboxDropdown("conf-filter", "Select conference(s)");
+  setupCheckboxDropdown("role-filter", "Select role(s)");
+
+  document.querySelectorAll(".checkbox-mini-btn").forEach(btn => {
+    btn.addEventListener("click", function() {
+      const target = this.dataset.target;
+      const action = this.dataset.action;
+      const boxes = document.querySelectorAll(`input[name="${target}"]`);
+
+      boxes.forEach(box => {
+        if (action === "select-all") box.checked = true;
+        if (action === "clear-all") box.checked = false;
+      });
+
+      const defaultMap = {
+        "team-filter": "Select team(s)",
+        "conf-filter": "Select conference(s)",
+        "role-filter": "Select role(s)"
+      };
+
+      updateDropdownButtonText(target, defaultMap[target]);
+    });
+  });
+
+  document.addEventListener("click", function(e) {
+    if (!e.target.closest(".checkbox-dropdown")) {
+      document.querySelectorAll(".checkbox-dropdown-menu.show").forEach(menu => {
+        menu.classList.remove("show");
+      });
+    }
   });
 }
 
@@ -620,9 +916,9 @@ function renderFilterUI() {
 }
 
 function applyFilters() {
-  const selectedTeams = getSelectedValues("team-filter");
-  const selectedConfs = getSelectedValues("conf-filter");
-  const selectedRoles = getSelectedValues("role-filter");
+  const selectedTeams = getCheckedValues("team-filter");
+  const selectedConfs = getCheckedValues("conf-filter");
+  const selectedRoles = getCheckedValues("role-filter");
 
   const minGP = toNumber(document.getElementById("gp-min-filter").value);
   const minPTS = toNumber(document.getElementById("pts-min-filter").value);
@@ -644,14 +940,19 @@ function applyFilters() {
 }
 
 function resetFilters() {
-  ["team-filter", "conf-filter", "role-filter"].forEach(id => {
-    const select = document.getElementById(id);
-    Array.from(select.options).forEach(opt => opt.selected = false);
+  ["team-filter", "conf-filter", "role-filter"].forEach(filterName => {
+    document.querySelectorAll(`input[name="${filterName}"]`).forEach(box => {
+      box.checked = false;
+    });
   });
 
   document.getElementById("gp-min-filter").value = "";
   document.getElementById("pts-min-filter").value = "";
   document.getElementById("mp-min-filter").value = "";
+
+  updateDropdownButtonText("team-filter", "Select team(s)");
+  updateDropdownButtonText("conf-filter", "Select conference(s)");
+  updateDropdownButtonText("role-filter", "Select role(s)");
 
   filteredData = [...projectionData];
   buildTable(currentView);
