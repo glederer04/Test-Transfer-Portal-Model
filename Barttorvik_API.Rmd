@@ -1963,3 +1963,51 @@ complete_2026_scored <- complete_2026_FE %>%
 #write_csv(complete_2026_scored, "docs/data/complete_2026_scored.csv")
 ```
 
+```{r, eval=FALSE}
+#yo <- read.csv('docs/data/complete_2026_scored.csv')
+
+yo <- yo %>%
+  mutate(conf = tolower(conf)) %>%  # make sure everything is lowercase first
+  mutate(conf = case_when(
+    conf == "b10" ~ "Big Ten",
+    conf == "b12" ~ "Big 12",
+    conf == "acc" ~ "ACC",
+    conf == "sec" ~ "SEC",
+    conf == "be"  ~ "Big East",
+    conf == "p12" ~ "Pac-12",
+    
+    conf == "amer" ~ "American",
+    conf == "a10"  ~ "A-10",
+    conf == "mwc"  ~ "MWC",
+    conf == "wcc"  ~ "WCC",
+    conf == "mvc"  ~ "MVC",
+    conf == "wac"  ~ "WAC",
+    conf == "caa"  ~ "CAA",
+    conf == "ivy"  ~ "Ivy",
+    conf == "mac"  ~ "MAC",
+    conf == "cusa" ~ "C-USA",
+    
+    conf == "ae"   ~ "AE",
+    conf == "asun" ~ "ASUN",
+    conf == "bsth" ~ "Big South",
+    conf == "bsky" ~ "Big Sky",
+    conf == "bw"   ~ "Big West",
+    conf == "horz" ~ "Horizon",
+    conf == "maac" ~ "MAAC",
+    conf == "meac" ~ "MEAC",
+    conf == "nec"  ~ "NEC",
+    conf == "ovc"  ~ "OVC",
+    conf == "pat"  ~ "Patriot",
+    conf == "sb"   ~ "Sun Belt",
+    conf == "sc"   ~ "SoCon",
+    conf == "slnd" ~ "Southland",
+    conf == "sum"  ~ "Summit",
+    conf == "swac" ~ "SWAC",
+    
+    conf %in% c("ind", "independent") ~ "Independent",
+    
+    TRUE ~ str_to_title(conf)  # fallback: just clean capitalization
+  ))
+#write_csv(yo, "docs/data/complete_2026_scored.csv")
+```
+
