@@ -2,6 +2,7 @@
 title: "Projections"
 format:
   html:
+    page-layout: full
     include-in-header:
       text: |
         <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
@@ -46,6 +47,8 @@ format:
 }
 
 #projection-table-wrapper {
+  width: 100%;
+  max-width: 100%;
   overflow-x: auto;
   margin-top: 10px;
 }
@@ -53,9 +56,14 @@ format:
 /* force table to show clearly */
 #projection-table {
   width: 100% !important;
+  min-width: 1200px;
   border-collapse: collapse !important;
   color: #111 !important;
   background: #fff !important;
+}
+
+.projection-highlight-col {
+  min-width: 120px;
 }
 
 #projection-table thead th {
@@ -390,6 +398,15 @@ table.dataTable tbody td {
 #projection-table tbody td.projection-highlight-col {
   background: #f4faff !important;
   font-weight: 600;
+}
+
+.dataTables_wrapper {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.dataTables_scrollBody {
+  width: 100% !important;
 }
 </style>
 
