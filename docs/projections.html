@@ -529,6 +529,23 @@ table.dataTable tbody td {
 .dataTables_scrollBody {
   width: 100% !important;
 }
+
+td.details-control {
+  text-align: center;
+  cursor: pointer;
+  font-weight: 700;
+  color: #13294b;
+}
+
+td.details-control::before {
+  content: "+";
+  font-size: 16px;
+}
+
+tr.shown td.details-control::before {
+  content: "−";
+  font-size: 16px;
+}
 </style>
 <p>Use the buttons below to switch between projection views.</p>
 <div class="projection-button-row">
@@ -561,11 +578,7 @@ const viewColumns = {
     "PTS",
     "REB",
     "AST",
-    "transfer_show",
-    "pred_transfer",
-    "transfer_prob_mean",
-    "transfer_prob_lo",
-    "transfer_prob_hi"
+    "transfer_show"
   ],
   return: [
     "player",
@@ -576,9 +589,7 @@ const viewColumns = {
     "PTS",
     "REB",
     "AST",
-    "return_show",
-    "pred_return",
-    "pred_leave"
+    "return_show"
   ],
   destination: [
     "player",
@@ -589,11 +600,7 @@ const viewColumns = {
     "PTS",
     "REB",
     "AST",
-    "destination_show",
-    "pred_destination_tier",
-    "dest_prob_high",
-    "dest_prob_upper_mid",
-    "dest_prob_low"
+    "destination_show"
   ],
   bpm: [
     "player",
@@ -604,7 +611,28 @@ const viewColumns = {
     "PTS",
     "REB",
     "AST",
-    "bpm_show",
+    "bpm_show"
+  ]
+};
+
+const detailColumns = {
+  transfer: [
+    "pred_transfer",
+    "transfer_prob_mean",
+    "transfer_prob_lo",
+    "transfer_prob_hi"
+  ],
+  return: [
+    "pred_return",
+    "pred_leave"
+  ],
+  destination: [
+    "pred_destination_tier",
+    "dest_prob_high",
+    "dest_prob_upper_mid",
+    "dest_prob_low"
+  ],
+  bpm: [
     "pred_BPM_low",
     "pred_BPM_low_lo",
     "pred_BPM_low_hi",
@@ -621,7 +649,30 @@ const customColumnTitles = {
   transfer_show: "Transfer Likelihood",
   return_show: "Return / Leave",
   destination_show: "Destination Tier",
-  bpm_show: "Projected BPM"
+  bpm_show: "Projected BPM",
+
+  pred_transfer: "Predicted Transfer",
+  transfer_prob_mean: "Transfer Prob Mean",
+  transfer_prob_lo: "Transfer Prob Low",
+  transfer_prob_hi: "Transfer Prob High",
+
+  pred_return: "Predicted Return",
+  pred_leave: "Predicted Leave",
+
+  pred_destination_tier: "Predicted Destination Tier",
+  dest_prob_high: "High Major Probability",
+  dest_prob_upper_mid: "Upper Mid Probability",
+  dest_prob_low: "Low Major Probability",
+
+  pred_BPM_low: "Projected BPM (Low Major)",
+  pred_BPM_low_lo: "BPM Low CI",
+  pred_BPM_low_hi: "BPM High CI",
+  pred_BPM_upper_mid: "Projected BPM (Upper Mid)",
+  pred_BPM_upper_mid_lo: "Upper Mid CI Low",
+  pred_BPM_upper_mid_hi: "Upper Mid CI High",
+  pred_BPM_high: "Projected BPM (High Major)",
+  pred_BPM_high_lo: "High Major CI Low",
+  pred_BPM_high_hi: "High Major CI High"
 };
 
 function prettifyLabel(col) {
@@ -910,6 +961,39 @@ function resetFilters() {
   buildTable(currentView);
 }
 
+function formatRowDetails(row, viewName) {
+  const detailCols = detailColumns[viewName] || [];
+
+  const validDetailCols = detailCols.filter(col =>
+    Object.prototype.hasOwnProperty.call(row, col)
+  );
+
+  if (validDetailCols.length === 0) {
+    return `<div style="padding:10px 14px;">No additional details available.</div>`;
+  }
+
+  const rowsHtml = validDetailCols.map(col => `
+    <tr>
+      <td style="font-weight:600; padding:6px 12px; border-bottom:1px solid #eee;">
+        ${customColumnTitles[col] || prettifyLabel(col)}
+      </td>
+      <td style="padding:6px 12px; border-bottom:1px solid #eee;">
+        ${row[col] ?? ""}
+      </td>
+    </tr>
+  `).join("");
+
+  return `
+    <div style="padding:12px 18px; background:#f8fbff;">
+      <table style="width:100%; border-collapse:collapse;">
+        <tbody>
+          ${rowsHtml}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
 function buildTable(viewName) {
   currentView = viewName;
 
@@ -921,17 +1005,27 @@ function buildTable(viewName) {
     Object.prototype.hasOwnProperty.call(dataToUse[0], col)
   );
 
-  const columns = validCols.map(col => ({
-    title: customColumnTitles[col] || prettifyLabel(col),
-    data: col,
-    defaultContent: "",
-    className: [
-      "transfer_show",
-      "return_show",
-      "destination_show",
-      "bpm_show"
-    ].includes(col) ? "projection-highlight-col" : ""
-  }));
+  const columns = [
+    {
+      className: 'details-control',
+      orderable: false,
+      data: null,
+      defaultContent: '',
+      title: '',
+      width: '30px'
+    },
+    ...validCols.map(col => ({
+      title: customColumnTitles[col] || prettifyLabel(col),
+      data: col,
+      defaultContent: "",
+      className: [
+        "transfer_show",
+        "return_show",
+        "destination_show",
+        "bpm_show"
+      ].includes(col) ? "projection-highlight-col" : ""
+    }))
+  ];
 
   if (currentTable) {
     currentTable.destroy();
@@ -947,6 +1041,21 @@ function buildTable(viewName) {
     order: [],
     autoWidth: true,
     deferRender: true
+  });
+
+  $('#projection-table tbody').off('click', 'td.details-control');
+
+  $('#projection-table tbody').on('click', 'td.details-control', function () {
+    const tr = $(this).closest('tr');
+    const row = currentTable.row(tr);
+
+    if (row.child.isShown()) {
+      row.child.hide();
+      tr.removeClass('shown');
+    } else {
+      row.child(formatRowDetails(row.data(), viewName)).show();
+      tr.addClass('shown');
+    }
   });
 }
 
