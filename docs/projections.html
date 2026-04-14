@@ -113,17 +113,9 @@ ul.task-list li input[type="checkbox"] {
 <div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-full page-navbar">
 <!-- sidebar -->
 <!-- margin-sidebar -->
-    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
-        <nav id="TOC" role="doc-toc" class="toc-active">
-    <h2 id="toc-title">On this page</h2>
-   
-  <ul>
-  <li><a href="#transfer-portal-projections" id="toc-transfer-portal-projections" class="nav-link active" data-scroll-target="#transfer-portal-projections">Transfer Portal Projections</a></li>
-  </ul>
-</nav>
-    </div>
+    
 <!-- main -->
-<main class="content column-page-left" id="quarto-document-content">
+<main class="content column-page" id="quarto-document-content">
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
@@ -132,7 +124,7 @@ ul.task-list li input[type="checkbox"] {
 
 
 
-<div class="quarto-title-meta column-page-left">
+<div class="quarto-title-meta column-page">
 
     
   
@@ -183,17 +175,16 @@ ul.task-list li input[type="checkbox"] {
   margin-top: 10px;
 }
 
-/* force table to show clearly */
 #projection-table {
   width: 100% !important;
-  min-width: 1200px;
+  min-width: 1600px;
   border-collapse: collapse !important;
   color: #111 !important;
   background: #fff !important;
 }
 
 .projection-highlight-col {
-  min-width: 120px;
+  font-weight: 600;
 }
 
 #projection-table thead th {
@@ -539,8 +530,6 @@ table.dataTable tbody td {
   width: 100% !important;
 }
 </style>
-<section id="transfer-portal-projections" class="level2">
-<h2 class="anchored" data-anchor-id="transfer-portal-projections">Transfer Portal Projections</h2>
 <p>Use the buttons below to switch between projection views.</p>
 <div class="projection-button-row">
 <p><button class="proj-btn active" data-view="transfer">Transfer Likelihood</button> <button class="proj-btn" data-view="return">Return / Leave</button> <button class="proj-btn" data-view="destination">Destination Tier</button> <button class="proj-btn" data-view="bpm">Projected BPM</button></p>
@@ -629,10 +618,10 @@ const viewColumns = {
 };
 
 const customColumnTitles = {
-  transfer_show: "Transfer %",
-  return_show: "Return %",
-  destination_show: "Predicted Destination",
-  bpm_show: "Predicted BPM"
+  transfer_show: "Transfer Likelihood",
+  return_show: "Return / Leave",
+  destination_show: "Destination Tier",
+  bpm_show: "Projected BPM"
 };
 
 function prettifyLabel(col) {
@@ -953,10 +942,10 @@ function buildTable(viewName) {
     data: dataToUse,
     columns: columns,
     pageLength: 25,
-    responsive: true,
+    responsive: false,
     scrollX: true,
     order: [],
-    autoWidth: false,
+    autoWidth: true,
     deferRender: true
   });
 }
@@ -996,7 +985,6 @@ document.querySelectorAll(".proj-btn").forEach(button => {
 </script>
 
 
-</section>
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">

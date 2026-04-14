@@ -3,6 +3,7 @@ title: "Projections"
 format:
   html:
     page-layout: full
+    toc: false
     include-in-header:
       text: |
         <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
@@ -53,17 +54,16 @@ format:
   margin-top: 10px;
 }
 
-/* force table to show clearly */
 #projection-table {
   width: 100% !important;
-  min-width: 1200px;
+  min-width: 1600px;
   border-collapse: collapse !important;
   color: #111 !important;
   background: #fff !important;
 }
 
 .projection-highlight-col {
-  min-width: 120px;
+  font-weight: 600;
 }
 
 #projection-table thead th {
@@ -410,8 +410,6 @@ table.dataTable tbody td {
 }
 </style>
 
-## Transfer Portal Projections
-
 Use the buttons below to switch between projection views.
 
 <div class="projection-button-row">
@@ -503,10 +501,10 @@ const viewColumns = {
 };
 
 const customColumnTitles = {
-  transfer_show: "Transfer %",
-  return_show: "Return %",
-  destination_show: "Predicted Destination",
-  bpm_show: "Predicted BPM"
+  transfer_show: "Transfer Likelihood",
+  return_show: "Return / Leave",
+  destination_show: "Destination Tier",
+  bpm_show: "Projected BPM"
 };
 
 function prettifyLabel(col) {
@@ -827,10 +825,10 @@ function buildTable(viewName) {
     data: dataToUse,
     columns: columns,
     pageLength: 25,
-    responsive: true,
+    responsive: false,
     scrollX: true,
     order: [],
-    autoWidth: false,
+    autoWidth: true,
     deferRender: true
   });
 }
