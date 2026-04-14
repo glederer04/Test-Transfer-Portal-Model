@@ -6,6 +6,7 @@ project:
     - projections.qmd
   resources:
     - data/
+    - favicon.png
 
 website:
   title: "Transfer Portal Projections"
