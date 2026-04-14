@@ -511,6 +511,17 @@ table.dataTable tbody td {
     box-shadow: none;
   }
 }
+
+#projection-table thead th.prediction-col {
+  background: #4b9cd3 !important;
+  color: #000 !important;
+  font-weight: 700;
+}
+
+#projection-table tbody td.prediction-col {
+  background: #eaf4fb !important;
+  font-weight: 600;
+}
 </style>
 <section id="transfer-portal-projections" class="level2">
 <h2 class="anchored" data-anchor-id="transfer-portal-projections">Transfer Portal Projections</h2>
@@ -545,10 +556,7 @@ const viewColumns = {
     "PTS",
     "REB",
     "AST",
-    "pred_transfer",
-    "transfer_prob_mean",
-    "transfer_prob_lo",
-    "transfer_prob_hi"
+    "transfer_prediction_display"
   ],
   return: [
     "player",
@@ -559,8 +567,7 @@ const viewColumns = {
     "PTS",
     "REB",
     "AST",
-    "pred_return",
-    "pred_leave"
+    "return_prediction_display"
   ],
   destination: [
     "player",
@@ -571,10 +578,8 @@ const viewColumns = {
     "PTS",
     "REB",
     "AST",
-    "pred_destination_tier",
-    "dest_prob_high",
-    "dest_prob_upper_mid",
-    "dest_prob_low"
+    "destination_tier_display",
+    "destination_tier_prob_display"
   ],
   bpm: [
     "player",
@@ -585,15 +590,7 @@ const viewColumns = {
     "PTS",
     "REB",
     "AST",
-    "pred_BPM_low",
-    "pred_BPM_low_lo",
-    "pred_BPM_low_hi",
-    "pred_BPM_upper_mid",
-    "pred_BPM_upper_mid_lo",
-    "pred_BPM_upper_mid_hi",
-    "pred_BPM_high",
-    "pred_BPM_high_lo",
-    "pred_BPM_high_hi"
+    "bpm_prediction_display"
   ]
 };
 
@@ -609,14 +606,69 @@ function toNumber(val) {
 }
 
 function enrichData(data) {
+  function pctDisplay(val) {
+    const num = parseFloat(val);
+    if (isNaN(num)) return "";
+    return `${(num * 100).toFixed(2)}%`;
+  }
+
+  function numDisplay(val, digits = 2) {
+    const num = parseFloat(val);
+    if (isNaN(num)) return "";
+    return num.toFixed(digits);
+  }
+
+  function cleanTierLabel(val) {
+    if (!val) return "";
+    const tierMap = {
+      low: "Low Major",
+      low_major: "Low Major",
+      upper_mid: "Upper Mid",
+      upper_mid_major: "Upper Mid",
+      high: "High Major",
+      high_major: "High Major"
+    };
+
+    const cleaned = String(val).toLowerCase().trim();
+    return tierMap[cleaned] || cleaned
+      .replaceAll("_", " ")
+      .replace(/\b\w/g, c => c.toUpperCase());
+  }
+
   return data.map(row => {
     const pts = toNumber(row.PTS);
     const reb = toNumber(row.REB);
     const ast = toNumber(row.AST);
 
+    const predTierRaw = row.pred_destination_tier;
+    const predTier = String(predTierRaw || "").toLowerCase().trim();
+
+    let chosenTierProb = "";
+    let chosenBPM = "";
+
+    if (predTier === "high" || predTier === "high_major") {
+      chosenTierProb = pctDisplay(row.dest_prob_high);
+      chosenBPM = numDisplay(row.pred_BPM_high, 2);
+    } else if (predTier === "upper_mid" || predTier === "upper_mid_major") {
+      chosenTierProb = pctDisplay(row.dest_prob_upper_mid);
+      chosenBPM = numDisplay(row.pred_BPM_upper_mid, 2);
+    } else if (predTier === "low" || predTier === "low_major") {
+      chosenTierProb = pctDisplay(row.dest_prob_low);
+      chosenBPM = numDisplay(row.pred_BPM_low, 2);
+    }
+
     return {
       ...row,
-      PRA: +(pts + reb + ast).toFixed(1)
+      PRA: +(pts + reb + ast).toFixed(1),
+
+      transfer_prediction_display: pctDisplay(row.transfer_prob_mean),
+
+      return_prediction_display: pctDisplay(row.pred_return),
+
+      destination_tier_display: cleanTierLabel(row.pred_destination_tier),
+      destination_tier_prob_display: chosenTierProb,
+
+      bpm_prediction_display: chosenBPM
     };
   });
 }
@@ -883,6 +935,22 @@ function resetFilters() {
   buildTable(currentView);
 }
 
+const customColumnTitles = {
+  transfer_prediction_display: "Transfer %",
+  return_prediction_display: "Return %",
+  destination_tier_display: "Predicted Destination Tier",
+  destination_tier_prob_display: "Destination Tier %",
+  bpm_prediction_display: "Predicted BPM"
+};
+
+const highlightColumns = new Set([
+  "transfer_prediction_display",
+  "return_prediction_display",
+  "destination_tier_display",
+  "destination_tier_prob_display",
+  "bpm_prediction_display"
+]);
+
 function buildTable(viewName) {
   currentView = viewName;
 
@@ -895,9 +963,10 @@ function buildTable(viewName) {
   );
 
   const columns = validCols.map(col => ({
-    title: prettifyLabel(col),
+    title: customColumnTitles[col] || prettifyLabel(col),
     data: col,
-    defaultContent: ""
+    defaultContent: "",
+    className: highlightColumns.has(col) ? "prediction-col" : ""
   }));
 
   if (currentTable) {
