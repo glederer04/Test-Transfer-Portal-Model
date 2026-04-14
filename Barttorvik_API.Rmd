@@ -2033,6 +2033,7 @@ yo <- yo %>%
 yo <- yo %>%
   mutate(destination_show = paste0(pred_destination_clean, ' (', round(ifelse(pred_destination_tier=='low_major', dest_prob_low, ifelse(pred_destination_tier=='mid_major', dest_prob_upper_mid, dest_prob_high))*100,1), '%)'))
 
+
 #write_csv(yo, "docs/data/complete_2026_scored.csv")
 ```
 
