@@ -556,7 +556,7 @@ const viewColumns = {
     "PTS",
     "REB",
     "AST",
-    "transfer_display",
+    "transfer_show",
     "pred_transfer",
     "transfer_prob_mean",
     "transfer_prob_lo",
@@ -571,7 +571,7 @@ const viewColumns = {
     "PTS",
     "REB",
     "AST",
-    "return_display",
+    "return_show",
     "pred_return",
     "pred_leave"
   ],
@@ -584,7 +584,7 @@ const viewColumns = {
     "PTS",
     "REB",
     "AST",
-    "destination_display",
+    "destination_show",
     "pred_destination_tier",
     "dest_prob_high",
     "dest_prob_upper_mid",
@@ -599,7 +599,7 @@ const viewColumns = {
     "PTS",
     "REB",
     "AST",
-    "bpm_display",
+    "bpm_show",
     "pred_BPM_low",
     "pred_BPM_low_lo",
     "pred_BPM_low_hi",
@@ -613,10 +613,10 @@ const viewColumns = {
 };
 
 const customColumnTitles = {
-  transfer_display: "Transfer %",
-  return_display: "Return %",
-  destination_display: "Predicted Destination",
-  bpm_display: "Predicted BPM"
+  transfer_show: "Transfer %",
+  return_show: "Return %",
+  destination_show: "Predicted Destination",
+  bpm_show: "Predicted BPM"
 };
 
 function prettifyLabel(col) {
@@ -631,68 +631,14 @@ function toNumber(val) {
 }
 
 function enrichData(data) {
-  function pctDisplay(val) {
-    const num = parseFloat(val);
-    if (isNaN(num)) return "";
-    return `${(num * 100).toFixed(2)}%`;
-  }
-
-  function numDisplay(val, digits = 2) {
-    const num = parseFloat(val);
-    if (isNaN(num)) return "";
-    return num.toFixed(digits);
-  }
-
-  function cleanTierLabel(val) {
-    if (!val) return "";
-    const cleaned = String(val).toLowerCase().trim();
-
-    const tierMap = {
-      low: "Low Major",
-      low_major: "Low Major",
-      upper_mid: "Upper Mid",
-      upper_mid_major: "Upper Mid",
-      high: "High Major",
-      high_major: "High Major"
-    };
-
-    return tierMap[cleaned] || cleaned
-      .replaceAll("_", " ")
-      .replace(/\b\w/g, c => c.toUpperCase());
-  }
-
   return data.map(row => {
     const pts = toNumber(row.PTS);
     const reb = toNumber(row.REB);
     const ast = toNumber(row.AST);
 
-    const predTierRaw = row.pred_destination_tier;
-    const predTier = String(predTierRaw || "").toLowerCase().trim();
-
-    let chosenTierProb = "";
-    let chosenBPM = "";
-
-    if (predTier === "high" || predTier === "high_major") {
-      chosenTierProb = pctDisplay(row.dest_prob_high);
-      chosenBPM = numDisplay(row.pred_BPM_high, 2);
-    } else if (predTier === "upper_mid" || predTier === "upper_mid_major") {
-      chosenTierProb = pctDisplay(row.dest_prob_upper_mid);
-      chosenBPM = numDisplay(row.pred_BPM_upper_mid, 2);
-    } else if (predTier === "low" || predTier === "low_major") {
-      chosenTierProb = pctDisplay(row.dest_prob_low);
-      chosenBPM = numDisplay(row.pred_BPM_low, 2);
-    }
-
     return {
       ...row,
-      PRA: +(pts + reb + ast).toFixed(1),
-
-      transfer_display: pctDisplay(row.transfer_prob_mean),
-      return_display: pctDisplay(row.pred_return),
-      destination_display: chosenTierProb
-        ? `${cleanTierLabel(row.pred_destination_tier)} (${chosenTierProb})`
-        : cleanTierLabel(row.pred_destination_tier),
-      bpm_display: chosenBPM
+      PRA: +(pts + reb + ast).toFixed(1)
     };
   });
 }
@@ -970,32 +916,16 @@ function buildTable(viewName) {
     Object.prototype.hasOwnProperty.call(dataToUse[0], col)
   );
 
-  const alwaysVisibleCols = [
-    "player",
-    "team",
-    "conf",
-    "height",
-    "GP",
-    "PTS",
-    "REB",
-    "AST",
-    "transfer_display",
-    "return_display",
-    "destination_display",
-    "bpm_display"
-  ];
-
   const columns = validCols.map(col => ({
     title: customColumnTitles[col] || prettifyLabel(col),
     data: col,
     defaultContent: "",
     className: [
-      "transfer_display",
-      "return_display",
-      "destination_display",
-      "bpm_display"
-    ].includes(col) ? "projection-highlight-col" : "",
-    responsivePriority: alwaysVisibleCols.includes(col) ? 1 : 100
+      "transfer_show",
+      "return_show",
+      "destination_show",
+      "bpm_show"
+    ].includes(col) ? "projection-highlight-col" : ""
   }));
 
   if (currentTable) {
@@ -1007,9 +937,7 @@ function buildTable(viewName) {
     data: dataToUse,
     columns: columns,
     pageLength: 25,
-    responsive: {
-      details: true
-    },
+    responsive: true,
     scrollX: true,
     order: [],
     autoWidth: false,
