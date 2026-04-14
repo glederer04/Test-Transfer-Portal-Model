@@ -856,7 +856,9 @@ const detailColumns = {
   ],
   return: [
     "pred_return",
-    "pred_leave"
+    "pred_leave",
+    "return_prob_lo",
+    "return_prob_hi"
   ],
   destination: [
     "pred_destination_tier",
@@ -890,6 +892,8 @@ const customColumnTitles = {
 
   pred_return: "Predicted Return",
   pred_leave: "Predicted Leave",
+  return_prob_lo: "Leave Prob Low",
+  return_prob_hi: "Leave Prob High",
 
   pred_destination_tier: "Predicted Destination Tier",
   dest_prob_high: "High Major Probability",
@@ -1041,12 +1045,109 @@ function formatTransferCard(row) {
   `;
 }
 
+function formatReturnRankText(row) {
+  const topPct = row.leave_top_pct;
+  const rank = row.leave_rank_all;
+
+  if (topPct === undefined || rank === undefined) return "Ranking unavailable";
+
+  const roundedTopPct = Math.max(1, Math.round(topPct));
+  return `Top ${roundedTopPct}% highest leave likelihood (#${rank})`;
+}
+
+function formatReturnCard(row) {
+  const leaveProb = clamp(toNumber(row.leave_display_num), 0, 1);
+  const returnProb = clamp(toNumber(row.return_display_num), 0, 1);
+
+  const lo = clamp(toNumber(row.leave_prob_lo_num), 0, 1);
+  const hi = clamp(toNumber(row.leave_prob_hi_num), 0, 1);
+
+  const percentile = clamp(toNumber(row.leave_percentile), 0, 100);
+  const percentileFill = `${percentile}%`;
+
+  const ciLeft = probToLeft(lo);
+  const ciWidth = `${Math.max((hi - lo) * 100, 1.5)}%`;
+  const dotLeft = probToLeft(leaveProb);
+
+  return `
+    <div class="transfer-card-wrap">
+      <div class="transfer-card">
+        <div class="transfer-card-top">
+          <div>
+            <div class="transfer-card-title">Return / Leave Projection Summary</div>
+            <div class="transfer-card-subtitle">
+              Visual snapshot of predicted leave risk, return likelihood, confidence range, and rank versus all players
+            </div>
+          </div>
+
+          <div class="transfer-card-score">
+            <div class="transfer-card-score-value">${pct1(leaveProb)}</div>
+            <div class="transfer-risk-pill ${row.leave_risk_tier_class}">
+              ${row.leave_risk_tier} Risk
+            </div>
+          </div>
+        </div>
+
+        <div class="transfer-stat-grid" style="margin-top: 4px;">
+          <div class="transfer-stat-box">
+            <div class="transfer-stat-box-label">Chance to Return</div>
+            <div class="transfer-stat-box-value">${pct1(returnProb)}</div>
+          </div>
+
+          <div class="transfer-stat-box">
+            <div class="transfer-stat-box-label">Chance to Leave</div>
+            <div class="transfer-stat-box-value">${pct1(leaveProb)}</div>
+          </div>
+        </div>
+
+        <div class="transfer-card-section">
+          <div class="transfer-section-label">Leave Risk Percentile Rank</div>
+          <div class="transfer-bar-track">
+            <div class="transfer-bar-fill" style="width:${percentileFill};"></div>
+          </div>
+          <div class="transfer-scale-row">
+            <span>Low Risk</span>
+            <span>High Risk</span>
+          </div>
+        </div>
+
+        <div class="transfer-card-section">
+          <div class="transfer-section-label">Confidence Interval (Leave Probability)</div>
+          <div class="transfer-ci-wrap">
+            <div class="transfer-ci-base"></div>
+            <div class="transfer-ci-range" style="left:${ciLeft}; width:${ciWidth};"></div>
+            <div class="transfer-ci-dot" style="left:${dotLeft};"></div>
+          </div>
+          <div class="transfer-ci-label-row">
+            <span>0%</span>
+            <span>50%</span>
+            <span>100%</span>
+          </div>
+        </div>
+
+        <div class="transfer-stat-grid">
+          <div class="transfer-stat-box">
+            <div class="transfer-stat-box-label">Rank vs All Players</div>
+            <div class="transfer-stat-box-value">${formatReturnRankText(row)}</div>
+          </div>
+
+          <div class="transfer-stat-box">
+            <div class="transfer-stat-box-label">Leave Confidence Interval</div>
+            <div class="transfer-stat-box-value">(${pct1(lo)}, ${pct1(hi)})</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 function enrichData(data) {
   const baseData = data.map(row => {
     const pts = toNumber(row.PTS);
     const reb = toNumber(row.REB);
     const ast = toNumber(row.AST);
 
+    // ---- transfer ----
     const transferDisplay =
       row.transfer_show !== undefined && row.transfer_show !== ""
         ? parseProbability(row.transfer_show)
@@ -1064,32 +1165,66 @@ function enrichData(data) {
     const transferLo = parseProbability(row.transfer_prob_lo);
     const transferHi = parseProbability(row.transfer_prob_hi);
 
+    // ---- return / leave ----
+    const rawReturn =
+      row.pred_return !== undefined && row.pred_return !== ""
+        ? parseProbability(row.pred_return)
+        : (
+            row.return_show !== undefined && row.return_show !== ""
+              ? parseProbability(row.return_show)
+              : 0
+          );
+
+    const rawLeave =
+      row.pred_leave !== undefined && row.pred_leave !== ""
+        ? parseProbability(row.pred_leave)
+        : (1 - rawReturn);
+
+    // normalize so they sum to 1
+    const totalRL = rawReturn + rawLeave;
+    const returnDisplay = totalRL > 0 ? rawReturn / totalRL : 0;
+    const leaveDisplay = totalRL > 0 ? rawLeave / totalRL : (1 - returnDisplay);
+
+    // if CI cols exist in dataset, use them; otherwise fallback to point estimate
+    const leaveLo =
+      row.return_prob_lo !== undefined && row.return_prob_lo !== ""
+        ? parseProbability(row.return_prob_lo)
+        : leaveDisplay;
+
+    const leaveHi =
+      row.return_prob_hi !== undefined && row.return_prob_hi !== ""
+        ? parseProbability(row.return_prob_hi)
+        : leaveDisplay;
+
     return {
       ...row,
       PRA: +(pts + reb + ast).toFixed(1),
+
       transfer_display_num: transferDisplay,
       transfer_prob_mean_num: transferMean,
       transfer_prob_lo_num: transferLo,
-      transfer_prob_hi_num: transferHi
+      transfer_prob_hi_num: transferHi,
+
+      return_display_num: returnDisplay,
+      leave_display_num: leaveDisplay,
+      leave_prob_lo_num: leaveLo,
+      leave_prob_hi_num: leaveHi
     };
   });
 
-  const ranked = baseData
+  // ---- transfer ranking ----
+  const transferRanked = baseData
     .map((row, idx) => ({ idx, val: row.transfer_display_num }))
     .filter(x => !isNaN(x.val))
     .sort((a, b) => b.val - a.val);
 
-  const totalRanked = ranked.length;
+  const totalTransferRanked = transferRanked.length;
 
-  ranked.forEach((item, i) => {
+  transferRanked.forEach((item, i) => {
     const rank = i + 1;
-
-    const topPct = totalRanked > 0
-      ? (rank / totalRanked) * 100
-      : 100;
-
-    const percentile = totalRanked > 1
-      ? ((totalRanked - rank) / (totalRanked - 1)) * 100
+    const topPct = totalTransferRanked > 0 ? (rank / totalTransferRanked) * 100 : 100;
+    const percentile = totalTransferRanked > 1
+      ? ((totalTransferRanked - rank) / (totalTransferRanked - 1)) * 100
       : 50;
 
     baseData[item.idx].transfer_rank_all = rank;
@@ -1097,22 +1232,57 @@ function enrichData(data) {
     baseData[item.idx].transfer_percentile = percentile;
   });
 
+  // ---- leave ranking ----
+  const leaveRanked = baseData
+    .map((row, idx) => ({ idx, val: row.leave_display_num }))
+    .filter(x => !isNaN(x.val))
+    .sort((a, b) => b.val - a.val);
+
+  const totalLeaveRanked = leaveRanked.length;
+
+  leaveRanked.forEach((item, i) => {
+    const rank = i + 1;
+    const topPct = totalLeaveRanked > 0 ? (rank / totalLeaveRanked) * 100 : 100;
+    const percentile = totalLeaveRanked > 1
+      ? ((totalLeaveRanked - rank) / (totalLeaveRanked - 1)) * 100
+      : 50;
+
+    baseData[item.idx].leave_rank_all = rank;
+    baseData[item.idx].leave_top_pct = topPct;
+    baseData[item.idx].leave_percentile = percentile;
+  });
+
+  // ---- risk tiers ----
   baseData.forEach(row => {
-    const percentile = clamp(toNumber(row.transfer_percentile), 0, 100);
+    const transferPercentile = clamp(toNumber(row.transfer_percentile), 0, 100);
+    let transferRiskTier = "Medium";
+    let transferRiskTierClass = "moderate";
 
-    let riskTier = "Medium";
-    let riskTierClass = "moderate";
-
-    if (percentile >= 80) {
-      riskTier = "High";
-      riskTierClass = "high";
-    } else if (percentile <= 20) {
-      riskTier = "Low";
-      riskTierClass = "low";
+    if (transferPercentile >= 80) {
+      transferRiskTier = "High";
+      transferRiskTierClass = "high";
+    } else if (transferPercentile <= 20) {
+      transferRiskTier = "Low";
+      transferRiskTierClass = "low";
     }
 
-    row.transfer_risk_tier = riskTier;
-    row.transfer_risk_tier_class = riskTierClass;
+    row.transfer_risk_tier = transferRiskTier;
+    row.transfer_risk_tier_class = transferRiskTierClass;
+
+    const leavePercentile = clamp(toNumber(row.leave_percentile), 0, 100);
+    let leaveRiskTier = "Medium";
+    let leaveRiskTierClass = "moderate";
+
+    if (leavePercentile >= 80) {
+      leaveRiskTier = "High";
+      leaveRiskTierClass = "high";
+    } else if (leavePercentile <= 20) {
+      leaveRiskTier = "Low";
+      leaveRiskTierClass = "low";
+    }
+
+    row.leave_risk_tier = leaveRiskTier;
+    row.leave_risk_tier_class = leaveRiskTierClass;
   });
 
   return baseData;
@@ -1383,6 +1553,10 @@ function resetFilters() {
 function formatRowDetails(row, viewName) {
   if (viewName === "transfer") {
     return formatTransferCard(row);
+  }
+
+  if (viewName === "return") {
+    return formatReturnCard(row);
   }
 
   const detailCols = detailColumns[viewName] || [];
