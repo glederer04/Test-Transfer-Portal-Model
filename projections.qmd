@@ -448,6 +448,7 @@ tr.shown td.details-control::before {
   padding: 18px 20px;
   box-shadow: 0 2px 10px rgba(19, 41, 75, 0.06);
   max-width: 950px;
+  margin: 0 auto;
 }
 
 .transfer-card-top {
