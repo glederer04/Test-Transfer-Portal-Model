@@ -6,7 +6,7 @@ project:
     - projections.qmd
   resources:
     - data/
-    - favicon.png
+    - favicon2.png
 
 website:
   title: "Transfer Portal Projections"
@@ -16,9 +16,9 @@ website:
         file: index.qmd
       - text: Projections1
         file: projections.qmd
-  favicon: favicon.png
+  favicon: favicon2.png
 
 format:
   html:
     theme: cosmo
-    toc: true
+    toc: false
