@@ -970,6 +970,21 @@ function buildTable(viewName) {
     Object.prototype.hasOwnProperty.call(dataToUse[0], col)
   );
 
+  const alwaysVisibleCols = [
+    "player",
+    "team",
+    "conf",
+    "height",
+    "GP",
+    "PTS",
+    "REB",
+    "AST",
+    "transfer_display",
+    "return_display",
+    "destination_display",
+    "bpm_display"
+  ];
+
   const columns = validCols.map(col => ({
     title: customColumnTitles[col] || prettifyLabel(col),
     data: col,
@@ -979,7 +994,8 @@ function buildTable(viewName) {
       "return_display",
       "destination_display",
       "bpm_display"
-    ].includes(col) ? "projection-highlight-col" : ""
+    ].includes(col) ? "projection-highlight-col" : "",
+    responsivePriority: alwaysVisibleCols.includes(col) ? 1 : 100
   }));
 
   if (currentTable) {
