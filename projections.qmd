@@ -763,7 +763,7 @@ const detailColumns = {
 
 const customColumnTitles = {
   transfer_show: "Transfer Likelihood",
-  return_show: "Return / Leave",
+  return_show: "Return Likelihood",
   destination_show: "Destination Tier",
   bpm_show: "Projected BPM",
 
