@@ -978,13 +978,12 @@ function formatTransferCard(row) {
   const lo = clamp(toNumber(row.transfer_prob_lo_num), 0, 1);
   const hi = clamp(toNumber(row.transfer_prob_hi_num), 0, 1);
 
-  const percentileFill = `${clamp(toNumber(row.transfer_percentile), 0, 100)}%`;
+  const percentile = clamp(toNumber(row.transfer_percentile), 0, 100);
+  const percentileFill = `${percentile}%`;
 
   const ciLeft = probToLeft(lo);
   const ciWidth = `${Math.max((hi - lo) * 100, 1.5)}%`;
   const dotLeft = probToLeft(displayProb);
-
-  const distributionLeft = `${clamp(toNumber(row.transfer_percentile), 0, 100)}%`;
 
   return `
     <div class="transfer-card-wrap">
@@ -1025,7 +1024,7 @@ function formatTransferCard(row) {
           </div>
           <div class="transfer-ci-label-row">
             <span>0%</span>
-            <span>${pct1(displayProb)}</span>
+            <span>50%</span>
             <span>100%</span>
           </div>
         </div>
@@ -1039,22 +1038,6 @@ function formatTransferCard(row) {
           <div class="transfer-stat-box">
             <div class="transfer-stat-box-label">Confidence Interval</div>
             <div class="transfer-stat-box-value">(${pct1(lo)}, ${pct1(hi)})</div>
-          </div>
-        </div>
-
-        <div class="transfer-card-section">
-          <div class="transfer-section-label">All-Player Distribution Position</div>
-          <div class="transfer-dist-wrap">
-            <div class="transfer-dist-track">
-              <div class="transfer-dist-marker" style="left:${distributionLeft};"></div>
-            </div>
-            <div class="transfer-dist-ticks">
-              <span>0%</span>
-              <span>25%</span>
-              <span>50%</span>
-              <span>75%</span>
-              <span>100%</span>
-            </div>
           </div>
         </div>
       </div>
@@ -1119,20 +1102,17 @@ function enrichData(data) {
   });
 
   baseData.forEach(row => {
-    const p = row.transfer_display_num;
+    const percentile = clamp(toNumber(row.transfer_percentile), 0, 100);
 
-    let riskTier = "Low";
-    let riskTierClass = "low";
+    let riskTier = "Medium";
+    let riskTierClass = "moderate";
 
-    if (p >= 0.80) {
-      riskTier = "Very High";
-      riskTierClass = "very-high";
-    } else if (p >= 0.60) {
+    if (percentile >= 80) {
       riskTier = "High";
       riskTierClass = "high";
-    } else if (p >= 0.30) {
-      riskTier = "Moderate";
-      riskTierClass = "moderate";
+    } else if (percentile <= 20) {
+      riskTier = "Low";
+      riskTierClass = "low";
     }
 
     row.transfer_risk_tier = riskTier;
