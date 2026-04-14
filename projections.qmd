@@ -836,7 +836,7 @@ function formatTransferRankText(row) {
   if (topPct === undefined || rank === undefined) return "Ranking unavailable";
 
   const roundedTopPct = Math.max(1, Math.round(topPct));
-  return `Top ${roundedTopPct}% highest transfer likelihood (${ordinalSuffix(rank)} highest)`;
+  return `Top ${roundedTopPct}% highest transfer likelihood (#${rank})`;
 }
 
 function formatTransferCard(row) {
@@ -848,6 +848,10 @@ function formatTransferCard(row) {
   const ciLeft = safePercentLeft(lo);
   const ciWidth = `${Math.max((hi - lo) * 100, 1.5)}%`;
   const dotLeft = safePercentLeft(mean);
+
+  const distributionLeft = row.transfer_distribution_pct !== undefined
+    ? `${clamp(toNumber(row.transfer_distribution_pct), 0, 100)}%`
+    : dotLeft;
 
   return `
     <div class="transfer-card-wrap">
@@ -900,10 +904,8 @@ function formatTransferCard(row) {
           </div>
 
           <div class="transfer-stat-box">
-            <div class="transfer-stat-box-label">Model Call</div>
-            <div class="transfer-stat-box-value">
-              ${row.pred_transfer !== undefined && row.pred_transfer !== "" ? pct1(row.pred_transfer) : pct1(mean)}
-            </div>
+            <div class="transfer-stat-box-label">Mean Projection</div>
+            <div class="transfer-stat-box-value">${pct1(mean)}</div>
           </div>
         </div>
 
@@ -911,7 +913,7 @@ function formatTransferCard(row) {
           <div class="transfer-section-label">All-Player Distribution Position</div>
           <div class="transfer-dist-wrap">
             <div class="transfer-dist-track">
-              <div class="transfer-dist-marker" style="left:${dotLeft};"></div>
+              <div class="transfer-dist-marker" style="left:${distributionLeft};"></div>
             </div>
             <div class="transfer-dist-ticks">
               <span>0%</span>
@@ -959,13 +961,18 @@ function enrichData(data) {
 
   ranked.forEach((item, i) => {
     const rank = i + 1;
-    const percentile = totalRanked > 1
+
+    const topPct = totalRanked > 0
+      ? (rank / totalRanked) * 100
+      : 100;
+
+    const distributionPct = totalRanked > 1
       ? ((totalRanked - rank) / (totalRanked - 1)) * 100
       : 50;
 
     baseData[item.idx].transfer_rank_all = rank;
-    baseData[item.idx].transfer_percentile = percentile;
-    baseData[item.idx].transfer_top_pct = 100 - percentile;
+    baseData[item.idx].transfer_top_pct = topPct;
+    baseData[item.idx].transfer_distribution_pct = distributionPct;
   });
 
   baseData.forEach(row => {
