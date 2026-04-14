@@ -800,7 +800,9 @@ function prettifyLabel(col) {
 }
 
 function toNumber(val) {
-  const num = parseFloat(val);
+  if (val === null || val === undefined || val === "") return 0;
+  const cleaned = String(val).replace(/%/g, "").trim();
+  const num = parseFloat(cleaned);
   return isNaN(num) ? 0 : num;
 }
 
@@ -808,16 +810,30 @@ function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
 }
 
+function parseProbability(val) {
+  if (val === null || val === undefined || val === "") return 0;
+  const str = String(val).trim();
+
+  if (str.includes("%")) {
+    return clamp(toNumber(str) / 100, 0, 1);
+  }
+
+  const num = toNumber(str);
+
+  if (num > 1) return clamp(num / 100, 0, 1);
+  return clamp(num, 0, 1);
+}
+
 function pct1(value) {
-  return `${(toNumber(value) * 100).toFixed(1)}%`;
+  return `${(clamp(toNumber(value), 0, 1) * 100).toFixed(1)}%`;
 }
 
 function pct0(value) {
-  return `${Math.round(toNumber(value) * 100)}%`;
+  return `${Math.round(clamp(toNumber(value), 0, 1) * 100)}%`;
 }
 
-function safePercentLeft(probValue) {
-  return `${clamp(toNumber(probValue) * 100, 0, 100)}%`;
+function probToLeft(probValue) {
+  return `${clamp(probValue, 0, 1) * 100}%`;
 }
 
 function ordinalSuffix(n) {
@@ -840,18 +856,17 @@ function formatTransferRankText(row) {
 }
 
 function formatTransferCard(row) {
-  const mean = clamp(toNumber(row.transfer_prob_mean_num), 0, 1);
+  const displayProb = clamp(toNumber(row.transfer_display_num), 0, 1);
   const lo = clamp(toNumber(row.transfer_prob_lo_num), 0, 1);
   const hi = clamp(toNumber(row.transfer_prob_hi_num), 0, 1);
 
-  const fillWidth = safePercentLeft(mean);
-  const ciLeft = safePercentLeft(lo);
-  const ciWidth = `${Math.max((hi - lo) * 100, 1.5)}%`;
-  const dotLeft = safePercentLeft(mean);
+  const percentileFill = `${clamp(toNumber(row.transfer_percentile), 0, 100)}%`;
 
-  const distributionLeft = row.transfer_distribution_pct !== undefined
-    ? `${clamp(toNumber(row.transfer_distribution_pct), 0, 100)}%`
-    : dotLeft;
+  const ciLeft = probToLeft(lo);
+  const ciWidth = `${Math.max((hi - lo) * 100, 1.5)}%`;
+  const dotLeft = probToLeft(displayProb);
+
+  const distributionLeft = `${clamp(toNumber(row.transfer_percentile), 0, 100)}%`;
 
   return `
     <div class="transfer-card-wrap">
@@ -865,7 +880,7 @@ function formatTransferCard(row) {
           </div>
 
           <div class="transfer-card-score">
-            <div class="transfer-card-score-value">${pct1(mean)}</div>
+            <div class="transfer-card-score-value">${pct1(displayProb)}</div>
             <div class="transfer-risk-pill ${row.transfer_risk_tier_class}">
               ${row.transfer_risk_tier} Risk
             </div>
@@ -873,9 +888,9 @@ function formatTransferCard(row) {
         </div>
 
         <div class="transfer-card-section">
-          <div class="transfer-section-label">Transfer Likelihood</div>
+          <div class="transfer-section-label">Transfer Likelihood Percentile Rank</div>
           <div class="transfer-bar-track">
-            <div class="transfer-bar-fill" style="width:${fillWidth};"></div>
+            <div class="transfer-bar-fill" style="width:${percentileFill};"></div>
           </div>
           <div class="transfer-scale-row">
             <span>Low Risk</span>
@@ -891,9 +906,9 @@ function formatTransferCard(row) {
             <div class="transfer-ci-dot" style="left:${dotLeft};"></div>
           </div>
           <div class="transfer-ci-label-row">
-            <span>Low: ${pct1(lo)}</span>
-            <span>Mean: ${pct1(mean)}</span>
-            <span>High: ${pct1(hi)}</span>
+            <span>0%</span>
+            <span>${pct1(displayProb)}</span>
+            <span>100%</span>
           </div>
         </div>
 
@@ -904,8 +919,8 @@ function formatTransferCard(row) {
           </div>
 
           <div class="transfer-stat-box">
-            <div class="transfer-stat-box-label">Mean Projection</div>
-            <div class="transfer-stat-box-value">${pct1(mean)}</div>
+            <div class="transfer-stat-box-label">Confidence Interval</div>
+            <div class="transfer-stat-box-value">(${pct1(lo)}, ${pct1(hi)})</div>
           </div>
         </div>
 
@@ -935,17 +950,27 @@ function enrichData(data) {
     const reb = toNumber(row.REB);
     const ast = toNumber(row.AST);
 
+    const transferDisplay =
+      row.transfer_show !== undefined && row.transfer_show !== ""
+        ? parseProbability(row.transfer_show)
+        : (
+            row.pred_transfer !== undefined && row.pred_transfer !== ""
+              ? parseProbability(row.pred_transfer)
+              : parseProbability(row.transfer_prob_mean)
+          );
+
     const transferMean =
       row.transfer_prob_mean !== undefined && row.transfer_prob_mean !== ""
-        ? toNumber(row.transfer_prob_mean)
-        : toNumber(row.pred_transfer);
+        ? parseProbability(row.transfer_prob_mean)
+        : transferDisplay;
 
-    const transferLo = toNumber(row.transfer_prob_lo);
-    const transferHi = toNumber(row.transfer_prob_hi);
+    const transferLo = parseProbability(row.transfer_prob_lo);
+    const transferHi = parseProbability(row.transfer_prob_hi);
 
     return {
       ...row,
       PRA: +(pts + reb + ast).toFixed(1),
+      transfer_display_num: transferDisplay,
       transfer_prob_mean_num: transferMean,
       transfer_prob_lo_num: transferLo,
       transfer_prob_hi_num: transferHi
@@ -953,7 +978,7 @@ function enrichData(data) {
   });
 
   const ranked = baseData
-    .map((row, idx) => ({ idx, val: row.transfer_prob_mean_num }))
+    .map((row, idx) => ({ idx, val: row.transfer_display_num }))
     .filter(x => !isNaN(x.val))
     .sort((a, b) => b.val - a.val);
 
@@ -966,17 +991,17 @@ function enrichData(data) {
       ? (rank / totalRanked) * 100
       : 100;
 
-    const distributionPct = totalRanked > 1
+    const percentile = totalRanked > 1
       ? ((totalRanked - rank) / (totalRanked - 1)) * 100
       : 50;
 
     baseData[item.idx].transfer_rank_all = rank;
     baseData[item.idx].transfer_top_pct = topPct;
-    baseData[item.idx].transfer_distribution_pct = distributionPct;
+    baseData[item.idx].transfer_percentile = percentile;
   });
 
   baseData.forEach(row => {
-    const p = row.transfer_prob_mean_num;
+    const p = row.transfer_display_num;
 
     let riskTier = "Low";
     let riskTierClass = "low";
