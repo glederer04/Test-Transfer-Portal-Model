@@ -1007,7 +1007,9 @@ function buildTable(viewName) {
     data: dataToUse,
     columns: columns,
     pageLength: 25,
-    responsive: true,
+    responsive: {
+      details: true
+    },
     scrollX: true,
     order: [],
     autoWidth: false,
