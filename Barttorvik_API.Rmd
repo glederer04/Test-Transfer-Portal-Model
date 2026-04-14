@@ -2015,6 +2015,14 @@ yo <- yo %>%
     REB = round(REB,1),
     AST = round(AST,1)
   )
+
+yo <- yo %>%
+  mutate(
+    transfer_show = paste0(round(pred_transfer*100,2), '%'),
+    return_show = paste0(round(pred_return*100,2), '%'),
+    destination_show = paste0(pred_destination_tier, ' (', round(ifelse(pred_destination_tier=='low_major', dest_prob_low, ifelse(pred_destination_tier=='mid_major', dest_prob_upper_mid, dest_prob_high))*100,1), '%)'),
+    bpm_show = round(ifelse(pred_destination_tier=='low_major', pred_BPM_low, ifelse(pred_destination_tier=='mid_major', pred_BPM_upper_mid, pred_BPM_high)),2)
+  )
 #write_csv(yo, "docs/data/complete_2026_scored.csv")
 ```
 
