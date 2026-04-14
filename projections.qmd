@@ -381,14 +381,14 @@ table.dataTable tbody td {
   }
 }
 
-#projection-table thead th.prediction-col {
-  background: #4b9cd3 !important;
-  color: #000 !important;
+#projection-table thead th.projection-highlight-col {
+  background: #d9ecfb !important;
+  color: #111 !important;
   font-weight: 700;
 }
 
-#projection-table tbody td.prediction-col {
-  background: #eaf4fb !important;
+#projection-table tbody td.projection-highlight-col {
+  background: #f4faff !important;
   font-weight: 600;
 }
 </style>
@@ -429,7 +429,11 @@ const viewColumns = {
     "PTS",
     "REB",
     "AST",
-    "transfer_prediction_display"
+    "transfer_display",
+    "pred_transfer",
+    "transfer_prob_mean",
+    "transfer_prob_lo",
+    "transfer_prob_hi"
   ],
   return: [
     "player",
@@ -440,7 +444,9 @@ const viewColumns = {
     "PTS",
     "REB",
     "AST",
-    "return_prediction_display"
+    "return_display",
+    "pred_return",
+    "pred_leave"
   ],
   destination: [
     "player",
@@ -451,8 +457,11 @@ const viewColumns = {
     "PTS",
     "REB",
     "AST",
-    "destination_tier_display",
-    "destination_tier_prob_display"
+    "destination_display",
+    "pred_destination_tier",
+    "dest_prob_high",
+    "dest_prob_upper_mid",
+    "dest_prob_low"
   ],
   bpm: [
     "player",
@@ -463,8 +472,24 @@ const viewColumns = {
     "PTS",
     "REB",
     "AST",
-    "bpm_prediction_display"
+    "bpm_display",
+    "pred_BPM_low",
+    "pred_BPM_low_lo",
+    "pred_BPM_low_hi",
+    "pred_BPM_upper_mid",
+    "pred_BPM_upper_mid_lo",
+    "pred_BPM_upper_mid_hi",
+    "pred_BPM_high",
+    "pred_BPM_high_lo",
+    "pred_BPM_high_hi"
   ]
+};
+
+const customColumnTitles = {
+  transfer_display: "Transfer %",
+  return_display: "Return %",
+  destination_display: "Predicted Destination",
+  bpm_display: "Predicted BPM"
 };
 
 function prettifyLabel(col) {
@@ -493,6 +518,8 @@ function enrichData(data) {
 
   function cleanTierLabel(val) {
     if (!val) return "";
+    const cleaned = String(val).toLowerCase().trim();
+
     const tierMap = {
       low: "Low Major",
       low_major: "Low Major",
@@ -502,7 +529,6 @@ function enrichData(data) {
       high_major: "High Major"
     };
 
-    const cleaned = String(val).toLowerCase().trim();
     return tierMap[cleaned] || cleaned
       .replaceAll("_", " ")
       .replace(/\b\w/g, c => c.toUpperCase());
@@ -534,14 +560,12 @@ function enrichData(data) {
       ...row,
       PRA: +(pts + reb + ast).toFixed(1),
 
-      transfer_prediction_display: pctDisplay(row.transfer_prob_mean),
-
-      return_prediction_display: pctDisplay(row.pred_return),
-
-      destination_tier_display: cleanTierLabel(row.pred_destination_tier),
-      destination_tier_prob_display: chosenTierProb,
-
-      bpm_prediction_display: chosenBPM
+      transfer_display: pctDisplay(row.transfer_prob_mean),
+      return_display: pctDisplay(row.pred_return),
+      destination_display: chosenTierProb
+        ? `${cleanTierLabel(row.pred_destination_tier)} (${chosenTierProb})`
+        : cleanTierLabel(row.pred_destination_tier),
+      bpm_display: chosenBPM
     };
   });
 }
@@ -808,22 +832,6 @@ function resetFilters() {
   buildTable(currentView);
 }
 
-const customColumnTitles = {
-  transfer_prediction_display: "Transfer %",
-  return_prediction_display: "Return %",
-  destination_tier_display: "Predicted Destination Tier",
-  destination_tier_prob_display: "Destination Tier %",
-  bpm_prediction_display: "Predicted BPM"
-};
-
-const highlightColumns = new Set([
-  "transfer_prediction_display",
-  "return_prediction_display",
-  "destination_tier_display",
-  "destination_tier_prob_display",
-  "bpm_prediction_display"
-]);
-
 function buildTable(viewName) {
   currentView = viewName;
 
@@ -839,7 +847,12 @@ function buildTable(viewName) {
     title: customColumnTitles[col] || prettifyLabel(col),
     data: col,
     defaultContent: "",
-    className: highlightColumns.has(col) ? "prediction-col" : ""
+    className: [
+      "transfer_display",
+      "return_display",
+      "destination_display",
+      "bpm_display"
+    ].includes(col) ? "projection-highlight-col" : ""
   }));
 
   if (currentTable) {
