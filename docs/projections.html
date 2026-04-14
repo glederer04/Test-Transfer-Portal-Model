@@ -177,10 +177,10 @@ ul.task-list li input[type="checkbox"] {
 
 #projection-table {
   width: 100% !important;
-  min-width: 1600px;
   border-collapse: collapse !important;
   color: #111 !important;
   background: #fff !important;
+  table-layout: auto;
 }
 
 .projection-highlight-col {
@@ -205,6 +205,7 @@ ul.task-list li input[type="checkbox"] {
 table.dataTable thead th,
 table.dataTable tbody td {
   white-space: nowrap;
+  width: 1%;
 }
 
 .dataTables_wrapper {
@@ -545,6 +546,14 @@ td.details-control::before {
 tr.shown td.details-control::before {
   content: "−";
   font-size: 16px;
+}
+
+.dataTables_wrapper {
+  width: 100% !important;
+}
+
+#projection-table-wrapper {
+  overflow-x: visible;
 }
 </style>
 <p>Use the buttons below to switch between projection views.</p>
@@ -1037,7 +1046,7 @@ function buildTable(viewName) {
     columns: columns,
     pageLength: 25,
     responsive: false,
-    scrollX: true,
+    scrollX: false,
     order: [],
     autoWidth: true,
     deferRender: true
