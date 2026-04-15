@@ -687,6 +687,7 @@ const viewColumns = {
     "player",
     "team",
     "conf",
+    "class",
     "height",
     "GP",
     "PTS",
@@ -698,6 +699,7 @@ const viewColumns = {
     "player",
     "team",
     "conf",
+    "class",
     "height",
     "GP",
     "PTS",
@@ -709,6 +711,7 @@ const viewColumns = {
     "player",
     "team",
     "conf",
+    "class",
     "height",
     "GP",
     "PTS",
@@ -720,6 +723,7 @@ const viewColumns = {
     "player",
     "team",
     "conf",
+    "class",
     "height",
     "GP",
     "PTS",
@@ -762,6 +766,8 @@ const detailColumns = {
 };
 
 const customColumnTitles = {
+  class: "Year",
+  
   transfer_show: "Transfer Likelihood",
   return_show: "Return Likelihood",
   destination_show: "Destination Tier",
@@ -1275,6 +1281,7 @@ function renderFilterUI() {
   const teams = uniqueSortedValues(projectionData, "team");
   const confs = uniqueSortedValues(projectionData, "conf");
   const roles = uniqueSortedValues(projectionData, "Role");
+  const years = uniqueSortedValues(projectionData, "class");
 
   filtersContainer.innerHTML = `
     <div class="filter-toolbar-top">
@@ -1307,6 +1314,14 @@ function renderFilterUI() {
           values: roles,
           buttonText: "Select role(s)",
           searchPlaceholder: "Search roles..."
+        })}
+        
+        ${createCheckboxDropdown({
+          id: "year-filter",
+          label: "Year",
+          values: years,
+          buttonText: "Select year(s)",
+          searchPlaceholder: "Search year..."
         })}
 
         <div class="filter-group">
@@ -1352,6 +1367,7 @@ function renderFilterUI() {
   setupCheckboxDropdown("team-filter", "Select team(s)");
   setupCheckboxDropdown("conf-filter", "Select conference(s)");
   setupCheckboxDropdown("role-filter", "Select role(s)");
+  setupCheckboxDropdown("year-filter", "Select year(s)");
 
   document.querySelectorAll(".checkbox-mini-btn").forEach(btn => {
     btn.addEventListener("click", function() {
@@ -1368,6 +1384,7 @@ function renderFilterUI() {
         "team-filter": "Select team(s)",
         "conf-filter": "Select conference(s)",
         "role-filter": "Select role(s)"
+        "year-filter": "Select year(s)"
       };
 
       updateDropdownButtonText(target, defaultMap[target]);
@@ -1393,6 +1410,7 @@ function applyFilters() {
   const selectedTeams = getCheckedValues("team-filter");
   const selectedConfs = getCheckedValues("conf-filter");
   const selectedRoles = getCheckedValues("role-filter");
+  const selectedYears = getCheckedValues("year-filter");
 
   const minGP = toNumber(document.getElementById("gp-min-filter").value);
   const minPTS = toNumber(document.getElementById("pts-min-filter").value);
@@ -1402,19 +1420,20 @@ function applyFilters() {
     const teamMatch = selectedTeams.length === 0 || selectedTeams.includes(row.team);
     const confMatch = selectedConfs.length === 0 || selectedConfs.includes(row.conf);
     const roleMatch = selectedRoles.length === 0 || selectedRoles.includes(row.Role);
+    const yearMatch = selectedYears.length === 0 || selectedYears.includes(row.class);
 
     const gpMatch = toNumber(row.GP) >= minGP;
     const ptsMatch = toNumber(row.PTS) >= minPTS;
     const mpMatch = toNumber(row.MP) >= minMP;
 
-    return teamMatch && confMatch && roleMatch && gpMatch && ptsMatch && mpMatch;
+    return teamMatch && confMatch && roleMatch && yearMatch && gpMatch && ptsMatch && mpMatch;
   });
 
   buildTable(currentView);
 }
 
 function resetFilters() {
-  ["team-filter", "conf-filter", "role-filter"].forEach(filterName => {
+  ["team-filter", "conf-filter", "role-filter", "year-filter"].forEach(filterName => {
     document.querySelectorAll(`input[name="${filterName}"]`).forEach(box => {
       box.checked = false;
     });
@@ -1427,6 +1446,7 @@ function resetFilters() {
   updateDropdownButtonText("team-filter", "Select team(s)");
   updateDropdownButtonText("conf-filter", "Select conference(s)");
   updateDropdownButtonText("role-filter", "Select role(s)");
+  updateDropdownButtonText("year-filter", "Select year(s)");
 
   filteredData = [...projectionData];
   buildTable(currentView);
