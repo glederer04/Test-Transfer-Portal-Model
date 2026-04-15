@@ -656,6 +656,199 @@ tr.shown td.details-control::before {
     font-size: 1.6rem;
   }
 }
+
+/* destination detail card */
+.destination-card-wrap {
+  padding: 14px 18px;
+  background: #f8fbff;
+}
+
+.destination-card {
+  background: #ffffff;
+  border: 1px solid #d9e6f2;
+  border-radius: 16px;
+  padding: 18px 20px;
+  box-shadow: 0 2px 10px rgba(19, 41, 75, 0.06);
+  max-width: 950px;
+  margin: 0 auto;
+}
+
+.destination-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.destination-card-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #13294b;
+  margin-bottom: 4px;
+}
+
+.destination-card-subtitle {
+  font-size: 0.92rem;
+  color: #5b6573;
+}
+
+.destination-card-score {
+  text-align: right;
+}
+
+.destination-card-tier {
+  font-size: 1.65rem;
+  font-weight: 800;
+  color: #111;
+  line-height: 1.1;
+  margin-bottom: 6px;
+}
+
+.destination-card-prob {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #4b9cd3;
+}
+
+.destination-card-section {
+  margin-top: 14px;
+}
+
+.destination-section-label {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #13294b;
+  margin-bottom: 10px;
+}
+
+.destination-tier-grid {
+  display: grid;
+  gap: 14px;
+  margin-top: 10px;
+}
+
+.destination-tier-box {
+  background: #f6f9fc;
+  border: 1px solid #e2e8ef;
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+.destination-tier-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.destination-tier-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #13294b;
+}
+
+.destination-tier-value {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #111;
+}
+
+.destination-ci-wrap {
+  position: relative;
+  width: 100%;
+  height: 28px;
+}
+
+.destination-ci-base {
+  position: absolute;
+  top: 12px;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: #d9dee3;
+  border-radius: 999px;
+}
+
+.destination-ci-range {
+  position: absolute;
+  top: 10px;
+  height: 8px;
+  background: #8ec5ea;
+  border-radius: 999px;
+}
+
+.destination-ci-dot {
+  position: absolute;
+  top: 6px;
+  width: 16px;
+  height: 16px;
+  background: #13294b;
+  border-radius: 50%;
+  transform: translateX(-50%);
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.18);
+}
+
+.destination-ci-label-row {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 4px;
+  font-size: 0.8rem;
+  color: #5f6b78;
+}
+
+.destination-tier-meta {
+  margin-top: 8px;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 0.84rem;
+  color: #4f5a67;
+}
+
+.destination-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.destination-summary-box {
+  background: #f6f9fc;
+  border: 1px solid #e2e8ef;
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+.destination-summary-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #5b6573;
+  margin-bottom: 5px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.destination-summary-value {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #111;
+}
+
+@media (max-width: 700px) {
+  .destination-card-score {
+    text-align: left;
+  }
+
+  .destination-card-tier {
+    font-size: 1.35rem;
+  }
+}
 </style>
 
 Use the buttons below to switch between projection views.
@@ -796,7 +989,14 @@ const customColumnTitles = {
   pred_BPM_upper_mid_hi: "Upper Mid CI High",
   pred_BPM_high: "Projected BPM (High Major)",
   pred_BPM_high_lo: "High Major CI Low",
-  pred_BPM_high_hi: "High Major CI High"
+  pred_BPM_high_hi: "High Major CI High",
+  
+  dest_prob_high_lo: "High Major Prob Low",
+  dest_prob_high_hi: "High Major Prob High",
+  dest_prob_upper_mid_lo: "Upper Mid Prob Low",
+  dest_prob_upper_mid_hi: "Upper Mid Prob High",
+  dest_prob_low_lo: "Low Major Prob Low",
+  dest_prob_low_hi: "Low Major Prob High"
 };
 
 function prettifyLabel(col) {
@@ -1029,6 +1229,139 @@ function formatReturnCard(row) {
   `;
 }
 
+function prettifyDestinationTier(tier) {
+  if (!tier) return "Unknown";
+
+  const t = String(tier).toLowerCase().trim();
+
+  if (t === "high" || t === "high_major" || t === "high major") return "High Major";
+  if (t === "upper_mid" || t === "upper mid" || t === "upper-mid") return "Upper Mid";
+  if (t === "low" || t === "low_major" || t === "low major") return "Low Major";
+
+  return String(tier)
+    .replaceAll("_", " ")
+    .replace(/\b\w/g, c => c.toUpperCase());
+}
+
+function formatDestinationTierRow(label, prob, lo, hi) {
+  const probVal = clamp(toNumber(prob), 0, 1);
+  const loVal = clamp(toNumber(lo), 0, 1);
+  const hiVal = clamp(toNumber(hi), 0, 1);
+
+  const useCI = hi !== undefined && hi !== null && hi !== "" &&
+                lo !== undefined && lo !== null && lo !== "";
+
+  const rangeLeft = probToLeft(useCI ? loVal : probVal);
+  const rangeWidth = `${Math.max(((useCI ? hiVal : probVal) - (useCI ? loVal : probVal)) * 100, useCI ? 1.5 : 0)}%`;
+  const dotLeft = probToLeft(probVal);
+
+  return `
+    <div class="destination-tier-box">
+      <div class="destination-tier-header">
+        <div class="destination-tier-name">${label}</div>
+        <div class="destination-tier-value">${pct1(probVal)}</div>
+      </div>
+
+      <div class="destination-ci-wrap">
+        <div class="destination-ci-base"></div>
+        <div class="destination-ci-range" style="left:${rangeLeft}; width:${rangeWidth};"></div>
+        <div class="destination-ci-dot" style="left:${dotLeft};"></div>
+      </div>
+
+      <div class="destination-ci-label-row">
+        <span>0%</span>
+        <span>50%</span>
+        <span>100%</span>
+      </div>
+
+      <div class="destination-tier-meta">
+        <span>Interval: ${useCI ? `(${pct1(loVal)}, ${pct1(hiVal)})` : "Point estimate only"}</span>
+        <span>${label}: ${pct1(probVal)}</span>
+      </div>
+    </div>
+  `;
+}
+
+function formatDestinationCard(row) {
+  const highProb = clamp(toNumber(row.dest_prob_high_num), 0, 1);
+  const upperMidProb = clamp(toNumber(row.dest_prob_upper_mid_num), 0, 1);
+  const lowProb = clamp(toNumber(row.dest_prob_low_num), 0, 1);
+
+  const predictedTier =
+    row.pred_destination_tier && String(row.pred_destination_tier).trim() !== ""
+      ? prettifyDestinationTier(row.pred_destination_tier)
+      : prettifyDestinationTier(
+          highProb >= upperMidProb && highProb >= lowProb
+            ? "high"
+            : upperMidProb >= lowProb
+              ? "upper_mid"
+              : "low"
+        );
+
+  let predictedTierProb = lowProb;
+  if (predictedTier === "High Major") predictedTierProb = highProb;
+  if (predictedTier === "Upper Mid") predictedTierProb = upperMidProb;
+  if (predictedTier === "Low Major") predictedTierProb = lowProb;
+
+  return `
+    <div class="destination-card-wrap">
+      <div class="destination-card">
+        <div class="destination-card-top">
+          <div>
+            <div class="destination-card-title">Destination Tier Projection Summary</div>
+            <div class="destination-card-subtitle">
+              Visual snapshot of predicted landing tier and probability ranges across all three destination levels
+            </div>
+          </div>
+
+          <div class="destination-card-score">
+            <div class="destination-card-tier">${predictedTier}</div>
+            <div class="destination-card-prob">${pct1(predictedTierProb)}</div>
+          </div>
+        </div>
+
+        <div class="destination-card-section">
+          <div class="destination-section-label">Tier Probabilities</div>
+          <div class="destination-tier-grid">
+            ${formatDestinationTierRow(
+              "High Major",
+              row.dest_prob_high_num,
+              row.dest_prob_high_lo_num,
+              row.dest_prob_high_hi_num
+            )}
+
+            ${formatDestinationTierRow(
+              "Upper Mid",
+              row.dest_prob_upper_mid_num,
+              row.dest_prob_upper_mid_lo_num,
+              row.dest_prob_upper_mid_hi_num
+            )}
+
+            ${formatDestinationTierRow(
+              "Low Major",
+              row.dest_prob_low_num,
+              row.dest_prob_low_lo_num,
+              row.dest_prob_low_hi_num
+            )}
+          </div>
+        </div>
+
+        <div class="destination-summary-grid">
+          <div class="destination-summary-box">
+            <div class="destination-summary-label">Predicted Tier</div>
+            <div class="destination-summary-value">${predictedTier}</div>
+          </div>
+
+          <div class="destination-summary-box">
+            <div class="destination-summary-label">Top Tier Probability</div>
+            <div class="destination-summary-value">${pct1(predictedTierProb)}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 function enrichData(data) {
   const baseData = data.map(row => {
     const pts = toNumber(row.PTS);
@@ -1083,6 +1416,42 @@ function enrichData(data) {
       row.return_prob_hi !== undefined && row.return_prob_hi !== ""
         ? parseProbability(row.return_prob_hi)
         : leaveDisplay;
+        
+    // ---- destination tier ----
+    const destProbHigh = parseProbability(row.dest_prob_high);
+    const destProbUpperMid = parseProbability(row.dest_prob_upper_mid);
+    const destProbLow = parseProbability(row.dest_prob_low);
+
+    // optional CI columns if they exist in dataset
+    const destProbHighLo =
+      row.dest_prob_high_lo !== undefined && row.dest_prob_high_lo !== ""
+        ? parseProbability(row.dest_prob_high_lo)
+        : "";
+
+    const destProbHighHi =
+      row.dest_prob_high_hi !== undefined && row.dest_prob_high_hi !== ""
+        ? parseProbability(row.dest_prob_high_hi)
+        : "";
+
+    const destProbUpperMidLo =
+      row.dest_prob_upper_mid_lo !== undefined && row.dest_prob_upper_mid_lo !== ""
+        ? parseProbability(row.dest_prob_upper_mid_lo)
+        : "";
+
+    const destProbUpperMidHi =
+      row.dest_prob_upper_mid_hi !== undefined && row.dest_prob_upper_mid_hi !== ""
+        ? parseProbability(row.dest_prob_upper_mid_hi)
+        : "";
+
+    const destProbLowLo =
+      row.dest_prob_low_lo !== undefined && row.dest_prob_low_lo !== ""
+        ? parseProbability(row.dest_prob_low_lo)
+        : "";
+
+    const destProbLowHi =
+      row.dest_prob_low_hi !== undefined && row.dest_prob_low_hi !== ""
+        ? parseProbability(row.dest_prob_low_hi)
+        : "";
 
     return {
       ...row,
@@ -1097,6 +1466,17 @@ function enrichData(data) {
       leave_display_num: leaveDisplay,
       leave_prob_lo_num: leaveLo,
       leave_prob_hi_num: leaveHi
+      
+      dest_prob_high_num: destProbHigh,
+      dest_prob_upper_mid_num: destProbUpperMid,
+      dest_prob_low_num: destProbLow,
+
+      dest_prob_high_lo_num: destProbHighLo,
+      dest_prob_high_hi_num: destProbHighHi,
+      dest_prob_upper_mid_lo_num: destProbUpperMidLo,
+      dest_prob_upper_mid_hi_num: destProbUpperMidHi,
+      dest_prob_low_lo_num: destProbLowLo,
+      dest_prob_low_hi_num: destProbLowHi
     };
   });
 
@@ -1490,6 +1870,10 @@ function formatRowDetails(row, viewName) {
 
   if (viewName === "return") {
     return formatReturnCard(row);
+  }
+
+  if (viewName === "destination") {
+    return formatDestinationCard(row);
   }
 
   const detailCols = detailColumns[viewName] || [];
