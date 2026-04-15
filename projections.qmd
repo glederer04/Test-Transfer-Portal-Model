@@ -1280,8 +1280,26 @@ function renderFilterUI() {
 
   const teams = uniqueSortedValues(projectionData, "team");
   const confs = uniqueSortedValues(projectionData, "conf");
-  const roles = uniqueSortedValues(projectionData, "Role");
-  const years = uniqueSortedValues(projectionData, "class");
+
+  const roleOrder = [
+    "Pure PG",
+    "Scoring PG",
+    "Combo G",
+    "Wing G",
+    "Wing F",
+    "Stretch 4",
+    "PF/C"
+  ];
+
+  const yearOrder = [
+    "Fr",
+    "So",
+    "Jr",
+    "Sr"
+  ];
+
+  const roles = orderedValues(projectionData, "Role", roleOrder);
+  const years = orderedValues(projectionData, "class", yearOrder);
 
   filtersContainer.innerHTML = `
     <div class="filter-toolbar-top">
@@ -1404,6 +1422,19 @@ function uniqueSortedValues(data, key) {
   return [...new Set(
     data.map(row => row[key]).filter(v => v !== null && v !== undefined && String(v).trim() !== "")
   )].sort((a, b) => String(a).localeCompare(String(b)));
+}
+
+function orderedValues(data, key, preferredOrder) {
+  const values = [...new Set(
+    data.map(row => row[key]).filter(v => v !== null && v !== undefined && String(v).trim() !== "")
+  )];
+
+  const preferredPresent = preferredOrder.filter(item => values.includes(item));
+  const remaining = values
+    .filter(item => !preferredOrder.includes(item))
+    .sort((a, b) => String(a).localeCompare(String(b)));
+
+  return [...preferredPresent, ...remaining];
 }
 
 function applyFilters() {
