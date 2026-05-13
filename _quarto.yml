@@ -17,7 +17,7 @@ website:
         file: index.qmd
       - text: Projections1
         file: projections.qmd
-  favicon: favicon.ico
+  favicon: favicon2.ico
 
 format:
   html:
