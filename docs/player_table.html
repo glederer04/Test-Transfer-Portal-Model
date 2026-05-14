@@ -538,8 +538,12 @@ tr.shown td.details-control::before {
 </style>
 <div class="table-shell">
 <div class="table-toolbar">
-<pre><code>&lt;button id="toggle-filters-btn" class="filter-toggle-btn"&gt;Filters&lt;/button&gt;
-&lt;div class="filter-help-text"&gt;Choose at least one filter to load the player table.&lt;/div&gt;</code></pre>
+<button id="toggle-filters-btn" class="filter-toggle-btn">
+Filters
+</button>
+<div class="filter-help-text">
+Choose at least one filter to load the player table.
+</div>
 </div>
 <div id="filter-panel" class="filter-panel show">
 
@@ -548,10 +552,12 @@ tr.shown td.details-control::before {
 Select at least one filter, then apply.
 </div>
 <div id="player-table-wrapper">
-<pre><code>&lt;table id="player-table" class="display nowrap"&gt;
-  &lt;thead&gt;&lt;/thead&gt;
-  &lt;tbody&gt;&lt;/tbody&gt;
-&lt;/table&gt;</code></pre>
+<table id="player-table" class="display nowrap">
+<thead>
+</thead>
+<tbody>
+</tbody>
+</table>
 </div>
 </div>
 <script>
@@ -577,11 +583,7 @@ const tableColumns = [
   "TS.",
   "eFG.",
   "AST_TOV",
-  "PORPAG",
-  "transfer_show",
-  "return_show",
-  "destination_show",
-  "bpm_show"
+  "PORPAG"
 ];
 
 const columnTitles = {
@@ -602,14 +604,8 @@ const columnTitles = {
   "TS.": "TS%",
   "eFG.": "eFG%",
   AST_TOV: "AST/TO",
-  PORPAG: "PORPAG",
-  transfer_show: "Transfer",
-  return_show: "Return",
-  destination_show: "Destination",
-  bpm_show: "Proj BPM"
+  PORPAG: "PORPAG"
 };
-
-const projectionCols = ["transfer_show", "return_show", "destination_show", "bpm_show"];
 
 function toNumber(val) {
   if (val === null || val === undefined || val === "") return 0;
@@ -1201,19 +1197,13 @@ function buildTable(dataToUse) {
       title: columnTitles[col] || col,
       data: col,
       defaultContent: "",
-      className: projectionCols.includes(col) ? "projection-highlight-col" : "",
+      className: "",
       render: function(data, type, row) {
         if (["MP", "PTS", "REB", "AST", "BPM", "ORTG", "USG", "TS.", "eFG.", "AST_TOV", "PORPAG"].includes(col)) {
           if (type === "sort" || type === "type") return toNumber(data);
           return fmt1(data);
         }
         if (type !== "display" && type !== "filter") return data;
-        if (col === "destination_show") {
-          return row.destination_show || getPrimaryDestination(row).tier;
-        }
-        if (col === "bpm_show") {
-          return row.bpm_show || fmtBPM(getPrimaryBpm(row).value);
-        }
         return data;
       }
     }))

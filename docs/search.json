@@ -4,7 +4,7 @@
     "href": "player_table.html",
     "title": "Player Table",
     "section": "",
-    "text": "&lt;button id=\"toggle-filters-btn\" class=\"filter-toggle-btn\"&gt;Filters&lt;/button&gt;\n&lt;div class=\"filter-help-text\"&gt;Choose at least one filter to load the player table.&lt;/div&gt;\n\n\n\n\n\nSelect at least one filter, then apply.\n\n\n&lt;table id=\"player-table\" class=\"display nowrap\"&gt;\n  &lt;thead&gt;&lt;/thead&gt;\n  &lt;tbody&gt;&lt;/tbody&gt;\n&lt;/table&gt;"
+    "text": "Filters\n\n\nChoose at least one filter to load the player table.\n\n\n\n\n\n\nSelect at least one filter, then apply."
   },
   {
     "objectID": "index.html",
