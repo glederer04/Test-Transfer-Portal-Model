@@ -1,0 +1,1150 @@
+---
+title: "Player Table"
+format:
+  html:
+    page-layout: full
+    toc: false
+    include-in-header:
+      text: |
+        <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
+        <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.dataTables.min.css">
+
+        <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+        <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+        <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+---
+
+<style>
+.table-shell {
+  width: 100%;
+  max-width: 100%;
+  color: #111;
+}
+
+.table-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.filter-toggle-btn,
+.filter-action-btn {
+  border: none;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.filter-toggle-btn {
+  background: #13294b;
+  color: #fff;
+}
+
+.filter-toggle-btn:hover,
+.filter-action-btn:hover {
+  opacity: 0.9;
+}
+
+.filter-help-text,
+.filter-status {
+  font-weight: 600;
+  color: #333;
+}
+
+.filter-status {
+  margin: 10px 0 14px;
+}
+
+.filter-panel {
+  background: #f8f9fa;
+  border: 1px solid #d9dee3;
+  border-radius: 12px;
+  padding: 16px;
+  margin: 8px 0 16px;
+  display: none;
+}
+
+.filter-panel.show {
+  display: block;
+}
+
+.filter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+  align-items: start;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.filter-group label {
+  font-weight: 700;
+  color: #222;
+}
+
+.filter-group input {
+  padding: 9px 10px;
+  border: 1px solid #c9ced6;
+  border-radius: 8px;
+  background: #fff;
+  color: #111;
+}
+
+.filter-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+
+.apply-btn {
+  background: #4b9cd3;
+  color: #000;
+}
+
+.reset-btn {
+  background: #dfe3e8;
+  color: #111;
+}
+
+.checkbox-dropdown {
+  position: relative;
+  width: 100%;
+}
+
+.checkbox-dropdown-btn {
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border: 1px solid #c9ced6;
+  border-radius: 8px;
+  background: #fff;
+  color: #111;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+.checkbox-dropdown-btn:hover {
+  background: #f5f7fa;
+}
+
+.checkbox-dropdown-menu {
+  display: none;
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  width: 100%;
+  background: #fff;
+  border: 1px solid #c9ced6;
+  border-radius: 10px;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.12);
+  z-index: 1000;
+  padding: 10px;
+}
+
+.checkbox-dropdown-menu.show {
+  display: block;
+}
+
+.checkbox-dropdown-search {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #c9ced6;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  font-size: 0.92rem;
+}
+
+.checkbox-actions-mini {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.checkbox-mini-btn {
+  border: 1px solid #c9ced6;
+  background: #f8f9fa;
+  color: #111;
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.checkbox-options {
+  max-height: 220px;
+  overflow-y: auto;
+  border-top: 1px solid #eef1f4;
+  padding-top: 8px;
+}
+
+.checkbox-options.team-options {
+  max-height: 320px;
+}
+
+.checkbox-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 2px;
+  font-size: 0.92rem;
+}
+
+.checkbox-option input {
+  margin: 0;
+}
+
+#player-table-wrapper {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  margin-top: 10px;
+  display: none;
+}
+
+#player-table {
+  width: 100% !important;
+  border-collapse: collapse !important;
+  color: #111 !important;
+  background: #fff !important;
+}
+
+#player-table thead th {
+  color: #111 !important;
+  background: #e9ecef !important;
+  border-bottom: 1px solid #ccc !important;
+  white-space: nowrap;
+  font-weight: 700;
+}
+
+#player-table tbody td {
+  color: #111 !important;
+  background: #fff !important;
+  border-bottom: 1px solid #eee !important;
+  white-space: nowrap;
+}
+
+table.dataTable thead th,
+table.dataTable tbody td {
+  white-space: nowrap;
+}
+
+.dataTables_wrapper {
+  color: #111 !important;
+  width: 100% !important;
+}
+
+.dataTables_wrapper .dataTables_filter input,
+.dataTables_wrapper .dataTables_length select {
+  color: #111 !important;
+  background: #fff !important;
+}
+
+.projection-highlight-col {
+  background: #f4faff !important;
+  font-weight: 700;
+}
+
+#player-table thead th.projection-highlight-col {
+  background: #d9ecfb !important;
+}
+
+td.details-control {
+  text-align: center;
+  cursor: pointer;
+  font-weight: 800;
+  color: #13294b;
+}
+
+td.details-control::before {
+  content: "+";
+  font-size: 16px;
+}
+
+tr.shown td.details-control::before {
+  content: "-";
+  font-size: 16px;
+}
+
+.model-card-wrap {
+  padding: 14px 18px;
+  background: #f8fbff;
+}
+
+.model-card {
+  background: #fff;
+  border: 1px solid #d9e6f2;
+  border-radius: 16px;
+  padding: 18px 20px;
+  box-shadow: 0 2px 10px rgba(19, 41, 75, 0.06);
+  max-width: 1050px;
+  margin: 0 auto;
+}
+
+.model-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.model-card-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #13294b;
+  margin-bottom: 4px;
+}
+
+.model-card-subtitle {
+  font-size: 0.92rem;
+  color: #5b6573;
+}
+
+.model-pill-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.model-pill {
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: #e8f4fb;
+  color: #13294b;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.model-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 12px;
+}
+
+.model-box {
+  background: #f6f9fc;
+  border: 1px solid #e2e8ef;
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+.model-box-label {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #5b6573;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.model-box-value {
+  font-size: 1.35rem;
+  line-height: 1.1;
+  font-weight: 850;
+  color: #111;
+  margin-bottom: 8px;
+}
+
+.model-box-note {
+  font-size: 0.84rem;
+  color: #4f5a67;
+}
+
+.mini-track {
+  position: relative;
+  width: 100%;
+  height: 10px;
+  background: #d9dee3;
+  border-radius: 999px;
+  overflow: hidden;
+  margin: 8px 0 6px;
+}
+
+.mini-fill {
+  height: 100%;
+  background: linear-gradient(to right, #4b9cd3 0%, #13294b 100%);
+  border-radius: 999px;
+}
+
+.tier-row {
+  display: grid;
+  grid-template-columns: 82px 1fr 48px;
+  gap: 8px;
+  align-items: center;
+  font-size: 0.84rem;
+  color: #3d4854;
+  margin-top: 7px;
+}
+
+.tier-name {
+  font-weight: 700;
+  color: #13294b;
+}
+
+.bpm-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 0.86rem;
+  color: #3d4854;
+  border-top: 1px solid #e2e8ef;
+  padding-top: 7px;
+  margin-top: 7px;
+}
+
+@media (max-width: 768px) {
+  .checkbox-dropdown-menu {
+    position: static;
+    margin-top: 8px;
+    box-shadow: none;
+  }
+}
+</style>
+
+<div class="table-shell">
+  <div class="table-toolbar">
+    <button id="toggle-filters-btn" class="filter-toggle-btn">Filters</button>
+    <div class="filter-help-text">Choose at least one filter to load the player table.</div>
+  </div>
+
+  <div id="filter-panel" class="filter-panel show"></div>
+  <div id="filter-status" class="filter-status">Select at least one filter, then apply.</div>
+
+  <div id="player-table-wrapper">
+    <table id="player-table" class="display nowrap">
+      <thead></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+let playerData = [];
+let filteredPlayers = [];
+let playerTable = null;
+
+const tableColumns = [
+  "player",
+  "team",
+  "conf",
+  "class",
+  "Role",
+  "height",
+  "GP",
+  "MP",
+  "PTS",
+  "REB",
+  "AST",
+  "BPM",
+  "ORTG",
+  "USG",
+  "TS.",
+  "eFG.",
+  "AST_TOV",
+  "PORPAG",
+  "transfer_show",
+  "return_show",
+  "destination_show",
+  "bpm_show"
+];
+
+const columnTitles = {
+  player: "Player",
+  team: "Team",
+  conf: "Conf",
+  class: "Year",
+  Role: "Role",
+  height: "Ht",
+  GP: "GP",
+  MP: "MPG",
+  PTS: "PTS",
+  REB: "REB",
+  AST: "AST",
+  BPM: "BPM",
+  ORTG: "ORTG",
+  USG: "USG%",
+  "TS.": "TS%",
+  "eFG.": "eFG%",
+  AST_TOV: "AST/TO",
+  PORPAG: "PORPAG",
+  transfer_show: "Transfer",
+  return_show: "Return",
+  destination_show: "Destination",
+  bpm_show: "Proj BPM"
+};
+
+const projectionCols = ["transfer_show", "return_show", "destination_show", "bpm_show"];
+
+function toNumber(val) {
+  if (val === null || val === undefined || val === "") return 0;
+  const cleaned = String(val).replace(/%/g, "").trim();
+  const num = parseFloat(cleaned);
+  return isNaN(num) ? 0 : num;
+}
+
+function parseOptionalNumber(val) {
+  if (val === null || val === undefined || String(val).trim() === "") return null;
+  const cleaned = String(val).replace(/%/g, "").trim();
+  const num = parseFloat(cleaned);
+  return isNaN(num) ? null : num;
+}
+
+function clamp(value, min, max) {
+  return Math.min(Math.max(value, min), max);
+}
+
+function parseProbability(val) {
+  if (val === null || val === undefined || val === "") return 0;
+  const str = String(val).trim();
+  if (str.includes("%")) return clamp(toNumber(str) / 100, 0, 1);
+  const num = toNumber(str);
+  if (num > 1) return clamp(num / 100, 0, 1);
+  return clamp(num, 0, 1);
+}
+
+function pct1(value) {
+  return `${(clamp(toNumber(value), 0, 1) * 100).toFixed(1)}%`;
+}
+
+function fmt1(value) {
+  const num = parseFloat(value);
+  if (isNaN(num)) return "";
+  return num.toFixed(1);
+}
+
+function fmtBPM(value) {
+  const num = parseFloat(value);
+  if (isNaN(num)) return "-";
+  return num.toFixed(1);
+}
+
+function prettifyDestinationTier(tier) {
+  if (!tier) return "Unknown";
+  const t = String(tier).toLowerCase().trim();
+  if (t === "high" || t === "high_major" || t === "high major") return "High Major";
+  if (t === "upper_mid" || t === "upper mid" || t === "upper-mid") return "Upper Mid";
+  if (t === "low" || t === "low_major" || t === "low major") return "Low Major";
+  return String(tier).replaceAll("_", " ").replace(/\b\w/g, c => c.toUpperCase());
+}
+
+function modelRiskLabel(prob) {
+  if (prob >= 0.7) return "High";
+  if (prob >= 0.4) return "Moderate";
+  return "Low";
+}
+
+function getPrimaryDestination(row) {
+  const high = row.dest_prob_high_num;
+  const upper = row.dest_prob_upper_mid_num;
+  const low = row.dest_prob_low_num;
+  const predicted = row.pred_destination_tier && String(row.pred_destination_tier).trim() !== ""
+    ? prettifyDestinationTier(row.pred_destination_tier)
+    : prettifyDestinationTier(high >= upper && high >= low ? "high" : upper >= low ? "upper_mid" : "low");
+
+  let prob = low;
+  if (predicted === "High Major") prob = high;
+  if (predicted === "Upper Mid") prob = upper;
+
+  return { tier: predicted, prob };
+}
+
+function getPrimaryBpm(row) {
+  const destination = getPrimaryDestination(row).tier;
+  if (destination === "High Major") return { label: "High Major", value: row.pred_BPM_high };
+  if (destination === "Upper Mid") return { label: "Upper Mid", value: row.pred_BPM_upper_mid };
+  return { label: "Low Major", value: row.pred_BPM_low };
+}
+
+function enrichData(data) {
+  return data.map(row => {
+    const transfer = row.transfer_show !== undefined && row.transfer_show !== ""
+      ? parseProbability(row.transfer_show)
+      : parseProbability(row.transfer_prob_mean || row.pred_transfer);
+
+    const returnProb = row.return_show !== undefined && row.return_show !== ""
+      ? parseProbability(row.return_show)
+      : parseProbability(row.pred_return);
+
+    const leave = row.pred_leave !== undefined && row.pred_leave !== ""
+      ? parseProbability(row.pred_leave)
+      : clamp(1 - returnProb, 0, 1);
+
+    const destHigh = parseProbability(row.dest_prob_high);
+    const destUpper = parseProbability(row.dest_prob_upper_mid);
+    const destLow = parseProbability(row.dest_prob_low);
+
+    const enriched = {
+      ...row,
+      transfer_num: transfer,
+      return_num: returnProb,
+      leave_num: leave,
+      dest_prob_high_num: destHigh,
+      dest_prob_upper_mid_num: destUpper,
+      dest_prob_low_num: destLow,
+      primary_bpm_num: parseFloat(getPrimaryBpm({
+        ...row,
+        dest_prob_high_num: destHigh,
+        dest_prob_upper_mid_num: destUpper,
+        dest_prob_low_num: destLow
+      }).value)
+    };
+
+    if (!enriched.destination_show || String(enriched.destination_show).trim() === "") {
+      const primaryDest = getPrimaryDestination(enriched);
+      enriched.destination_show = `${primaryDest.tier} (${pct1(primaryDest.prob)})`;
+    }
+
+    if (!enriched.bpm_show || String(enriched.bpm_show).trim() === "") {
+      enriched.bpm_show = fmtBPM(enriched.primary_bpm_num);
+    }
+
+    return enriched;
+  });
+}
+
+function getCheckedValues(filterName) {
+  return Array.from(document.querySelectorAll(`input[name="${filterName}"]:checked`))
+    .map(input => input.value);
+}
+
+function uniqueSortedValues(data, key) {
+  return [...new Set(
+    data.map(row => row[key]).filter(v => v !== null && v !== undefined && String(v).trim() !== "")
+  )].sort((a, b) => String(a).localeCompare(String(b)));
+}
+
+function orderedValues(data, key, preferredOrder) {
+  const values = [...new Set(
+    data.map(row => row[key]).filter(v => v !== null && v !== undefined && String(v).trim() !== "")
+  )];
+
+  const preferredPresent = preferredOrder.filter(item => values.includes(item));
+  const remaining = values
+    .filter(item => !preferredOrder.includes(item))
+    .sort((a, b) => String(a).localeCompare(String(b)));
+
+  return [...preferredPresent, ...remaining];
+}
+
+function createCheckboxDropdown({
+  id,
+  label,
+  values,
+  buttonText,
+  searchPlaceholder = "Search...",
+  large = false
+}) {
+  const optionsHtml = values.map(value => `
+    <label class="checkbox-option" data-value="${String(value).toLowerCase()}">
+      <input type="checkbox" name="${id}" value="${value}">
+      <span>${value}</span>
+    </label>
+  `).join("");
+
+  return `
+    <div class="filter-group">
+      <label>${label}</label>
+      <div class="checkbox-dropdown" id="${id}-dropdown">
+        <button type="button" class="checkbox-dropdown-btn" id="${id}-btn">${buttonText}</button>
+        <div class="checkbox-dropdown-menu" id="${id}-menu">
+          <input type="text" class="checkbox-dropdown-search" id="${id}-search" placeholder="${searchPlaceholder}">
+          <div class="checkbox-actions-mini">
+            <button type="button" class="checkbox-mini-btn" data-action="select-all" data-target="${id}">Select All</button>
+            <button type="button" class="checkbox-mini-btn" data-action="clear-all" data-target="${id}">Clear</button>
+          </div>
+          <div class="checkbox-options ${large ? "team-options" : ""}" id="${id}-options">
+            ${optionsHtml}
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function updateDropdownButtonText(filterName, defaultText) {
+  const checked = getCheckedValues(filterName);
+  const btn = document.getElementById(`${filterName}-btn`);
+  if (!btn) return;
+  if (checked.length === 0) btn.textContent = defaultText;
+  else if (checked.length <= 2) btn.textContent = checked.join(", ");
+  else btn.textContent = `${checked.length} selected`;
+}
+
+function setupCheckboxDropdown(filterName, defaultText) {
+  const btn = document.getElementById(`${filterName}-btn`);
+  const menu = document.getElementById(`${filterName}-menu`);
+  const search = document.getElementById(`${filterName}-search`);
+  const optionsWrap = document.getElementById(`${filterName}-options`);
+
+  btn.addEventListener("click", function(e) {
+    e.stopPropagation();
+    document.querySelectorAll(".checkbox-dropdown-menu.show").forEach(openMenu => {
+      if (openMenu !== menu) openMenu.classList.remove("show");
+    });
+    menu.classList.toggle("show");
+  });
+
+  search.addEventListener("input", function() {
+    const term = this.value.toLowerCase().trim();
+    optionsWrap.querySelectorAll(".checkbox-option").forEach(option => {
+      const value = option.getAttribute("data-value");
+      option.style.display = value.includes(term) ? "flex" : "none";
+    });
+  });
+
+  optionsWrap.querySelectorAll(`input[name="${filterName}"]`).forEach(input => {
+    input.addEventListener("change", function() {
+      updateDropdownButtonText(filterName, defaultText);
+    });
+  });
+}
+
+function numericFilterIds() {
+  return [
+    "gp-min-filter",
+    "pts-min-filter",
+    "mp-min-filter",
+    "bpm-min-filter",
+    "transfer-min-filter",
+    "leave-min-filter",
+    "dest-prob-min-filter",
+    "proj-bpm-min-filter",
+    "proj-bpm-max-filter"
+  ];
+}
+
+function hasAtLeastOneFilter() {
+  const selectedCounts = [
+    getCheckedValues("team-filter").length,
+    getCheckedValues("conf-filter").length,
+    getCheckedValues("role-filter").length,
+    getCheckedValues("year-filter").length,
+    getCheckedValues("destination-filter").length
+  ];
+
+  const hasCheckbox = selectedCounts.some(count => count > 0);
+  const hasNumeric = numericFilterIds().some(id => {
+    const el = document.getElementById(id);
+    return el && String(el.value).trim() !== "";
+  });
+
+  return hasCheckbox || hasNumeric;
+}
+
+function renderFilterUI() {
+  const filterPanel = document.getElementById("filter-panel");
+  const teams = uniqueSortedValues(playerData, "team");
+  const confs = uniqueSortedValues(playerData, "conf");
+  const roles = orderedValues(playerData, "Role", ["Pure PG", "Scoring PG", "Combo G", "Wing G", "Wing F", "Stretch 4", "PF/C"]);
+  const years = orderedValues(playerData, "class", ["Fr", "So", "Jr", "Sr"]);
+  const destinations = orderedValues(
+    playerData.map(row => ({ tier: getPrimaryDestination(row).tier })),
+    "tier",
+    ["High Major", "Upper Mid", "Low Major"]
+  );
+
+  filterPanel.innerHTML = `
+    <div class="filter-grid">
+      ${createCheckboxDropdown({
+        id: "team-filter",
+        label: "Team",
+        values: teams,
+        buttonText: "Select team(s)",
+        searchPlaceholder: "Search teams...",
+        large: true
+      })}
+
+      ${createCheckboxDropdown({
+        id: "conf-filter",
+        label: "Conference",
+        values: confs,
+        buttonText: "Select conference(s)",
+        searchPlaceholder: "Search conferences..."
+      })}
+
+      ${createCheckboxDropdown({
+        id: "role-filter",
+        label: "Role",
+        values: roles,
+        buttonText: "Select role(s)",
+        searchPlaceholder: "Search roles..."
+      })}
+
+      ${createCheckboxDropdown({
+        id: "year-filter",
+        label: "Year",
+        values: years,
+        buttonText: "Select year(s)",
+        searchPlaceholder: "Search years..."
+      })}
+
+      ${createCheckboxDropdown({
+        id: "destination-filter",
+        label: "Projected Destination",
+        values: destinations,
+        buttonText: "Select tier(s)",
+        searchPlaceholder: "Search tiers..."
+      })}
+
+      <div class="filter-group">
+        <label for="gp-min-filter">Min GP</label>
+        <input type="number" id="gp-min-filter" min="0" placeholder="e.g. 10">
+      </div>
+
+      <div class="filter-group">
+        <label for="pts-min-filter">Min PTS</label>
+        <input type="number" id="pts-min-filter" min="0" step="0.1" placeholder="e.g. 8">
+      </div>
+
+      <div class="filter-group">
+        <label for="mp-min-filter">Min MP</label>
+        <input type="number" id="mp-min-filter" min="0" step="0.1" placeholder="e.g. 15">
+      </div>
+
+      <div class="filter-group">
+        <label for="bpm-min-filter">Min BPM</label>
+        <input type="number" id="bpm-min-filter" step="0.1" placeholder="e.g. 2">
+      </div>
+
+      <div class="filter-group">
+        <label for="transfer-min-filter">Min Transfer %</label>
+        <input type="number" id="transfer-min-filter" min="0" max="100" step="1" placeholder="e.g. 50">
+      </div>
+
+      <div class="filter-group">
+        <label for="leave-min-filter">Min Leave %</label>
+        <input type="number" id="leave-min-filter" min="0" max="100" step="1" placeholder="e.g. 50">
+      </div>
+
+      <div class="filter-group">
+        <label for="dest-prob-min-filter">Min Destination Confidence %</label>
+        <input type="number" id="dest-prob-min-filter" min="0" max="100" step="1" placeholder="e.g. 45">
+      </div>
+
+      <div class="filter-group">
+        <label for="proj-bpm-min-filter">Min Projected BPM</label>
+        <input type="number" id="proj-bpm-min-filter" step="0.1" placeholder="e.g. 1">
+      </div>
+
+      <div class="filter-group">
+        <label for="proj-bpm-max-filter">Max Projected BPM</label>
+        <input type="number" id="proj-bpm-max-filter" step="0.1" placeholder="e.g. 8">
+      </div>
+    </div>
+
+    <div class="filter-actions">
+      <button id="apply-filters-btn" class="filter-action-btn apply-btn">Apply Filters</button>
+      <button id="reset-filters-btn" class="filter-action-btn reset-btn">Reset Filters</button>
+    </div>
+  `;
+
+  [
+    ["team-filter", "Select team(s)"],
+    ["conf-filter", "Select conference(s)"],
+    ["role-filter", "Select role(s)"],
+    ["year-filter", "Select year(s)"],
+    ["destination-filter", "Select tier(s)"]
+  ].forEach(([id, label]) => setupCheckboxDropdown(id, label));
+
+  document.querySelectorAll(".checkbox-mini-btn").forEach(btn => {
+    btn.addEventListener("click", function() {
+      const target = this.dataset.target;
+      const action = this.dataset.action;
+      document.querySelectorAll(`input[name="${target}"]`).forEach(box => {
+        if (action === "select-all") box.checked = true;
+        if (action === "clear-all") box.checked = false;
+      });
+
+      const defaultMap = {
+        "team-filter": "Select team(s)",
+        "conf-filter": "Select conference(s)",
+        "role-filter": "Select role(s)",
+        "year-filter": "Select year(s)",
+        "destination-filter": "Select tier(s)"
+      };
+
+      updateDropdownButtonText(target, defaultMap[target]);
+    });
+  });
+
+  document.getElementById("apply-filters-btn").addEventListener("click", applyFilters);
+  document.getElementById("reset-filters-btn").addEventListener("click", resetFilters);
+
+  document.addEventListener("click", function(e) {
+    if (!e.target.closest(".checkbox-dropdown")) {
+      document.querySelectorAll(".checkbox-dropdown-menu.show").forEach(menu => {
+        menu.classList.remove("show");
+      });
+    }
+  });
+}
+
+function getNumericInput(id) {
+  const el = document.getElementById(id);
+  return el ? parseOptionalNumber(el.value) : null;
+}
+
+function applyFilters() {
+  const status = document.getElementById("filter-status");
+  const wrapper = document.getElementById("player-table-wrapper");
+
+  if (!hasAtLeastOneFilter()) {
+    filteredPlayers = [];
+    wrapper.style.display = "none";
+    status.textContent = "Select at least one filter, then apply.";
+    if (playerTable) {
+      playerTable.clear().draw();
+    }
+    return;
+  }
+
+  const selectedTeams = getCheckedValues("team-filter");
+  const selectedConfs = getCheckedValues("conf-filter");
+  const selectedRoles = getCheckedValues("role-filter");
+  const selectedYears = getCheckedValues("year-filter");
+  const selectedDestinations = getCheckedValues("destination-filter");
+
+  const minGP = getNumericInput("gp-min-filter");
+  const minPTS = getNumericInput("pts-min-filter");
+  const minMP = getNumericInput("mp-min-filter");
+  const minBPM = getNumericInput("bpm-min-filter");
+  const minTransfer = getNumericInput("transfer-min-filter");
+  const minLeave = getNumericInput("leave-min-filter");
+  const minDestProb = getNumericInput("dest-prob-min-filter");
+  const minProjectedBPM = getNumericInput("proj-bpm-min-filter");
+  const maxProjectedBPM = getNumericInput("proj-bpm-max-filter");
+
+  filteredPlayers = playerData.filter(row => {
+    const primaryDest = getPrimaryDestination(row);
+    const primaryBpm = getPrimaryBpm(row);
+    const primaryBpmNum = parseFloat(primaryBpm.value);
+
+    const teamMatch = selectedTeams.length === 0 || selectedTeams.includes(row.team);
+    const confMatch = selectedConfs.length === 0 || selectedConfs.includes(row.conf);
+    const roleMatch = selectedRoles.length === 0 || selectedRoles.includes(row.Role);
+    const yearMatch = selectedYears.length === 0 || selectedYears.includes(row.class);
+    const destMatch = selectedDestinations.length === 0 || selectedDestinations.includes(primaryDest.tier);
+
+    const gpMatch = minGP === null || toNumber(row.GP) >= minGP;
+    const ptsMatch = minPTS === null || toNumber(row.PTS) >= minPTS;
+    const mpMatch = minMP === null || toNumber(row.MP) >= minMP;
+    const bpmMatch = minBPM === null || toNumber(row.BPM) >= minBPM;
+    const transferMatch = minTransfer === null || row.transfer_num >= minTransfer / 100;
+    const leaveMatch = minLeave === null || row.leave_num >= minLeave / 100;
+    const destProbMatch = minDestProb === null || primaryDest.prob >= minDestProb / 100;
+    const projectedMinMatch = minProjectedBPM === null || (!isNaN(primaryBpmNum) && primaryBpmNum >= minProjectedBPM);
+    const projectedMaxMatch = maxProjectedBPM === null || (!isNaN(primaryBpmNum) && primaryBpmNum <= maxProjectedBPM);
+
+    return teamMatch && confMatch && roleMatch && yearMatch && destMatch &&
+      gpMatch && ptsMatch && mpMatch && bpmMatch && transferMatch && leaveMatch &&
+      destProbMatch && projectedMinMatch && projectedMaxMatch;
+  });
+
+  wrapper.style.display = "block";
+  status.textContent = `${filteredPlayers.length.toLocaleString()} players match the active filters. Sort by any column or expand a player for model details.`;
+  buildTable(filteredPlayers);
+}
+
+function resetFilters() {
+  ["team-filter", "conf-filter", "role-filter", "year-filter", "destination-filter"].forEach(filterName => {
+    document.querySelectorAll(`input[name="${filterName}"]`).forEach(box => {
+      box.checked = false;
+    });
+  });
+
+  numericFilterIds().forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = "";
+  });
+
+  updateDropdownButtonText("team-filter", "Select team(s)");
+  updateDropdownButtonText("conf-filter", "Select conference(s)");
+  updateDropdownButtonText("role-filter", "Select role(s)");
+  updateDropdownButtonText("year-filter", "Select year(s)");
+  updateDropdownButtonText("destination-filter", "Select tier(s)");
+
+  filteredPlayers = [];
+  document.getElementById("player-table-wrapper").style.display = "none";
+  document.getElementById("filter-status").textContent = "Select at least one filter, then apply.";
+  if (playerTable) {
+    playerTable.clear().draw();
+  }
+}
+
+function miniBar(value) {
+  const pct = clamp(toNumber(value), 0, 1) * 100;
+  return `<div class="mini-track"><div class="mini-fill" style="width:${pct}%;"></div></div>`;
+}
+
+function tierRow(label, value) {
+  return `
+    <div class="tier-row">
+      <div class="tier-name">${label}</div>
+      ${miniBar(value)}
+      <div>${pct1(value)}</div>
+    </div>
+  `;
+}
+
+function formatModelDetails(row) {
+  const primaryDest = getPrimaryDestination(row);
+  const primaryBpm = getPrimaryBpm(row);
+  const transfer = row.transfer_num;
+  const leave = row.leave_num;
+  const returnProb = row.return_num;
+
+  return `
+    <div class="model-card-wrap">
+      <div class="model-card">
+        <div class="model-card-top">
+          <div>
+            <div class="model-card-title">${row.player}</div>
+            <div class="model-card-subtitle">${row.team} | ${row.conf} | ${row.class || ""} | ${row.Role || ""}</div>
+          </div>
+          <div class="model-pill-row">
+            <span class="model-pill">${fmt1(row.PTS)} PTS</span>
+            <span class="model-pill">${fmt1(row.REB)} REB</span>
+            <span class="model-pill">${fmt1(row.AST)} AST</span>
+            <span class="model-pill">${fmtBPM(row.BPM)} BPM</span>
+          </div>
+        </div>
+
+        <div class="model-grid">
+          <div class="model-box">
+            <div class="model-box-label">Transfer Model</div>
+            <div class="model-box-value">${pct1(transfer)}</div>
+            ${miniBar(transfer)}
+            <div class="model-box-note">${modelRiskLabel(transfer)} transfer likelihood</div>
+          </div>
+
+          <div class="model-box">
+            <div class="model-box-label">Return / Leave Model</div>
+            <div class="model-box-value">${pct1(returnProb)} return</div>
+            ${miniBar(returnProb)}
+            <div class="model-box-note">${pct1(leave)} leave probability</div>
+          </div>
+
+          <div class="model-box">
+            <div class="model-box-label">Destination Model</div>
+            <div class="model-box-value">${primaryDest.tier}</div>
+            <div class="model-box-note">${pct1(primaryDest.prob)} confidence in selected tier</div>
+            ${tierRow("High", row.dest_prob_high_num)}
+            ${tierRow("Upper", row.dest_prob_upper_mid_num)}
+            ${tierRow("Low", row.dest_prob_low_num)}
+          </div>
+
+          <div class="model-box">
+            <div class="model-box-label">Projected BPM Model</div>
+            <div class="model-box-value">${fmtBPM(primaryBpm.value)}</div>
+            <div class="model-box-note">Primary projection for ${primaryBpm.label}</div>
+            <div class="bpm-row"><span>Low Major</span><strong>${fmtBPM(row.pred_BPM_low)}</strong></div>
+            <div class="bpm-row"><span>Upper Mid</span><strong>${fmtBPM(row.pred_BPM_upper_mid)}</strong></div>
+            <div class="bpm-row"><span>High Major</span><strong>${fmtBPM(row.pred_BPM_high)}</strong></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function buildTable(dataToUse) {
+  const validCols = tableColumns.filter(col =>
+    dataToUse.length === 0 || Object.prototype.hasOwnProperty.call(playerData[0], col)
+  );
+
+  const columns = [
+    {
+      className: "details-control",
+      orderable: false,
+      data: null,
+      defaultContent: "",
+      title: "",
+      width: "30px"
+    },
+    ...validCols.map(col => ({
+      title: columnTitles[col] || col,
+      data: col,
+      defaultContent: "",
+      className: projectionCols.includes(col) ? "projection-highlight-col" : "",
+      render: function(data, type, row) {
+        if (["MP", "PTS", "REB", "AST", "BPM", "ORTG", "USG", "TS.", "eFG.", "AST_TOV", "PORPAG"].includes(col)) {
+          if (type === "sort" || type === "type") return toNumber(data);
+          return fmt1(data);
+        }
+        if (type !== "display" && type !== "filter") return data;
+        if (col === "destination_show") {
+          return row.destination_show || getPrimaryDestination(row).tier;
+        }
+        if (col === "bpm_show") {
+          return row.bpm_show || fmtBPM(getPrimaryBpm(row).value);
+        }
+        return data;
+      }
+    }))
+  ];
+
+  if (playerTable) {
+    playerTable.destroy();
+    $("#player-table").empty();
+  }
+
+  playerTable = $("#player-table").DataTable({
+    data: dataToUse,
+    columns: columns,
+    pageLength: 25,
+    responsive: false,
+    scrollX: true,
+    order: [[9, "desc"]],
+    autoWidth: true,
+    deferRender: true
+  });
+
+  $("#player-table tbody").off("click", "td.details-control");
+  $("#player-table tbody").on("click", "td.details-control", function() {
+    const tr = $(this).closest("tr");
+    const row = playerTable.row(tr);
+
+    if (row.child.isShown()) {
+      row.child.hide();
+      tr.removeClass("shown");
+    } else {
+      row.child(formatModelDetails(row.data())).show();
+      tr.addClass("shown");
+    }
+  });
+}
+
+document.getElementById("toggle-filters-btn").addEventListener("click", function() {
+  document.getElementById("filter-panel").classList.toggle("show");
+});
+
+Papa.parse("data/complete_2026_scored.csv", {
+  download: true,
+  header: true,
+  skipEmptyLines: true,
+  complete: function(results) {
+    playerData = enrichData(results.data);
+
+    if (!playerData || playerData.length === 0) {
+      document.getElementById("filter-status").textContent = "No data loaded.";
+      return;
+    }
+
+    renderFilterUI();
+  },
+  error: function(error) {
+    document.getElementById("filter-status").textContent = "Error loading data.";
+    console.error(error);
+  }
+});
+</script>

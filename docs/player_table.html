@@ -1,0 +1,1706 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.5.57">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Player Table – Transfer Portal Projections</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./favicon2.ico" rel="icon">
+<script src="site_libs/quarto-html/quarto.js"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.dataTables.min.css">
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+
+
+</head>
+
+<body class="nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="./index.html">
+    <span class="navbar-title">Transfer Portal Projections</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="./index.html"> 
+<span class="menu-text">Home</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="./projections.html"> 
+<span class="menu-text">Projections1</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link active" href="./player_table.html" aria-current="page"> 
+<span class="menu-text">Player Table</span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-full page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    
+<!-- main -->
+<main class="content column-page" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Player Table</h1>
+</div>
+
+
+
+<div class="quarto-title-meta column-page">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<style>
+.table-shell {
+  width: 100%;
+  max-width: 100%;
+  color: #111;
+}
+
+.table-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.filter-toggle-btn,
+.filter-action-btn {
+  border: none;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.filter-toggle-btn {
+  background: #13294b;
+  color: #fff;
+}
+
+.filter-toggle-btn:hover,
+.filter-action-btn:hover {
+  opacity: 0.9;
+}
+
+.filter-help-text,
+.filter-status {
+  font-weight: 600;
+  color: #333;
+}
+
+.filter-status {
+  margin: 10px 0 14px;
+}
+
+.filter-panel {
+  background: #f8f9fa;
+  border: 1px solid #d9dee3;
+  border-radius: 12px;
+  padding: 16px;
+  margin: 8px 0 16px;
+  display: none;
+}
+
+.filter-panel.show {
+  display: block;
+}
+
+.filter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+  align-items: start;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.filter-group label {
+  font-weight: 700;
+  color: #222;
+}
+
+.filter-group input {
+  padding: 9px 10px;
+  border: 1px solid #c9ced6;
+  border-radius: 8px;
+  background: #fff;
+  color: #111;
+}
+
+.filter-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+
+.apply-btn {
+  background: #4b9cd3;
+  color: #000;
+}
+
+.reset-btn {
+  background: #dfe3e8;
+  color: #111;
+}
+
+.checkbox-dropdown {
+  position: relative;
+  width: 100%;
+}
+
+.checkbox-dropdown-btn {
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border: 1px solid #c9ced6;
+  border-radius: 8px;
+  background: #fff;
+  color: #111;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+.checkbox-dropdown-btn:hover {
+  background: #f5f7fa;
+}
+
+.checkbox-dropdown-menu {
+  display: none;
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  width: 100%;
+  background: #fff;
+  border: 1px solid #c9ced6;
+  border-radius: 10px;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.12);
+  z-index: 1000;
+  padding: 10px;
+}
+
+.checkbox-dropdown-menu.show {
+  display: block;
+}
+
+.checkbox-dropdown-search {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #c9ced6;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  font-size: 0.92rem;
+}
+
+.checkbox-actions-mini {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.checkbox-mini-btn {
+  border: 1px solid #c9ced6;
+  background: #f8f9fa;
+  color: #111;
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.checkbox-options {
+  max-height: 220px;
+  overflow-y: auto;
+  border-top: 1px solid #eef1f4;
+  padding-top: 8px;
+}
+
+.checkbox-options.team-options {
+  max-height: 320px;
+}
+
+.checkbox-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 2px;
+  font-size: 0.92rem;
+}
+
+.checkbox-option input {
+  margin: 0;
+}
+
+#player-table-wrapper {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  margin-top: 10px;
+  display: none;
+}
+
+#player-table {
+  width: 100% !important;
+  border-collapse: collapse !important;
+  color: #111 !important;
+  background: #fff !important;
+}
+
+#player-table thead th {
+  color: #111 !important;
+  background: #e9ecef !important;
+  border-bottom: 1px solid #ccc !important;
+  white-space: nowrap;
+  font-weight: 700;
+}
+
+#player-table tbody td {
+  color: #111 !important;
+  background: #fff !important;
+  border-bottom: 1px solid #eee !important;
+  white-space: nowrap;
+}
+
+table.dataTable thead th,
+table.dataTable tbody td {
+  white-space: nowrap;
+}
+
+.dataTables_wrapper {
+  color: #111 !important;
+  width: 100% !important;
+}
+
+.dataTables_wrapper .dataTables_filter input,
+.dataTables_wrapper .dataTables_length select {
+  color: #111 !important;
+  background: #fff !important;
+}
+
+.projection-highlight-col {
+  background: #f4faff !important;
+  font-weight: 700;
+}
+
+#player-table thead th.projection-highlight-col {
+  background: #d9ecfb !important;
+}
+
+td.details-control {
+  text-align: center;
+  cursor: pointer;
+  font-weight: 800;
+  color: #13294b;
+}
+
+td.details-control::before {
+  content: "+";
+  font-size: 16px;
+}
+
+tr.shown td.details-control::before {
+  content: "-";
+  font-size: 16px;
+}
+
+.model-card-wrap {
+  padding: 14px 18px;
+  background: #f8fbff;
+}
+
+.model-card {
+  background: #fff;
+  border: 1px solid #d9e6f2;
+  border-radius: 16px;
+  padding: 18px 20px;
+  box-shadow: 0 2px 10px rgba(19, 41, 75, 0.06);
+  max-width: 1050px;
+  margin: 0 auto;
+}
+
+.model-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.model-card-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #13294b;
+  margin-bottom: 4px;
+}
+
+.model-card-subtitle {
+  font-size: 0.92rem;
+  color: #5b6573;
+}
+
+.model-pill-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.model-pill {
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: #e8f4fb;
+  color: #13294b;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.model-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 12px;
+}
+
+.model-box {
+  background: #f6f9fc;
+  border: 1px solid #e2e8ef;
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+.model-box-label {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #5b6573;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.model-box-value {
+  font-size: 1.35rem;
+  line-height: 1.1;
+  font-weight: 850;
+  color: #111;
+  margin-bottom: 8px;
+}
+
+.model-box-note {
+  font-size: 0.84rem;
+  color: #4f5a67;
+}
+
+.mini-track {
+  position: relative;
+  width: 100%;
+  height: 10px;
+  background: #d9dee3;
+  border-radius: 999px;
+  overflow: hidden;
+  margin: 8px 0 6px;
+}
+
+.mini-fill {
+  height: 100%;
+  background: linear-gradient(to right, #4b9cd3 0%, #13294b 100%);
+  border-radius: 999px;
+}
+
+.tier-row {
+  display: grid;
+  grid-template-columns: 82px 1fr 48px;
+  gap: 8px;
+  align-items: center;
+  font-size: 0.84rem;
+  color: #3d4854;
+  margin-top: 7px;
+}
+
+.tier-name {
+  font-weight: 700;
+  color: #13294b;
+}
+
+.bpm-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 0.86rem;
+  color: #3d4854;
+  border-top: 1px solid #e2e8ef;
+  padding-top: 7px;
+  margin-top: 7px;
+}
+
+@media (max-width: 768px) {
+  .checkbox-dropdown-menu {
+    position: static;
+    margin-top: 8px;
+    box-shadow: none;
+  }
+}
+</style>
+<div class="table-shell">
+<div class="table-toolbar">
+<pre><code>&lt;button id="toggle-filters-btn" class="filter-toggle-btn"&gt;Filters&lt;/button&gt;
+&lt;div class="filter-help-text"&gt;Choose at least one filter to load the player table.&lt;/div&gt;</code></pre>
+</div>
+<div id="filter-panel" class="filter-panel show">
+
+</div>
+<div id="filter-status" class="filter-status">
+Select at least one filter, then apply.
+</div>
+<div id="player-table-wrapper">
+<pre><code>&lt;table id="player-table" class="display nowrap"&gt;
+  &lt;thead&gt;&lt;/thead&gt;
+  &lt;tbody&gt;&lt;/tbody&gt;
+&lt;/table&gt;</code></pre>
+</div>
+</div>
+<script>
+let playerData = [];
+let filteredPlayers = [];
+let playerTable = null;
+
+const tableColumns = [
+  "player",
+  "team",
+  "conf",
+  "class",
+  "Role",
+  "height",
+  "GP",
+  "MP",
+  "PTS",
+  "REB",
+  "AST",
+  "BPM",
+  "ORTG",
+  "USG",
+  "TS.",
+  "eFG.",
+  "AST_TOV",
+  "PORPAG",
+  "transfer_show",
+  "return_show",
+  "destination_show",
+  "bpm_show"
+];
+
+const columnTitles = {
+  player: "Player",
+  team: "Team",
+  conf: "Conf",
+  class: "Year",
+  Role: "Role",
+  height: "Ht",
+  GP: "GP",
+  MP: "MPG",
+  PTS: "PTS",
+  REB: "REB",
+  AST: "AST",
+  BPM: "BPM",
+  ORTG: "ORTG",
+  USG: "USG%",
+  "TS.": "TS%",
+  "eFG.": "eFG%",
+  AST_TOV: "AST/TO",
+  PORPAG: "PORPAG",
+  transfer_show: "Transfer",
+  return_show: "Return",
+  destination_show: "Destination",
+  bpm_show: "Proj BPM"
+};
+
+const projectionCols = ["transfer_show", "return_show", "destination_show", "bpm_show"];
+
+function toNumber(val) {
+  if (val === null || val === undefined || val === "") return 0;
+  const cleaned = String(val).replace(/%/g, "").trim();
+  const num = parseFloat(cleaned);
+  return isNaN(num) ? 0 : num;
+}
+
+function parseOptionalNumber(val) {
+  if (val === null || val === undefined || String(val).trim() === "") return null;
+  const cleaned = String(val).replace(/%/g, "").trim();
+  const num = parseFloat(cleaned);
+  return isNaN(num) ? null : num;
+}
+
+function clamp(value, min, max) {
+  return Math.min(Math.max(value, min), max);
+}
+
+function parseProbability(val) {
+  if (val === null || val === undefined || val === "") return 0;
+  const str = String(val).trim();
+  if (str.includes("%")) return clamp(toNumber(str) / 100, 0, 1);
+  const num = toNumber(str);
+  if (num > 1) return clamp(num / 100, 0, 1);
+  return clamp(num, 0, 1);
+}
+
+function pct1(value) {
+  return `${(clamp(toNumber(value), 0, 1) * 100).toFixed(1)}%`;
+}
+
+function fmt1(value) {
+  const num = parseFloat(value);
+  if (isNaN(num)) return "";
+  return num.toFixed(1);
+}
+
+function fmtBPM(value) {
+  const num = parseFloat(value);
+  if (isNaN(num)) return "-";
+  return num.toFixed(1);
+}
+
+function prettifyDestinationTier(tier) {
+  if (!tier) return "Unknown";
+  const t = String(tier).toLowerCase().trim();
+  if (t === "high" || t === "high_major" || t === "high major") return "High Major";
+  if (t === "upper_mid" || t === "upper mid" || t === "upper-mid") return "Upper Mid";
+  if (t === "low" || t === "low_major" || t === "low major") return "Low Major";
+  return String(tier).replaceAll("_", " ").replace(/\b\w/g, c => c.toUpperCase());
+}
+
+function modelRiskLabel(prob) {
+  if (prob >= 0.7) return "High";
+  if (prob >= 0.4) return "Moderate";
+  return "Low";
+}
+
+function getPrimaryDestination(row) {
+  const high = row.dest_prob_high_num;
+  const upper = row.dest_prob_upper_mid_num;
+  const low = row.dest_prob_low_num;
+  const predicted = row.pred_destination_tier && String(row.pred_destination_tier).trim() !== ""
+    ? prettifyDestinationTier(row.pred_destination_tier)
+    : prettifyDestinationTier(high >= upper && high >= low ? "high" : upper >= low ? "upper_mid" : "low");
+
+  let prob = low;
+  if (predicted === "High Major") prob = high;
+  if (predicted === "Upper Mid") prob = upper;
+
+  return { tier: predicted, prob };
+}
+
+function getPrimaryBpm(row) {
+  const destination = getPrimaryDestination(row).tier;
+  if (destination === "High Major") return { label: "High Major", value: row.pred_BPM_high };
+  if (destination === "Upper Mid") return { label: "Upper Mid", value: row.pred_BPM_upper_mid };
+  return { label: "Low Major", value: row.pred_BPM_low };
+}
+
+function enrichData(data) {
+  return data.map(row => {
+    const transfer = row.transfer_show !== undefined && row.transfer_show !== ""
+      ? parseProbability(row.transfer_show)
+      : parseProbability(row.transfer_prob_mean || row.pred_transfer);
+
+    const returnProb = row.return_show !== undefined && row.return_show !== ""
+      ? parseProbability(row.return_show)
+      : parseProbability(row.pred_return);
+
+    const leave = row.pred_leave !== undefined && row.pred_leave !== ""
+      ? parseProbability(row.pred_leave)
+      : clamp(1 - returnProb, 0, 1);
+
+    const destHigh = parseProbability(row.dest_prob_high);
+    const destUpper = parseProbability(row.dest_prob_upper_mid);
+    const destLow = parseProbability(row.dest_prob_low);
+
+    const enriched = {
+      ...row,
+      transfer_num: transfer,
+      return_num: returnProb,
+      leave_num: leave,
+      dest_prob_high_num: destHigh,
+      dest_prob_upper_mid_num: destUpper,
+      dest_prob_low_num: destLow,
+      primary_bpm_num: parseFloat(getPrimaryBpm({
+        ...row,
+        dest_prob_high_num: destHigh,
+        dest_prob_upper_mid_num: destUpper,
+        dest_prob_low_num: destLow
+      }).value)
+    };
+
+    if (!enriched.destination_show || String(enriched.destination_show).trim() === "") {
+      const primaryDest = getPrimaryDestination(enriched);
+      enriched.destination_show = `${primaryDest.tier} (${pct1(primaryDest.prob)})`;
+    }
+
+    if (!enriched.bpm_show || String(enriched.bpm_show).trim() === "") {
+      enriched.bpm_show = fmtBPM(enriched.primary_bpm_num);
+    }
+
+    return enriched;
+  });
+}
+
+function getCheckedValues(filterName) {
+  return Array.from(document.querySelectorAll(`input[name="${filterName}"]:checked`))
+    .map(input => input.value);
+}
+
+function uniqueSortedValues(data, key) {
+  return [...new Set(
+    data.map(row => row[key]).filter(v => v !== null && v !== undefined && String(v).trim() !== "")
+  )].sort((a, b) => String(a).localeCompare(String(b)));
+}
+
+function orderedValues(data, key, preferredOrder) {
+  const values = [...new Set(
+    data.map(row => row[key]).filter(v => v !== null && v !== undefined && String(v).trim() !== "")
+  )];
+
+  const preferredPresent = preferredOrder.filter(item => values.includes(item));
+  const remaining = values
+    .filter(item => !preferredOrder.includes(item))
+    .sort((a, b) => String(a).localeCompare(String(b)));
+
+  return [...preferredPresent, ...remaining];
+}
+
+function createCheckboxDropdown({
+  id,
+  label,
+  values,
+  buttonText,
+  searchPlaceholder = "Search...",
+  large = false
+}) {
+  const optionsHtml = values.map(value => `
+    <label class="checkbox-option" data-value="${String(value).toLowerCase()}">
+      <input type="checkbox" name="${id}" value="${value}">
+      <span>${value}</span>
+    </label>
+  `).join("");
+
+  return `
+    <div class="filter-group">
+      <label>${label}</label>
+      <div class="checkbox-dropdown" id="${id}-dropdown">
+        <button type="button" class="checkbox-dropdown-btn" id="${id}-btn">${buttonText}</button>
+        <div class="checkbox-dropdown-menu" id="${id}-menu">
+          <input type="text" class="checkbox-dropdown-search" id="${id}-search" placeholder="${searchPlaceholder}">
+          <div class="checkbox-actions-mini">
+            <button type="button" class="checkbox-mini-btn" data-action="select-all" data-target="${id}">Select All</button>
+            <button type="button" class="checkbox-mini-btn" data-action="clear-all" data-target="${id}">Clear</button>
+          </div>
+          <div class="checkbox-options ${large ? "team-options" : ""}" id="${id}-options">
+            ${optionsHtml}
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function updateDropdownButtonText(filterName, defaultText) {
+  const checked = getCheckedValues(filterName);
+  const btn = document.getElementById(`${filterName}-btn`);
+  if (!btn) return;
+  if (checked.length === 0) btn.textContent = defaultText;
+  else if (checked.length <= 2) btn.textContent = checked.join(", ");
+  else btn.textContent = `${checked.length} selected`;
+}
+
+function setupCheckboxDropdown(filterName, defaultText) {
+  const btn = document.getElementById(`${filterName}-btn`);
+  const menu = document.getElementById(`${filterName}-menu`);
+  const search = document.getElementById(`${filterName}-search`);
+  const optionsWrap = document.getElementById(`${filterName}-options`);
+
+  btn.addEventListener("click", function(e) {
+    e.stopPropagation();
+    document.querySelectorAll(".checkbox-dropdown-menu.show").forEach(openMenu => {
+      if (openMenu !== menu) openMenu.classList.remove("show");
+    });
+    menu.classList.toggle("show");
+  });
+
+  search.addEventListener("input", function() {
+    const term = this.value.toLowerCase().trim();
+    optionsWrap.querySelectorAll(".checkbox-option").forEach(option => {
+      const value = option.getAttribute("data-value");
+      option.style.display = value.includes(term) ? "flex" : "none";
+    });
+  });
+
+  optionsWrap.querySelectorAll(`input[name="${filterName}"]`).forEach(input => {
+    input.addEventListener("change", function() {
+      updateDropdownButtonText(filterName, defaultText);
+    });
+  });
+}
+
+function numericFilterIds() {
+  return [
+    "gp-min-filter",
+    "pts-min-filter",
+    "mp-min-filter",
+    "bpm-min-filter",
+    "transfer-min-filter",
+    "leave-min-filter",
+    "dest-prob-min-filter",
+    "proj-bpm-min-filter",
+    "proj-bpm-max-filter"
+  ];
+}
+
+function hasAtLeastOneFilter() {
+  const selectedCounts = [
+    getCheckedValues("team-filter").length,
+    getCheckedValues("conf-filter").length,
+    getCheckedValues("role-filter").length,
+    getCheckedValues("year-filter").length,
+    getCheckedValues("destination-filter").length
+  ];
+
+  const hasCheckbox = selectedCounts.some(count => count > 0);
+  const hasNumeric = numericFilterIds().some(id => {
+    const el = document.getElementById(id);
+    return el && String(el.value).trim() !== "";
+  });
+
+  return hasCheckbox || hasNumeric;
+}
+
+function renderFilterUI() {
+  const filterPanel = document.getElementById("filter-panel");
+  const teams = uniqueSortedValues(playerData, "team");
+  const confs = uniqueSortedValues(playerData, "conf");
+  const roles = orderedValues(playerData, "Role", ["Pure PG", "Scoring PG", "Combo G", "Wing G", "Wing F", "Stretch 4", "PF/C"]);
+  const years = orderedValues(playerData, "class", ["Fr", "So", "Jr", "Sr"]);
+  const destinations = orderedValues(
+    playerData.map(row => ({ tier: getPrimaryDestination(row).tier })),
+    "tier",
+    ["High Major", "Upper Mid", "Low Major"]
+  );
+
+  filterPanel.innerHTML = `
+    <div class="filter-grid">
+      ${createCheckboxDropdown({
+        id: "team-filter",
+        label: "Team",
+        values: teams,
+        buttonText: "Select team(s)",
+        searchPlaceholder: "Search teams...",
+        large: true
+      })}
+
+      ${createCheckboxDropdown({
+        id: "conf-filter",
+        label: "Conference",
+        values: confs,
+        buttonText: "Select conference(s)",
+        searchPlaceholder: "Search conferences..."
+      })}
+
+      ${createCheckboxDropdown({
+        id: "role-filter",
+        label: "Role",
+        values: roles,
+        buttonText: "Select role(s)",
+        searchPlaceholder: "Search roles..."
+      })}
+
+      ${createCheckboxDropdown({
+        id: "year-filter",
+        label: "Year",
+        values: years,
+        buttonText: "Select year(s)",
+        searchPlaceholder: "Search years..."
+      })}
+
+      ${createCheckboxDropdown({
+        id: "destination-filter",
+        label: "Projected Destination",
+        values: destinations,
+        buttonText: "Select tier(s)",
+        searchPlaceholder: "Search tiers..."
+      })}
+
+      <div class="filter-group">
+        <label for="gp-min-filter">Min GP</label>
+        <input type="number" id="gp-min-filter" min="0" placeholder="e.g. 10">
+      </div>
+
+      <div class="filter-group">
+        <label for="pts-min-filter">Min PTS</label>
+        <input type="number" id="pts-min-filter" min="0" step="0.1" placeholder="e.g. 8">
+      </div>
+
+      <div class="filter-group">
+        <label for="mp-min-filter">Min MP</label>
+        <input type="number" id="mp-min-filter" min="0" step="0.1" placeholder="e.g. 15">
+      </div>
+
+      <div class="filter-group">
+        <label for="bpm-min-filter">Min BPM</label>
+        <input type="number" id="bpm-min-filter" step="0.1" placeholder="e.g. 2">
+      </div>
+
+      <div class="filter-group">
+        <label for="transfer-min-filter">Min Transfer %</label>
+        <input type="number" id="transfer-min-filter" min="0" max="100" step="1" placeholder="e.g. 50">
+      </div>
+
+      <div class="filter-group">
+        <label for="leave-min-filter">Min Leave %</label>
+        <input type="number" id="leave-min-filter" min="0" max="100" step="1" placeholder="e.g. 50">
+      </div>
+
+      <div class="filter-group">
+        <label for="dest-prob-min-filter">Min Destination Confidence %</label>
+        <input type="number" id="dest-prob-min-filter" min="0" max="100" step="1" placeholder="e.g. 45">
+      </div>
+
+      <div class="filter-group">
+        <label for="proj-bpm-min-filter">Min Projected BPM</label>
+        <input type="number" id="proj-bpm-min-filter" step="0.1" placeholder="e.g. 1">
+      </div>
+
+      <div class="filter-group">
+        <label for="proj-bpm-max-filter">Max Projected BPM</label>
+        <input type="number" id="proj-bpm-max-filter" step="0.1" placeholder="e.g. 8">
+      </div>
+    </div>
+
+    <div class="filter-actions">
+      <button id="apply-filters-btn" class="filter-action-btn apply-btn">Apply Filters</button>
+      <button id="reset-filters-btn" class="filter-action-btn reset-btn">Reset Filters</button>
+    </div>
+  `;
+
+  [
+    ["team-filter", "Select team(s)"],
+    ["conf-filter", "Select conference(s)"],
+    ["role-filter", "Select role(s)"],
+    ["year-filter", "Select year(s)"],
+    ["destination-filter", "Select tier(s)"]
+  ].forEach(([id, label]) => setupCheckboxDropdown(id, label));
+
+  document.querySelectorAll(".checkbox-mini-btn").forEach(btn => {
+    btn.addEventListener("click", function() {
+      const target = this.dataset.target;
+      const action = this.dataset.action;
+      document.querySelectorAll(`input[name="${target}"]`).forEach(box => {
+        if (action === "select-all") box.checked = true;
+        if (action === "clear-all") box.checked = false;
+      });
+
+      const defaultMap = {
+        "team-filter": "Select team(s)",
+        "conf-filter": "Select conference(s)",
+        "role-filter": "Select role(s)",
+        "year-filter": "Select year(s)",
+        "destination-filter": "Select tier(s)"
+      };
+
+      updateDropdownButtonText(target, defaultMap[target]);
+    });
+  });
+
+  document.getElementById("apply-filters-btn").addEventListener("click", applyFilters);
+  document.getElementById("reset-filters-btn").addEventListener("click", resetFilters);
+
+  document.addEventListener("click", function(e) {
+    if (!e.target.closest(".checkbox-dropdown")) {
+      document.querySelectorAll(".checkbox-dropdown-menu.show").forEach(menu => {
+        menu.classList.remove("show");
+      });
+    }
+  });
+}
+
+function getNumericInput(id) {
+  const el = document.getElementById(id);
+  return el ? parseOptionalNumber(el.value) : null;
+}
+
+function applyFilters() {
+  const status = document.getElementById("filter-status");
+  const wrapper = document.getElementById("player-table-wrapper");
+
+  if (!hasAtLeastOneFilter()) {
+    filteredPlayers = [];
+    wrapper.style.display = "none";
+    status.textContent = "Select at least one filter, then apply.";
+    if (playerTable) {
+      playerTable.clear().draw();
+    }
+    return;
+  }
+
+  const selectedTeams = getCheckedValues("team-filter");
+  const selectedConfs = getCheckedValues("conf-filter");
+  const selectedRoles = getCheckedValues("role-filter");
+  const selectedYears = getCheckedValues("year-filter");
+  const selectedDestinations = getCheckedValues("destination-filter");
+
+  const minGP = getNumericInput("gp-min-filter");
+  const minPTS = getNumericInput("pts-min-filter");
+  const minMP = getNumericInput("mp-min-filter");
+  const minBPM = getNumericInput("bpm-min-filter");
+  const minTransfer = getNumericInput("transfer-min-filter");
+  const minLeave = getNumericInput("leave-min-filter");
+  const minDestProb = getNumericInput("dest-prob-min-filter");
+  const minProjectedBPM = getNumericInput("proj-bpm-min-filter");
+  const maxProjectedBPM = getNumericInput("proj-bpm-max-filter");
+
+  filteredPlayers = playerData.filter(row => {
+    const primaryDest = getPrimaryDestination(row);
+    const primaryBpm = getPrimaryBpm(row);
+    const primaryBpmNum = parseFloat(primaryBpm.value);
+
+    const teamMatch = selectedTeams.length === 0 || selectedTeams.includes(row.team);
+    const confMatch = selectedConfs.length === 0 || selectedConfs.includes(row.conf);
+    const roleMatch = selectedRoles.length === 0 || selectedRoles.includes(row.Role);
+    const yearMatch = selectedYears.length === 0 || selectedYears.includes(row.class);
+    const destMatch = selectedDestinations.length === 0 || selectedDestinations.includes(primaryDest.tier);
+
+    const gpMatch = minGP === null || toNumber(row.GP) >= minGP;
+    const ptsMatch = minPTS === null || toNumber(row.PTS) >= minPTS;
+    const mpMatch = minMP === null || toNumber(row.MP) >= minMP;
+    const bpmMatch = minBPM === null || toNumber(row.BPM) >= minBPM;
+    const transferMatch = minTransfer === null || row.transfer_num >= minTransfer / 100;
+    const leaveMatch = minLeave === null || row.leave_num >= minLeave / 100;
+    const destProbMatch = minDestProb === null || primaryDest.prob >= minDestProb / 100;
+    const projectedMinMatch = minProjectedBPM === null || (!isNaN(primaryBpmNum) && primaryBpmNum >= minProjectedBPM);
+    const projectedMaxMatch = maxProjectedBPM === null || (!isNaN(primaryBpmNum) && primaryBpmNum <= maxProjectedBPM);
+
+    return teamMatch && confMatch && roleMatch && yearMatch && destMatch &&
+      gpMatch && ptsMatch && mpMatch && bpmMatch && transferMatch && leaveMatch &&
+      destProbMatch && projectedMinMatch && projectedMaxMatch;
+  });
+
+  wrapper.style.display = "block";
+  status.textContent = `${filteredPlayers.length.toLocaleString()} players match the active filters. Sort by any column or expand a player for model details.`;
+  buildTable(filteredPlayers);
+}
+
+function resetFilters() {
+  ["team-filter", "conf-filter", "role-filter", "year-filter", "destination-filter"].forEach(filterName => {
+    document.querySelectorAll(`input[name="${filterName}"]`).forEach(box => {
+      box.checked = false;
+    });
+  });
+
+  numericFilterIds().forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = "";
+  });
+
+  updateDropdownButtonText("team-filter", "Select team(s)");
+  updateDropdownButtonText("conf-filter", "Select conference(s)");
+  updateDropdownButtonText("role-filter", "Select role(s)");
+  updateDropdownButtonText("year-filter", "Select year(s)");
+  updateDropdownButtonText("destination-filter", "Select tier(s)");
+
+  filteredPlayers = [];
+  document.getElementById("player-table-wrapper").style.display = "none";
+  document.getElementById("filter-status").textContent = "Select at least one filter, then apply.";
+  if (playerTable) {
+    playerTable.clear().draw();
+  }
+}
+
+function miniBar(value) {
+  const pct = clamp(toNumber(value), 0, 1) * 100;
+  return `<div class="mini-track"><div class="mini-fill" style="width:${pct}%;"></div></div>`;
+}
+
+function tierRow(label, value) {
+  return `
+    <div class="tier-row">
+      <div class="tier-name">${label}</div>
+      ${miniBar(value)}
+      <div>${pct1(value)}</div>
+    </div>
+  `;
+}
+
+function formatModelDetails(row) {
+  const primaryDest = getPrimaryDestination(row);
+  const primaryBpm = getPrimaryBpm(row);
+  const transfer = row.transfer_num;
+  const leave = row.leave_num;
+  const returnProb = row.return_num;
+
+  return `
+    <div class="model-card-wrap">
+      <div class="model-card">
+        <div class="model-card-top">
+          <div>
+            <div class="model-card-title">${row.player}</div>
+            <div class="model-card-subtitle">${row.team} | ${row.conf} | ${row.class || ""} | ${row.Role || ""}</div>
+          </div>
+          <div class="model-pill-row">
+            <span class="model-pill">${fmt1(row.PTS)} PTS</span>
+            <span class="model-pill">${fmt1(row.REB)} REB</span>
+            <span class="model-pill">${fmt1(row.AST)} AST</span>
+            <span class="model-pill">${fmtBPM(row.BPM)} BPM</span>
+          </div>
+        </div>
+
+        <div class="model-grid">
+          <div class="model-box">
+            <div class="model-box-label">Transfer Model</div>
+            <div class="model-box-value">${pct1(transfer)}</div>
+            ${miniBar(transfer)}
+            <div class="model-box-note">${modelRiskLabel(transfer)} transfer likelihood</div>
+          </div>
+
+          <div class="model-box">
+            <div class="model-box-label">Return / Leave Model</div>
+            <div class="model-box-value">${pct1(returnProb)} return</div>
+            ${miniBar(returnProb)}
+            <div class="model-box-note">${pct1(leave)} leave probability</div>
+          </div>
+
+          <div class="model-box">
+            <div class="model-box-label">Destination Model</div>
+            <div class="model-box-value">${primaryDest.tier}</div>
+            <div class="model-box-note">${pct1(primaryDest.prob)} confidence in selected tier</div>
+            ${tierRow("High", row.dest_prob_high_num)}
+            ${tierRow("Upper", row.dest_prob_upper_mid_num)}
+            ${tierRow("Low", row.dest_prob_low_num)}
+          </div>
+
+          <div class="model-box">
+            <div class="model-box-label">Projected BPM Model</div>
+            <div class="model-box-value">${fmtBPM(primaryBpm.value)}</div>
+            <div class="model-box-note">Primary projection for ${primaryBpm.label}</div>
+            <div class="bpm-row"><span>Low Major</span><strong>${fmtBPM(row.pred_BPM_low)}</strong></div>
+            <div class="bpm-row"><span>Upper Mid</span><strong>${fmtBPM(row.pred_BPM_upper_mid)}</strong></div>
+            <div class="bpm-row"><span>High Major</span><strong>${fmtBPM(row.pred_BPM_high)}</strong></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function buildTable(dataToUse) {
+  const validCols = tableColumns.filter(col =>
+    dataToUse.length === 0 || Object.prototype.hasOwnProperty.call(playerData[0], col)
+  );
+
+  const columns = [
+    {
+      className: "details-control",
+      orderable: false,
+      data: null,
+      defaultContent: "",
+      title: "",
+      width: "30px"
+    },
+    ...validCols.map(col => ({
+      title: columnTitles[col] || col,
+      data: col,
+      defaultContent: "",
+      className: projectionCols.includes(col) ? "projection-highlight-col" : "",
+      render: function(data, type, row) {
+        if (["MP", "PTS", "REB", "AST", "BPM", "ORTG", "USG", "TS.", "eFG.", "AST_TOV", "PORPAG"].includes(col)) {
+          if (type === "sort" || type === "type") return toNumber(data);
+          return fmt1(data);
+        }
+        if (type !== "display" && type !== "filter") return data;
+        if (col === "destination_show") {
+          return row.destination_show || getPrimaryDestination(row).tier;
+        }
+        if (col === "bpm_show") {
+          return row.bpm_show || fmtBPM(getPrimaryBpm(row).value);
+        }
+        return data;
+      }
+    }))
+  ];
+
+  if (playerTable) {
+    playerTable.destroy();
+    $("#player-table").empty();
+  }
+
+  playerTable = $("#player-table").DataTable({
+    data: dataToUse,
+    columns: columns,
+    pageLength: 25,
+    responsive: false,
+    scrollX: true,
+    order: [[9, "desc"]],
+    autoWidth: true,
+    deferRender: true
+  });
+
+  $("#player-table tbody").off("click", "td.details-control");
+  $("#player-table tbody").on("click", "td.details-control", function() {
+    const tr = $(this).closest("tr");
+    const row = playerTable.row(tr);
+
+    if (row.child.isShown()) {
+      row.child.hide();
+      tr.removeClass("shown");
+    } else {
+      row.child(formatModelDetails(row.data())).show();
+      tr.addClass("shown");
+    }
+  });
+}
+
+document.getElementById("toggle-filters-btn").addEventListener("click", function() {
+  document.getElementById("filter-panel").classList.toggle("show");
+});
+
+Papa.parse("data/complete_2026_scored.csv", {
+  download: true,
+  header: true,
+  skipEmptyLines: true,
+  complete: function(results) {
+    playerData = enrichData(results.data);
+
+    if (!playerData || playerData.length === 0) {
+      document.getElementById("filter-status").textContent = "No data loaded.";
+      return;
+    }
+
+    renderFilterUI();
+  },
+  error: function(error) {
+    document.getElementById("filter-status").textContent = "Error loading data.";
+    console.error(error);
+  }
+});
+</script>
+
+
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    // For code content inside modals, clipBoardJS needs to be initialized with a container option
+    // TODO: Check when it could be a function (https://github.com/zenorocha/clipboard.js/issues/860)
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp("https:\/\/glederer04\.github\.io\/Test-Transfer-Portal-Model\/");
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
