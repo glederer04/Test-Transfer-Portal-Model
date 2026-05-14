@@ -331,7 +331,7 @@ ul.task-list li input[type="checkbox"] {
 #player-table-wrapper {
   width: 100%;
   max-width: 100%;
-  overflow-x: auto;
+  overflow-x: visible;
   margin-top: 10px;
   display: none;
 }
@@ -361,6 +361,14 @@ ul.task-list li input[type="checkbox"] {
 table.dataTable thead th,
 table.dataTable tbody td {
   white-space: nowrap;
+}
+
+#player-table thead th {
+  cursor: help;
+}
+
+#player-table tbody td:first-child {
+  text-align: center;
 }
 
 .dataTables_wrapper {
@@ -449,6 +457,35 @@ tr.shown td.details-control::before {
   color: #13294b;
   font-size: 0.82rem;
   font-weight: 800;
+}
+
+.context-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin: 12px 0 16px;
+}
+
+.context-item {
+  background: #f6f9fc;
+  border: 1px solid #e2e8ef;
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.context-label {
+  color: #5b6573;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  margin-bottom: 3px;
+  text-transform: uppercase;
+}
+
+.context-value {
+  color: #111;
+  font-size: 0.95rem;
+  font-weight: 750;
 }
 
 .model-grid {
@@ -567,44 +604,44 @@ let playerTable = null;
 
 const tableColumns = [
   "player",
-  "team",
-  "conf",
-  "class",
-  "Role",
-  "height",
   "GP",
   "MP",
   "PTS",
   "REB",
   "AST",
-  "BPM",
-  "ORTG",
+  "FG_display",
+  "TP_display",
+  "FT_display",
   "USG",
-  "TS.",
-  "eFG.",
-  "AST_TOV",
-  "PORPAG"
+  "BPM"
 ];
 
 const columnTitles = {
   player: "Player",
-  team: "Team",
-  conf: "Conf",
-  class: "Year",
-  Role: "Role",
-  height: "Ht",
   GP: "GP",
   MP: "MPG",
   PTS: "PTS",
   REB: "REB",
   AST: "AST",
-  BPM: "BPM",
-  ORTG: "ORTG",
+  FG_display: "FG%",
+  TP_display: "3PT%",
+  FT_display: "FT%",
   USG: "USG%",
-  "TS.": "TS%",
-  "eFG.": "eFG%",
-  AST_TOV: "AST/TO",
-  PORPAG: "PORPAG"
+  BPM: "BPM"
+};
+
+const columnHelp = {
+  player: "Player name.",
+  GP: "Games played.",
+  MP: "Minutes per game.",
+  PTS: "Points per game.",
+  REB: "Rebounds per game.",
+  AST: "Assists per game.",
+  FG_display: "Field goal percentage. Attempts per game are shown in parentheses.",
+  TP_display: "Three-point percentage. Three-point attempts per game are shown in parentheses.",
+  FT_display: "Free throw percentage. Free throw attempts per game are shown in parentheses.",
+  USG: "Usage rate: estimated share of team possessions used while on the floor.",
+  BPM: "Box Plus/Minus: estimated points above or below average per 100 possessions."
 };
 
 function toNumber(val) {
@@ -650,6 +687,27 @@ function fmtBPM(value) {
   return num.toFixed(1);
 }
 
+function pctDisplay(value) {
+  const num = parseFloat(value);
+  if (isNaN(num)) return "";
+  const pct = num <= 1 ? num * 100 : num;
+  return `${pct.toFixed(1)}%`;
+}
+
+function pctAttemptsDisplay(pctValue, attemptsValue) {
+  const pct = pctDisplay(pctValue);
+  const attempts = parseFloat(attemptsValue);
+  if (!pct) return "";
+  if (isNaN(attempts)) return pct;
+  return `${pct} (${attempts.toFixed(1)})`;
+}
+
+function headerTitle(col) {
+  const label = columnTitles[col] || col;
+  const help = columnHelp[col] || label;
+  return `<span title="${help}">${label}</span>`;
+}
+
 function prettifyDestinationTier(tier) {
   if (!tier) return "Unknown";
   const t = String(tier).toLowerCase().trim();
@@ -689,6 +747,16 @@ function getPrimaryBpm(row) {
 
 function enrichData(data) {
   return data.map(row => {
+    const gp = Math.max(toNumber(row.GP), 1);
+    const twoAtt = toNumber(row.TWO_Att);
+    const threeAtt = toNumber(row.TPA);
+    const totalFgAtt = twoAtt + threeAtt;
+    const totalFgMake = toNumber(row.TWO_Make) + toNumber(row.TPM);
+    const fgPct = totalFgAtt > 0 ? totalFgMake / totalFgAtt : null;
+    const fgAttemptsPerGame = totalFgAtt > 0 ? totalFgAtt / gp : null;
+    const threeAttemptsPerGame = threeAtt > 0 ? threeAtt / gp : null;
+    const ftAttemptsPerGame = toNumber(row.FTA) > 0 ? toNumber(row.FTA) / gp : null;
+
     const transfer = row.transfer_show !== undefined && row.transfer_show !== ""
       ? parseProbability(row.transfer_show)
       : parseProbability(row.transfer_prob_mean || row.pred_transfer);
@@ -713,6 +781,12 @@ function enrichData(data) {
       dest_prob_high_num: destHigh,
       dest_prob_upper_mid_num: destUpper,
       dest_prob_low_num: destLow,
+      FG_display: pctAttemptsDisplay(fgPct, fgAttemptsPerGame),
+      FG_sort: fgPct === null ? 0 : fgPct,
+      TP_display: pctAttemptsDisplay(row["TP."], threeAttemptsPerGame),
+      TP_sort: parseProbability(row["TP."]),
+      FT_display: pctAttemptsDisplay(row["FT."], ftAttemptsPerGame),
+      FT_sort: parseProbability(row["FT."]),
       primary_bpm_num: parseFloat(getPrimaryBpm({
         ...row,
         dest_prob_high_num: destHigh,
@@ -835,13 +909,7 @@ function numericFilterIds() {
   return [
     "gp-min-filter",
     "pts-min-filter",
-    "mp-min-filter",
-    "bpm-min-filter",
-    "transfer-min-filter",
-    "leave-min-filter",
-    "dest-prob-min-filter",
-    "proj-bpm-min-filter",
-    "proj-bpm-max-filter"
+    "mp-min-filter"
   ];
 }
 
@@ -850,8 +918,7 @@ function hasAtLeastOneFilter() {
     getCheckedValues("team-filter").length,
     getCheckedValues("conf-filter").length,
     getCheckedValues("role-filter").length,
-    getCheckedValues("year-filter").length,
-    getCheckedValues("destination-filter").length
+    getCheckedValues("year-filter").length
   ];
 
   const hasCheckbox = selectedCounts.some(count => count > 0);
@@ -869,12 +936,6 @@ function renderFilterUI() {
   const confs = uniqueSortedValues(playerData, "conf");
   const roles = orderedValues(playerData, "Role", ["Pure PG", "Scoring PG", "Combo G", "Wing G", "Wing F", "Stretch 4", "PF/C"]);
   const years = orderedValues(playerData, "class", ["Fr", "So", "Jr", "Sr"]);
-  const destinations = orderedValues(
-    playerData.map(row => ({ tier: getPrimaryDestination(row).tier })),
-    "tier",
-    ["High Major", "Upper Mid", "Low Major"]
-  );
-
   filterPanel.innerHTML = `
     <div class="filter-grid">
       ${createCheckboxDropdown({
@@ -910,14 +971,6 @@ function renderFilterUI() {
         searchPlaceholder: "Search years..."
       })}
 
-      ${createCheckboxDropdown({
-        id: "destination-filter",
-        label: "Projected Destination",
-        values: destinations,
-        buttonText: "Select tier(s)",
-        searchPlaceholder: "Search tiers..."
-      })}
-
       <div class="filter-group">
         <label for="gp-min-filter">Min GP</label>
         <input type="number" id="gp-min-filter" min="0" placeholder="e.g. 10">
@@ -932,36 +985,6 @@ function renderFilterUI() {
         <label for="mp-min-filter">Min MP</label>
         <input type="number" id="mp-min-filter" min="0" step="0.1" placeholder="e.g. 15">
       </div>
-
-      <div class="filter-group">
-        <label for="bpm-min-filter">Min BPM</label>
-        <input type="number" id="bpm-min-filter" step="0.1" placeholder="e.g. 2">
-      </div>
-
-      <div class="filter-group">
-        <label for="transfer-min-filter">Min Transfer %</label>
-        <input type="number" id="transfer-min-filter" min="0" max="100" step="1" placeholder="e.g. 50">
-      </div>
-
-      <div class="filter-group">
-        <label for="leave-min-filter">Min Leave %</label>
-        <input type="number" id="leave-min-filter" min="0" max="100" step="1" placeholder="e.g. 50">
-      </div>
-
-      <div class="filter-group">
-        <label for="dest-prob-min-filter">Min Destination Confidence %</label>
-        <input type="number" id="dest-prob-min-filter" min="0" max="100" step="1" placeholder="e.g. 45">
-      </div>
-
-      <div class="filter-group">
-        <label for="proj-bpm-min-filter">Min Projected BPM</label>
-        <input type="number" id="proj-bpm-min-filter" step="0.1" placeholder="e.g. 1">
-      </div>
-
-      <div class="filter-group">
-        <label for="proj-bpm-max-filter">Max Projected BPM</label>
-        <input type="number" id="proj-bpm-max-filter" step="0.1" placeholder="e.g. 8">
-      </div>
     </div>
 
     <div class="filter-actions">
@@ -974,8 +997,7 @@ function renderFilterUI() {
     ["team-filter", "Select team(s)"],
     ["conf-filter", "Select conference(s)"],
     ["role-filter", "Select role(s)"],
-    ["year-filter", "Select year(s)"],
-    ["destination-filter", "Select tier(s)"]
+    ["year-filter", "Select year(s)"]
   ].forEach(([id, label]) => setupCheckboxDropdown(id, label));
 
   document.querySelectorAll(".checkbox-mini-btn").forEach(btn => {
@@ -991,8 +1013,7 @@ function renderFilterUI() {
         "team-filter": "Select team(s)",
         "conf-filter": "Select conference(s)",
         "role-filter": "Select role(s)",
-        "year-filter": "Select year(s)",
-        "destination-filter": "Select tier(s)"
+        "year-filter": "Select year(s)"
       };
 
       updateDropdownButtonText(target, defaultMap[target]);
@@ -1034,42 +1055,22 @@ function applyFilters() {
   const selectedConfs = getCheckedValues("conf-filter");
   const selectedRoles = getCheckedValues("role-filter");
   const selectedYears = getCheckedValues("year-filter");
-  const selectedDestinations = getCheckedValues("destination-filter");
 
   const minGP = getNumericInput("gp-min-filter");
   const minPTS = getNumericInput("pts-min-filter");
   const minMP = getNumericInput("mp-min-filter");
-  const minBPM = getNumericInput("bpm-min-filter");
-  const minTransfer = getNumericInput("transfer-min-filter");
-  const minLeave = getNumericInput("leave-min-filter");
-  const minDestProb = getNumericInput("dest-prob-min-filter");
-  const minProjectedBPM = getNumericInput("proj-bpm-min-filter");
-  const maxProjectedBPM = getNumericInput("proj-bpm-max-filter");
 
   filteredPlayers = playerData.filter(row => {
-    const primaryDest = getPrimaryDestination(row);
-    const primaryBpm = getPrimaryBpm(row);
-    const primaryBpmNum = parseFloat(primaryBpm.value);
-
     const teamMatch = selectedTeams.length === 0 || selectedTeams.includes(row.team);
     const confMatch = selectedConfs.length === 0 || selectedConfs.includes(row.conf);
     const roleMatch = selectedRoles.length === 0 || selectedRoles.includes(row.Role);
     const yearMatch = selectedYears.length === 0 || selectedYears.includes(row.class);
-    const destMatch = selectedDestinations.length === 0 || selectedDestinations.includes(primaryDest.tier);
 
     const gpMatch = minGP === null || toNumber(row.GP) >= minGP;
     const ptsMatch = minPTS === null || toNumber(row.PTS) >= minPTS;
     const mpMatch = minMP === null || toNumber(row.MP) >= minMP;
-    const bpmMatch = minBPM === null || toNumber(row.BPM) >= minBPM;
-    const transferMatch = minTransfer === null || row.transfer_num >= minTransfer / 100;
-    const leaveMatch = minLeave === null || row.leave_num >= minLeave / 100;
-    const destProbMatch = minDestProb === null || primaryDest.prob >= minDestProb / 100;
-    const projectedMinMatch = minProjectedBPM === null || (!isNaN(primaryBpmNum) && primaryBpmNum >= minProjectedBPM);
-    const projectedMaxMatch = maxProjectedBPM === null || (!isNaN(primaryBpmNum) && primaryBpmNum <= maxProjectedBPM);
 
-    return teamMatch && confMatch && roleMatch && yearMatch && destMatch &&
-      gpMatch && ptsMatch && mpMatch && bpmMatch && transferMatch && leaveMatch &&
-      destProbMatch && projectedMinMatch && projectedMaxMatch;
+    return teamMatch && confMatch && roleMatch && yearMatch && gpMatch && ptsMatch && mpMatch;
   });
 
   wrapper.style.display = "block";
@@ -1078,7 +1079,7 @@ function applyFilters() {
 }
 
 function resetFilters() {
-  ["team-filter", "conf-filter", "role-filter", "year-filter", "destination-filter"].forEach(filterName => {
+  ["team-filter", "conf-filter", "role-filter", "year-filter"].forEach(filterName => {
     document.querySelectorAll(`input[name="${filterName}"]`).forEach(box => {
       box.checked = false;
     });
@@ -1093,7 +1094,6 @@ function resetFilters() {
   updateDropdownButtonText("conf-filter", "Select conference(s)");
   updateDropdownButtonText("role-filter", "Select role(s)");
   updateDropdownButtonText("year-filter", "Select year(s)");
-  updateDropdownButtonText("destination-filter", "Select tier(s)");
 
   filteredPlayers = [];
   document.getElementById("player-table-wrapper").style.display = "none";
@@ -1131,13 +1131,36 @@ function formatModelDetails(row) {
         <div class="model-card-top">
           <div>
             <div class="model-card-title">${row.player}</div>
-            <div class="model-card-subtitle">${row.team} | ${row.conf} | ${row.class || ""} | ${row.Role || ""}</div>
+            <div class="model-card-subtitle">Player context, current production, and model projections</div>
           </div>
           <div class="model-pill-row">
             <span class="model-pill">${fmt1(row.PTS)} PTS</span>
             <span class="model-pill">${fmt1(row.REB)} REB</span>
             <span class="model-pill">${fmt1(row.AST)} AST</span>
             <span class="model-pill">${fmtBPM(row.BPM)} BPM</span>
+          </div>
+        </div>
+
+        <div class="context-grid">
+          <div class="context-item">
+            <div class="context-label">Team</div>
+            <div class="context-value">${row.team || ""}</div>
+          </div>
+          <div class="context-item">
+            <div class="context-label">Conference</div>
+            <div class="context-value">${row.conf || ""}</div>
+          </div>
+          <div class="context-item">
+            <div class="context-label">Year</div>
+            <div class="context-value">${row.class || ""}</div>
+          </div>
+          <div class="context-item">
+            <div class="context-label">Role</div>
+            <div class="context-value">${row.Role || ""}</div>
+          </div>
+          <div class="context-item">
+            <div class="context-label">Height</div>
+            <div class="context-value">${row.height || ""}</div>
           </div>
         </div>
 
@@ -1194,12 +1217,24 @@ function buildTable(dataToUse) {
       width: "30px"
     },
     ...validCols.map(col => ({
-      title: columnTitles[col] || col,
+      title: headerTitle(col),
       data: col,
       defaultContent: "",
       className: "",
       render: function(data, type, row) {
-        if (["MP", "PTS", "REB", "AST", "BPM", "ORTG", "USG", "TS.", "eFG.", "AST_TOV", "PORPAG"].includes(col)) {
+        if (col === "FG_display") {
+          if (type === "sort" || type === "type") return row.FG_sort;
+          return data;
+        }
+        if (col === "TP_display") {
+          if (type === "sort" || type === "type") return row.TP_sort;
+          return data;
+        }
+        if (col === "FT_display") {
+          if (type === "sort" || type === "type") return row.FT_sort;
+          return data;
+        }
+        if (["MP", "PTS", "REB", "AST", "BPM", "USG"].includes(col)) {
           if (type === "sort" || type === "type") return toNumber(data);
           return fmt1(data);
         }
@@ -1219,8 +1254,8 @@ function buildTable(dataToUse) {
     columns: columns,
     pageLength: 25,
     responsive: false,
-    scrollX: true,
-    order: [[9, "desc"]],
+    scrollX: false,
+    order: [[4, "desc"]],
     autoWidth: true,
     deferRender: true
   });
