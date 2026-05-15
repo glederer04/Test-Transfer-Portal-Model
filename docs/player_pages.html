@@ -1690,18 +1690,18 @@ function drawPlayerReportPdf(pdf, player) {
   pdf.line(0.38, 0.84, 8.12, 0.84);
 
   pdfCard(pdf, 0.35, 0.96, 3.72, 2.1, "Profile Snapshot");
-  pdfText(pdf, stripHtml(buildSummary(player)), 0.47, 1.25, 3.48, 7.4, "bold", 4);
-  pdfCompactKey(pdf, "BPM", fmtSigned(player.BPM), `${fmtSigned(player.OBPM)} OBPM / ${fmtSigned(player.DBPM)} DBPM`, 0.47, 1.86, 1.68, 0.52);
-  pdfCompactKey(pdf, "Production", `${fmt(player.PTS)} PTS`, `${fmt(player.REB)} REB / ${fmt(player.AST)} AST`, 2.22, 1.86, 1.68, 0.52);
-  pdfCompactKey(pdf, "Role Load", `${fmt(player.USG)}% USG`, `${fmt(player.MP)} MPG / ${fmt(player.GP, 0)} games`, 0.47, 2.43, 1.68, 0.52);
-  pdfCompactKey(pdf, "Transfer", pctProb(player.transfer_prob), `${pctProb(player.return_prob)} return probability`, 2.22, 2.43, 1.68, 0.52);
+  pdfText(pdf, stripHtml(buildSummary(player)), 0.47, 1.32, 3.48, 7.4, "bold", 4);
+  pdfCompactKey(pdf, "BPM", fmtSigned(player.BPM), `${fmtSigned(player.OBPM)} OBPM / ${fmtSigned(player.DBPM)} DBPM`, 0.47, 1.9, 1.68, 0.52);
+  pdfCompactKey(pdf, "Production", `${fmt(player.PTS)} PTS`, `${fmt(player.REB)} REB / ${fmt(player.AST)} AST`, 2.22, 1.9, 1.68, 0.52);
+  pdfCompactKey(pdf, "Role Load", `${fmt(player.USG)}% USG`, `${fmt(player.MP)} MPG / ${fmt(player.GP, 0)} games`, 0.47, 2.47, 1.68, 0.52);
+  pdfCompactKey(pdf, "Transfer", pctProb(player.transfer_prob), `${pctProb(player.return_prob)} return probability`, 2.22, 2.47, 1.68, 0.52);
 
   pdfCard(pdf, 4.25, 0.96, 3.9, 2.1, "Read On The Player");
   const insights = Array.from(document.querySelectorAll("#insight-list .insight")).map(el => el.textContent.trim());
   const insightPoints = insights.slice(0, 5);
   const pointSlot = 0.34;
   insightPoints.forEach((note, idx) => {
-    pdfInsightPoint(pdf, note, 4.39, 1.22 + idx * pointSlot, 3.55, pointSlot, 5.75);
+    pdfInsightPoint(pdf, note, 4.39, 1.3 + idx * pointSlot, 3.55, pointSlot, 5.75);
   });
 
   pdfCard(pdf, 0.35, 3.22, 7.8, 2.25, `Comparison Snapshot | ${scopeName}`);
@@ -1710,7 +1710,7 @@ function drawPlayerReportPdf(pdf, player) {
 
   pdfCard(pdf, 0.35, 5.63, 3.8, 1.62, metricLabel);
   const metric = pdfMetricTiles(player);
-  pdfText(pdf, metric.note, 0.47, 5.96, 3.52, 6.4, "normal", 2);
+  pdfText(pdf, metric.note, 0.47, 5.96, 3.52, 6.9, "normal", 2);
   drawMetricPdf(pdf, metric, 0.47, 6.22, 3.52, 0.88);
 
   pdfCard(pdf, 4.35, 5.63, 3.8, 1.62, modelLabel);
