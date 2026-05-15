@@ -7,6 +7,7 @@ format:
     include-in-header:
       text: |
         <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"></script>
 ---
 
 <style>
@@ -155,6 +156,34 @@ format:
 
 .select-player-btn:hover {
   background: #1d3b68;
+}
+
+.profile-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.profile-action-btn {
+  border: 1px solid #bfd1df;
+  border-radius: 7px;
+  background: #f7fbff;
+  color: var(--navy);
+  padding: 8px 11px;
+  font-size: 0.84rem;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.profile-action-btn:hover {
+  background: #e8f4fb;
+  border-color: #9ac7e4;
+}
+
+.profile-action-btn:disabled {
+  opacity: 0.65;
+  cursor: wait;
 }
 
 .profile-empty {
@@ -377,6 +406,60 @@ format:
 .map-guide {
   pointer-events: stroke;
   cursor: help;
+}
+
+.pdf-export-frame {
+  position: fixed;
+  left: -99999px;
+  top: 0;
+  width: 1060px;
+  background: #fff;
+  color: var(--ink);
+  padding: 18px;
+  z-index: -1;
+}
+
+.pdf-export-frame .selector-band,
+.pdf-export-frame .profile-action-btn {
+  display: none !important;
+}
+
+.pdf-export-frame .profile-view {
+  display: block !important;
+}
+
+.pdf-export-frame .profile-hero,
+.pdf-export-frame .section-grid,
+.pdf-export-frame .wide-grid {
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.pdf-export-frame .player-identity,
+.pdf-export-frame .analysis-panel,
+.pdf-export-frame .insight-panel,
+.pdf-export-frame .section-panel {
+  padding: 12px;
+  break-inside: avoid;
+}
+
+.pdf-export-frame .player-name {
+  font-size: 2.35rem;
+}
+
+.pdf-export-frame .chart-box,
+.pdf-export-frame .chart-box svg {
+  min-height: 255px;
+}
+
+.pdf-export-frame .role-grid,
+.pdf-export-frame .key-card-grid {
+  gap: 7px;
+}
+
+.pdf-export-frame .insight {
+  padding: 7px 9px;
+  font-size: 0.82rem;
 }
 
 .chart-box {
@@ -705,6 +788,9 @@ format:
   <div id="profile-view" class="profile-view">
     <section class="profile-hero">
       <div class="player-identity">
+        <div class="profile-actions">
+          <button id="download-player-pdf-btn" class="profile-action-btn" type="button">Download PDF</button>
+        </div>
         <div id="player-name" class="player-name"></div>
         <div id="player-meta" class="player-meta"></div>
         <div id="profile-summary" class="profile-summary"></div>
@@ -912,6 +998,10 @@ function quantile(values, q) {
   return sorted[base] + rest * (sorted[base + 1] - sorted[base]);
 }
 
+function isLegitimateChartSample(row) {
+  return num(row.GP) >= 8 && num(row.MP) >= 8;
+}
+
 function rankInGroup(player, group, key, descending = true) {
   const sorted = group
     .filter(row => cleanNumber(row[key]) !== null)
@@ -1000,6 +1090,8 @@ function setupControls() {
     if (player) renderProfile(player);
   });
 
+  document.getElementById("download-player-pdf-btn").addEventListener("click", downloadPlayerPdf);
+
   renderButtonSet("scope-buttons", scopeLabels, activeScope, value => {
     activeScope = value;
     if (selectedPlayer) renderComparison(selectedPlayer);
@@ -1017,6 +1109,90 @@ function setupControls() {
 
   updatePlayerChoices();
   loadPlayerFromUrl();
+}
+
+function filenameSafe(value) {
+  return String(value || "player")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "") || "player";
+}
+
+async function downloadPlayerPdf() {
+  if (!selectedPlayer) return;
+
+  const btn = document.getElementById("download-player-pdf-btn");
+  const originalText = btn.textContent;
+  const originalPeerCount = activePeerCount;
+  let frame = null;
+  btn.disabled = true;
+  btn.textContent = "Building PDF...";
+
+  try {
+    activePeerCount = 5;
+    renderPeers(selectedPlayer);
+
+    const source = document.getElementById("profile-view");
+    frame = document.createElement("div");
+    frame.className = "pdf-export-frame";
+    frame.appendChild(source.cloneNode(true));
+    document.body.appendChild(frame);
+
+    await new Promise(resolve => requestAnimationFrame(resolve));
+
+    const fileName = `${filenameSafe(selectedPlayer.player)}-player-page.pdf`;
+    const renderOptions = {
+      scale: 1.8,
+      useCORS: true,
+      backgroundColor: "#ffffff",
+      windowWidth: 1100
+    };
+    if (!window.html2canvas && !window.html2pdf) {
+      throw new Error("PDF export library is not available.");
+    }
+    const canvas = window.html2canvas
+      ? await window.html2canvas(frame, renderOptions)
+      : await window.html2pdf().set({ html2canvas: renderOptions }).from(frame).toCanvas().get("canvas");
+    const jsPDFCtor = window.jspdf?.jsPDF || window.jsPDF;
+
+    if (jsPDFCtor) {
+      const pdf = new jsPDFCtor({
+        unit: "in",
+        format: "letter",
+        orientation: "portrait"
+      });
+      const pageWidth = 8.5;
+      const pageHeight = 11;
+      const margin = 0.18;
+      const maxWidth = pageWidth - margin * 2;
+      const maxHeight = pageHeight - margin * 2;
+      const ratio = Math.min(maxWidth / canvas.width, maxHeight / canvas.height);
+      const imageWidth = canvas.width * ratio;
+      const imageHeight = canvas.height * ratio;
+      const x = (pageWidth - imageWidth) / 2;
+      const y = margin;
+      pdf.addImage(canvas.toDataURL("image/jpeg", 0.96), "JPEG", x, y, imageWidth, imageHeight);
+      pdf.save(fileName);
+    } else if (window.html2pdf) {
+      await window.html2pdf().set({
+        margin: [0.18, 0.18, 0.18, 0.18],
+        filename: fileName,
+        image: { type: "jpeg", quality: 0.96 },
+        html2canvas: renderOptions,
+        jsPDF: { unit: "in", format: "letter", orientation: "portrait" }
+      }).from(frame).save();
+    }
+    frame.remove();
+  } catch (error) {
+    console.error(error);
+    alert("PDF export could not be completed. Please try again.");
+  } finally {
+    if (frame && frame.parentNode) frame.remove();
+    activePeerCount = originalPeerCount;
+    renderPeers(selectedPlayer);
+    btn.disabled = false;
+    btn.textContent = originalText;
+  }
 }
 
 function loadPlayerFromUrl() {
@@ -1198,17 +1374,28 @@ function renderComparison(player) {
 
 function renderPlayerMap(player, group) {
   const sample = group.filter(row => cleanNumber(row.USG) !== null && cleanNumber(row.BPM) !== null);
-  const usageValues = sample.map(row => num(row.USG));
-  const bpmValues = sample.map(row => num(row.BPM));
-  const usageLo = Math.max(0, quantile(usageValues, 0.03) ?? 0);
-  const usageHi = Math.max(35, quantile(usageValues, 0.97) ?? 35);
-  const bpmLo = Math.min(-8, quantile(bpmValues, 0.03) ?? -8);
-  const bpmHi = Math.max(8, quantile(bpmValues, 0.97) ?? 8);
+  const stableSample = sample.filter(row => isLegitimateChartSample(row));
+  const axisSample = stableSample.length >= 5 ? stableSample : sample;
+  const usageValues = axisSample.map(row => num(row.USG));
+  const bpmValues = axisSample.map(row => num(row.BPM));
+  const selectedUsage = num(player.USG);
+  const selectedBpm = num(player.BPM);
+  const usageBaseLo = Math.min(quantile(usageValues, 0.005) ?? 0, selectedUsage);
+  const usageBaseHi = Math.max(35, quantile(usageValues, 0.995) ?? 35, selectedUsage);
+  const bpmBaseLo = Math.min(-8, quantile(bpmValues, 0.005) ?? -8, selectedBpm);
+  const bpmBaseHi = Math.max(8, quantile(bpmValues, 0.995) ?? 8, selectedBpm);
+  const usagePad = Math.max(1.5, (usageBaseHi - usageBaseLo) * 0.045);
+  const bpmPad = Math.max(0.75, (bpmBaseHi - bpmBaseLo) * 0.055);
+  const usageLo = Math.max(0, usageBaseLo - usagePad);
+  const usageHi = usageBaseHi + usagePad;
+  const bpmLo = bpmBaseLo - bpmPad;
+  const bpmHi = bpmBaseHi + bpmPad;
   const visibleSample = sample.filter(row => {
     if (row.pid === player.pid) return true;
     const usage = num(row.USG);
     const bpm = num(row.BPM);
-    return usage >= usageLo && usage <= usageHi && bpm >= bpmLo && bpm <= bpmHi;
+    const withinFrame = usage >= usageLo && usage <= usageHi && bpm >= bpmLo && bpm <= bpmHi;
+    return withinFrame || isLegitimateChartSample(row);
   });
   const width = 820;
   const height = 390;
