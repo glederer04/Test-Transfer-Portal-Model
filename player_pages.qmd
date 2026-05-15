@@ -172,7 +172,7 @@ format:
 
 .profile-hero {
   display: grid;
-  grid-template-columns: minmax(320px, 0.9fr) minmax(520px, 1.7fr);
+  grid-template-columns: minmax(340px, 0.95fr) minmax(440px, 1.05fr);
   gap: 14px;
   align-items: stretch;
   margin-bottom: 14px;
@@ -180,6 +180,7 @@ format:
 
 .player-identity,
 .analysis-panel,
+.insight-panel,
 .section-panel {
   background: var(--panel);
   border: 1px solid var(--line);
@@ -187,8 +188,13 @@ format:
   padding: 16px;
 }
 
+.player-identity,
+.insight-panel {
+  padding: 18px;
+}
+
 .player-name {
-  font-size: clamp(2rem, 4vw, 3.5rem);
+  font-size: clamp(2.2rem, 4vw, 3.75rem);
   line-height: 0.95;
   font-weight: 900;
   color: var(--navy);
@@ -261,6 +267,7 @@ format:
   display: grid;
   grid-template-rows: auto 1fr;
   gap: 12px;
+  grid-column: 1 / -1;
 }
 
 .panel-head {
@@ -319,15 +326,21 @@ format:
 
 .bars-wrap {
   display: grid;
-  grid-template-columns: repeat(3, minmax(160px, 1fr));
-  gap: 10px 14px;
+  grid-template-columns: repeat(3, minmax(190px, max-content));
+  gap: 8px 12px;
+  align-items: start;
 }
 
 .bar-row {
   display: grid;
-  grid-template-columns: 82px 1fr 48px;
-  gap: 10px;
+  grid-template-columns: 82px minmax(96px, 138px) 34px;
+  gap: 7px;
   align-items: center;
+  justify-content: start;
+  background: #f8fafc;
+  border: 1px solid #e4ebf2;
+  border-radius: 8px;
+  padding: 8px 9px;
 }
 
 .bar-label {
@@ -355,6 +368,15 @@ format:
   text-align: right;
   color: var(--navy);
   font-weight: 900;
+}
+
+#player-map circle {
+  cursor: pointer;
+}
+
+.map-guide {
+  pointer-events: stroke;
+  cursor: help;
 }
 
 .chart-box {
@@ -624,7 +646,7 @@ format:
 
   .bar-row,
   .stacked-row {
-    grid-template-columns: 76px 1fr 48px;
+    grid-template-columns: 76px minmax(90px, 1fr) 42px;
   }
 
   .bars-wrap {
@@ -689,6 +711,16 @@ format:
         <div id="key-card-grid" class="key-card-grid"></div>
       </div>
 
+      <div class="insight-panel">
+        <div class="panel-head">
+          <div>
+            <div class="panel-title">Read On The Player</div>
+            <div class="panel-kicker">Executive analytical summary for role, value, translation, and roster decision context.</div>
+          </div>
+        </div>
+        <div id="insight-list" class="insight-list"></div>
+      </div>
+
       <div class="analysis-panel">
         <div class="panel-head">
           <div>
@@ -750,16 +782,6 @@ format:
         </div>
         <div id="peer-list"></div>
       </div>
-    </section>
-
-    <section class="section-panel">
-      <div class="panel-head">
-        <div>
-          <div class="panel-title">Read On The Player</div>
-          <div class="panel-kicker">Short notes generated from the metrics above. These are meant to orient the page, not replace film or scouting judgment.</div>
-        </div>
-      </div>
-      <div id="insight-list" class="insight-list"></div>
     </section>
   </div>
 </div>
@@ -1209,7 +1231,7 @@ function renderPlayerMap(player, group) {
       const isPlayer = row.pid === player.pid;
       const radius = isPlayer ? 8 : 4.2;
       const fill = isPlayer ? "#13294b" : "rgba(75,156,211,0.42)";
-      return `<circle cx="${xFor(row.USG)}" cy="${yFor(row.BPM)}" r="${radius}" fill="${fill}" stroke="${isPlayer ? "#ffffff" : "rgba(75,156,211,0.16)"}" stroke-width="${isPlayer ? 2.5 : 1}" data-tip="${escapeHtml(row.player)} | ${escapeHtml(row.team)} | ${fmt(row.USG)} USG | ${fmtSigned(row.BPM)} BPM"></circle>`;
+      return `<circle cx="${xFor(row.USG)}" cy="${yFor(row.BPM)}" r="${radius}" fill="${fill}" stroke="${isPlayer ? "#ffffff" : "rgba(75,156,211,0.16)"}" stroke-width="${isPlayer ? 2.5 : 1}" data-pid="${escapeHtml(row.pid)}" data-tip="${escapeHtml(row.player)} | ${escapeHtml(row.team)} | ${fmt(row.USG)} USG | ${fmtSigned(row.BPM)} BPM. Click to open this player page."></circle>`;
     }).join("");
 
   document.getElementById("player-map").innerHTML = `
@@ -1218,6 +1240,8 @@ function renderPlayerMap(player, group) {
       <line x1="${pad}" y1="${pad / 2}" x2="${pad}" y2="${height - pad}" stroke="#bfccd8" />
       <line x1="${xFor(avgUsage)}" y1="${pad / 2}" x2="${xFor(avgUsage)}" y2="${height - pad}" stroke="#d8a24a" stroke-dasharray="5 5" />
       <line x1="${pad}" y1="${yFor(avgBpm)}" x2="${width - pad / 2}" y2="${yFor(avgBpm)}" stroke="#d8a24a" stroke-dasharray="5 5" />
+      <line class="map-guide" x1="${xFor(avgUsage)}" y1="${pad / 2}" x2="${xFor(avgUsage)}" y2="${height - pad}" stroke="#d8a24a" stroke-width="10" stroke-opacity="0" data-tip="${escapeHtml(scopeName)} average usage: ${fmt(avgUsage)}%." />
+      <line class="map-guide" x1="${pad}" y1="${yFor(avgBpm)}" x2="${width - pad / 2}" y2="${yFor(avgBpm)}" stroke="#d8a24a" stroke-width="10" stroke-opacity="0" data-tip="${escapeHtml(scopeName)} average BPM: ${fmtSigned(avgBpm)}." />
       <text x="${pad}" y="22" fill="#5f6b7a" font-size="13" font-weight="700">BPM</text>
       <text x="${width - 128}" y="${height - 14}" fill="#5f6b7a" font-size="13" font-weight="700">Usage Rate</text>
       <text x="${pad}" y="${height - 18}" fill="#5f6b7a" font-size="12">${Math.round(usageLo)}%</text>
@@ -1447,6 +1471,20 @@ function renderPeers(player) {
   });
 }
 
+function ordinal(value) {
+  const rounded = Math.round(value);
+  const suffix = rounded % 100 >= 11 && rounded % 100 <= 13
+    ? "th"
+    : ({ 1: "st", 2: "nd", 3: "rd" }[rounded % 10] || "th");
+  return `${rounded}${suffix}`;
+}
+
+function tierPhrase(percentileValue, strong, solid, developing) {
+  if (percentileValue >= 80) return strong;
+  if (percentileValue >= 55) return solid;
+  return developing;
+}
+
 function renderInsights(player) {
   const team = getScopeGroup(player, "team");
   const conf = getScopeGroup(player, "conf");
@@ -1455,16 +1493,39 @@ function renderInsights(player) {
   const bpmPct = percentile(player.BPM, conf, "BPM");
   const usagePct = percentile(player.USG, role, "USG");
   const minPct = percentile(player.MP, team, "MP");
+  const scoringPct = percentile(player.PTS, conf, "PTS");
+  const porpagPct = percentile(player.PORPAG, conf, "PORPAG");
+  const astPct = percentile(player.AST, role, "AST");
+  const rebPct = percentile(player.REB, role, "REB");
   const transfer = player.transfer_prob;
+  const impactPhrase = tierPhrase(
+    bpmPct,
+    "a high-end impact profile for this conference",
+    "a positive impact profile with clear rotation value",
+    "a developing impact profile that needs role and fit context"
+  );
+  const usagePhrase = tierPhrase(
+    usagePct,
+    "a primary or near-primary offensive role",
+    "a meaningful but not overly ball-dominant role",
+    "a lower-usage role that depends more on efficiency, defense, and fit"
+  );
+  const trustPhrase = tierPhrase(
+    minPct,
+    "strong staff trust",
+    "steady rotation trust",
+    "limited current role security"
+  );
 
-  notes.push(`<strong>Impact signal:</strong> ${escapeHtml(player.player)} is in the ${Math.round(bpmPct)}th percentile for BPM within the ${escapeHtml(player.conf)}.`);
-  notes.push(`<strong>Role signal:</strong> usage is in the ${Math.round(usagePct)}th percentile among ${escapeHtml(player.Role || "role")} players, so volume should be read against similar roles.`);
-  notes.push(`<strong>Staff trust:</strong> minutes sit in the ${Math.round(minPct)}th percentile on ${escapeHtml(player.team)}, a quick proxy for how much responsibility was already earned.`);
+  notes.push(`<strong>Executive read:</strong> ${escapeHtml(player.player)} profiles as ${impactPhrase}: ${fmtSigned(player.BPM)} BPM, ${fmt(player.PTS)} points, ${fmt(player.REB)} rebounds, and ${fmt(player.AST)} assists in ${fmt(player.MP)} minutes per game for ${escapeHtml(player.team || "their team")}.`);
+  notes.push(`<strong>Role and deployment:</strong> Usage sits in the ${ordinal(usagePct)} percentile among ${escapeHtml(player.Role || "similar-role")} players, which points to ${usagePhrase}. Minutes are in the ${ordinal(minPct)} percentile on ${escapeHtml(player.team || "the team")}, signaling ${trustPhrase}.`);
+  notes.push(`<strong>Translation indicators:</strong> Within the ${escapeHtml(player.conf || "conference")} sample, the profile lands in the ${ordinal(bpmPct)} percentile for BPM, the ${ordinal(scoringPct)} percentile for scoring, and the ${ordinal(porpagPct)} percentile for PORPAG. That gives a cleaner read on whether the production is isolated box-score volume or broader possession value.`);
+  notes.push(`<strong>Skill shape:</strong> Against position peers, assist production is in the ${ordinal(astPct)} percentile and rebounding is in the ${ordinal(rebPct)} percentile. Use that split to frame whether the player is creating value as a connector, finisher, floor spacer, rebounder, or multi-area contributor.`);
 
   if (transfer >= 0.45) {
-    notes.push(`<strong>Portal read:</strong> the model flags an elevated transfer probability, so destination fit and projected BPM should be reviewed together.`);
+    notes.push(`<strong>Roster decision:</strong> The model flags an elevated transfer probability at ${pctProb(transfer)}, so destination level, projected BPM, and role fit should be reviewed together before treating the current production as directly portable.`);
   } else {
-    notes.push(`<strong>Portal read:</strong> the model is more return-leaning, but the destination panel still shows how the profile could translate by tier.`);
+    notes.push(`<strong>Roster decision:</strong> The model is more return-leaning at ${pctProb(player.return_prob)} return probability. If the player does move, the destination and projected BPM panels show where the current profile is most likely to translate.`);
   }
 
   document.getElementById("insight-list").innerHTML = notes.map(note => `<div class="insight">${note}</div>`).join("");
@@ -1487,7 +1548,7 @@ function setupTooltips() {
 
 function setupChartTooltips() {
   const tooltip = document.getElementById("chart-tooltip");
-  document.querySelectorAll("#player-map circle").forEach(el => {
+  document.querySelectorAll("#player-map circle, #player-map .map-guide").forEach(el => {
     el.addEventListener("mouseenter", event => {
       tooltip.textContent = el.dataset.tip || "";
       tooltip.style.display = "block";
@@ -1496,6 +1557,23 @@ function setupChartTooltips() {
     el.addEventListener("mousemove", moveTooltip);
     el.addEventListener("mouseleave", () => {
       tooltip.style.display = "none";
+    });
+  });
+
+  document.querySelectorAll("#player-map circle").forEach(el => {
+    el.addEventListener("click", function() {
+      const player = allPlayers.find(row => String(row.pid) === String(this.dataset.pid));
+      if (!player) return;
+      document.getElementById("name-search").value = player.player;
+      document.getElementById("team-filter").value = "";
+      document.getElementById("conf-filter").value = "";
+      document.getElementById("role-filter").value = "";
+      document.getElementById("year-filter").value = "";
+      updatePlayerChoices();
+      document.getElementById("player-select").value = player.pid;
+      window.history.replaceState({}, "", `player_pages.html?pid=${encodeURIComponent(player.pid)}`);
+      renderProfile(player);
+      document.querySelector(".selector-band").scrollIntoView({ behavior: "smooth", block: "start" });
     });
   });
 }
