@@ -1404,6 +1404,29 @@ function pdfInsightBlock(pdf, note, x, y, width, height, size = 6.2) {
   pdf.text(pdf.splitTextToSize(body, width - 0.18).slice(0, maxLines), x + 0.09, lineY);
 }
 
+function pdfInsightPoint(pdf, note, x, y, width, slotHeight, size = 6.1) {
+  const text = String(note || "").replace(/\s+/g, " ").trim();
+  const colon = text.indexOf(":");
+  const lead = colon === -1 ? "Read:" : text.slice(0, colon + 1);
+  const body = colon === -1 ? text : text.slice(colon + 1).trim();
+
+  pdf.setTextColor(75, 156, 211);
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(8);
+  pdf.text("•", x, y);
+
+  pdf.setTextColor(19, 41, 75);
+  pdf.setFontSize(size);
+  pdf.text(lead, x + 0.11, y);
+
+  pdf.setTextColor(41, 53, 72);
+  pdf.setFont("helvetica", "normal");
+  pdf.setFontSize(size);
+  const lineY = y + size * 0.015;
+  const maxLines = Math.max(1, Math.floor((slotHeight - 0.12) / (size * 0.015)));
+  pdf.text(pdf.splitTextToSize(body, width - 0.11).slice(0, maxLines), x + 0.11, lineY);
+}
+
 function pdfTableRow(pdf, x, y, w, h, fill = false) {
   if (fill) {
     pdf.setFillColor(248, 250, 252);
@@ -1463,15 +1486,15 @@ function pdfMetricCell(pdf, label, value, sub, x, y, w, h) {
   pdf.roundedRect(x, y, w, h, 0.045, 0.045, "FD");
   pdf.setTextColor(95, 107, 122);
   pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(5.8);
+  pdf.setFontSize(5.4);
   pdf.text(String(label).toUpperCase(), x + 0.06, y + 0.11);
   pdf.setTextColor(17, 24, 39);
-  pdf.setFontSize(10);
-  pdf.text(String(value), x + 0.06, y + 0.27);
+  pdf.setFontSize(9.8);
+  pdf.text(String(value), x + 0.06, y + 0.26);
   pdf.setTextColor(95, 107, 122);
   pdf.setFont("helvetica", "normal");
-  pdf.setFontSize(5.2);
-  pdf.text(pdf.splitTextToSize(String(sub || ""), w - 0.12).slice(0, 1), x + 0.06, y + h - 0.07);
+  pdf.setFontSize(4.7);
+  pdf.text(pdf.splitTextToSize(String(sub || ""), w - 0.12).slice(0, 1), x + 0.06, y + h - 0.06);
 }
 
 function pdfMetricTiles(player) {
@@ -1541,17 +1564,18 @@ function drawPlayerReportPdf(pdf, player) {
   pdf.line(0.38, 0.84, 8.12, 0.84);
 
   pdfCard(pdf, 0.35, 0.96, 3.72, 2.1, "Profile Snapshot");
-  pdfText(pdf, stripHtml(buildSummary(player)), 0.47, 1.25, 3.48, 6.9, "bold", 3);
-  pdfCompactKey(pdf, "BPM", fmtSigned(player.BPM), `${fmtSigned(player.OBPM)} OBPM / ${fmtSigned(player.DBPM)} DBPM`, 0.47, 1.83, 1.68, 0.54);
-  pdfCompactKey(pdf, "Production", `${fmt(player.PTS)} PTS`, `${fmt(player.REB)} REB / ${fmt(player.AST)} AST`, 2.22, 1.83, 1.68, 0.54);
-  pdfCompactKey(pdf, "Role Load", `${fmt(player.USG)}% USG`, `${fmt(player.MP)} MPG / ${fmt(player.GP, 0)} games`, 0.47, 2.42, 1.68, 0.54);
-  pdfCompactKey(pdf, "Transfer", pctProb(player.transfer_prob), `${pctProb(player.return_prob)} return probability`, 2.22, 2.42, 1.68, 0.54);
+  pdfText(pdf, stripHtml(buildSummary(player)), 0.47, 1.25, 3.48, 7.4, "bold", 4);
+  pdfCompactKey(pdf, "BPM", fmtSigned(player.BPM), `${fmtSigned(player.OBPM)} OBPM / ${fmtSigned(player.DBPM)} DBPM`, 0.47, 1.86, 1.68, 0.52);
+  pdfCompactKey(pdf, "Production", `${fmt(player.PTS)} PTS`, `${fmt(player.REB)} REB / ${fmt(player.AST)} AST`, 2.22, 1.86, 1.68, 0.52);
+  pdfCompactKey(pdf, "Role Load", `${fmt(player.USG)}% USG`, `${fmt(player.MP)} MPG / ${fmt(player.GP, 0)} games`, 0.47, 2.43, 1.68, 0.52);
+  pdfCompactKey(pdf, "Transfer", pctProb(player.transfer_prob), `${pctProb(player.return_prob)} return probability`, 2.22, 2.43, 1.68, 0.52);
 
   pdfCard(pdf, 4.25, 0.96, 3.9, 2.1, "Read On The Player");
   const insights = Array.from(document.querySelectorAll("#insight-list .insight")).map(el => el.textContent.trim());
-  const insightBlocks = insights.slice(0, 4);
-  insightBlocks.forEach((note, idx) => {
-    pdfInsightBlock(pdf, note, 4.38, 1.19 + idx * 0.43, 3.6, 0.37, 5.8);
+  const insightPoints = insights.slice(0, 5);
+  const pointSlot = 0.34;
+  insightPoints.forEach((note, idx) => {
+    pdfInsightPoint(pdf, note, 4.39, 1.22 + idx * pointSlot, 3.55, pointSlot, 5.75);
   });
 
   pdfCard(pdf, 0.35, 3.22, 7.8, 2.25, `Comparison Snapshot | ${scopeName}`);
@@ -1609,12 +1633,12 @@ function drawComparisonPdf(pdf, player, x, y, w, h) {
 }
 
 function drawMetricPdf(pdf, metric, x, y, w, h) {
-  const colW = (w - 0.12) / 2;
-  const rowH = (h - 0.12) / 3;
+  const colW = (w - 0.16) / 3;
+  const rowH = (h - 0.08) / 2;
   metric.tiles.forEach(([label, value, sub], idx) => {
-    const col = idx % 2;
-    const row = Math.floor(idx / 2);
-    pdfMetricCell(pdf, label, value, sub, x + col * (colW + 0.12), y + row * (rowH + 0.06), colW, rowH);
+    const col = idx % 3;
+    const row = Math.floor(idx / 3);
+    pdfMetricCell(pdf, label, value, sub, x + col * (colW + 0.08), y + row * (rowH + 0.08), colW, rowH);
   });
 }
 
