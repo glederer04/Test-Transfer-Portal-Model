@@ -880,6 +880,16 @@ function average(group, key) {
   return values.reduce((sum, value) => sum + value, 0) / values.length;
 }
 
+function quantile(values, q) {
+  const sorted = values.filter(value => Number.isFinite(value)).sort((a, b) => a - b);
+  if (sorted.length === 0) return null;
+  const pos = (sorted.length - 1) * q;
+  const base = Math.floor(pos);
+  const rest = pos - base;
+  if (sorted[base + 1] === undefined) return sorted[base];
+  return sorted[base] + rest * (sorted[base + 1] - sorted[base]);
+}
+
 function rankInGroup(player, group, key, descending = true) {
   const sorted = group
     .filter(row => cleanNumber(row[key]) !== null)
@@ -1131,7 +1141,7 @@ function renderComparison(player) {
 
   document.getElementById("comparison-bars").innerHTML = comparisonMetrics.map(metric => {
     const pct = percentile(player[metric.key], group, metric.key);
-    const help = `${player.player} is in the ${Math.round(pct)}th percentile for ${metric.label} among ${group.length.toLocaleString()} ${scopeName} players. Higher bars mean the player ranks better within the selected comparison group. ${metric.help}`;
+    const help = `${metric.help} ${player.player} is in the ${Math.round(pct)}th percentile for ${metric.label} among ${group.length.toLocaleString()} ${scopeName} players.`;
     return `
       <div class="bar-row">
         <div class="bar-label"><span class="column-help" data-help="${escapeHtml(help)}">${metric.label}</span></div>
@@ -1147,19 +1157,34 @@ function renderComparison(player) {
 
 function renderPlayerMap(player, group) {
   const sample = group.filter(row => cleanNumber(row.USG) !== null && cleanNumber(row.BPM) !== null);
-  const maxUsage = Math.max(35, ...sample.map(row => num(row.USG)));
-  const minBpm = Math.min(-10, ...sample.map(row => num(row.BPM)));
-  const maxBpm = Math.max(10, ...sample.map(row => num(row.BPM)));
+  const usageValues = sample.map(row => num(row.USG));
+  const bpmValues = sample.map(row => num(row.BPM));
+  const usageLo = Math.max(0, quantile(usageValues, 0.03) ?? 0);
+  const usageHi = Math.max(35, quantile(usageValues, 0.97) ?? 35);
+  const bpmLo = Math.min(-8, quantile(bpmValues, 0.03) ?? -8);
+  const bpmHi = Math.max(8, quantile(bpmValues, 0.97) ?? 8);
+  const visibleSample = sample.filter(row => {
+    if (row.pid === player.pid) return true;
+    const usage = num(row.USG);
+    const bpm = num(row.BPM);
+    return usage >= usageLo && usage <= usageHi && bpm >= bpmLo && bpm <= bpmHi;
+  });
   const width = 820;
   const height = 390;
   const pad = 52;
 
-  const xFor = value => pad + (num(value) / maxUsage) * (width - pad * 1.5);
-  const yFor = value => height - pad - ((num(value) - minBpm) / (maxBpm - minBpm || 1)) * (height - pad * 1.5);
+  const xFor = value => {
+    const clipped = clamp(num(value), usageLo, usageHi);
+    return pad + ((clipped - usageLo) / (usageHi - usageLo || 1)) * (width - pad * 1.5);
+  };
+  const yFor = value => {
+    const clipped = clamp(num(value), bpmLo, bpmHi);
+    return height - pad - ((clipped - bpmLo) / (bpmHi - bpmLo || 1)) * (height - pad * 1.5);
+  };
   const scopeName = getScopeName(player, activeScope);
-  const avgUsage = average(sample, "USG") || 0;
-  const avgBpm = average(sample, "BPM") || 0;
-  const points = sample
+  const avgUsage = clamp(average(visibleSample, "USG") || 0, usageLo, usageHi);
+  const avgBpm = clamp(average(visibleSample, "BPM") || 0, bpmLo, bpmHi);
+  const points = visibleSample
     .sort((a, b) => (a.pid === player.pid ? 1 : b.pid === player.pid ? -1 : 0))
     .map(row => {
       const isPlayer = row.pid === player.pid;
@@ -1176,8 +1201,8 @@ function renderPlayerMap(player, group) {
       <line x1="${pad}" y1="${yFor(avgBpm)}" x2="${width - pad / 2}" y2="${yFor(avgBpm)}" stroke="#d8a24a" stroke-dasharray="5 5" />
       <text x="${pad}" y="22" fill="#5f6b7a" font-size="13" font-weight="700">BPM</text>
       <text x="${width - 128}" y="${height - 14}" fill="#5f6b7a" font-size="13" font-weight="700">Usage Rate</text>
-      <text x="${pad}" y="${height - 18}" fill="#5f6b7a" font-size="12">0%</text>
-      <text x="${width - 72}" y="${height - 18}" fill="#5f6b7a" font-size="12">${Math.round(maxUsage)}%</text>
+      <text x="${pad}" y="${height - 18}" fill="#5f6b7a" font-size="12">${Math.round(usageLo)}%</text>
+      <text x="${width - 72}" y="${height - 18}" fill="#5f6b7a" font-size="12">${Math.round(usageHi)}%</text>
       <text x="${xFor(avgUsage) + 8}" y="${pad / 2 + 14}" fill="#9a6816" font-size="12" font-weight="700">${escapeHtml(scopeName)} avg usage</text>
       <text x="${pad + 8}" y="${yFor(avgBpm) - 8}" fill="#9a6816" font-size="12" font-weight="700">${escapeHtml(scopeName)} avg BPM</text>
       ${points}
