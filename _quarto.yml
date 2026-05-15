@@ -5,6 +5,7 @@ project:
     - index.qmd
     - projections.qmd
     - player_table.qmd
+    - player_pages.qmd
   resources:
     - data/
     - favicon.ico
@@ -20,6 +21,8 @@ website:
         file: projections.qmd
       - text: Player Table
         file: player_table.qmd
+      - text: Player Pages
+        file: player_pages.qmd
   favicon: favicon2.ico
 
 format:
