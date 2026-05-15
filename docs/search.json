@@ -11,7 +11,7 @@
     "href": "projections.html",
     "title": "Projections",
     "section": "",
-    "text": "Use the buttons below to switch between projection views.\n\nTransfer Likelihood Return / Leave Destination Tier Projected BPM"
+    "text": "Use the buttons below to switch between projection views.\n\nTransfer Likelihood Return / Leave Destination Tier Projected BPM\n\n\n\n\n\n\nHover over a column name for a quick definition. Click a player name to open that player page in this tab, or use the plus button beside a player for projection details."
   },
   {
     "objectID": "index.html",
@@ -32,6 +32,6 @@
     "href": "player_table.html",
     "title": "Player Table",
     "section": "",
-    "text": "Filters\n\n\nChoose at least one filter to load the player table.\n\n\n\n\n\n\nSelect at least one filter, then apply.\n\n\n\nHover over a column name for a quick definition. Use the plus button beside a player to open more player context and model details."
+    "text": "Filters\n\n\nChoose at least one filter to load the player table.\n\n\n\n\n\n\nSelect at least one filter, then apply.\n\n\n\nHover over a column name for a quick definition. Click a player name to open that player page in this tab, or use the plus button beside a player for table-level model details."
   }
 ]

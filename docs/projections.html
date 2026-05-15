@@ -124,7 +124,7 @@ ul.task-list li input[type="checkbox"] {
 <!-- margin-sidebar -->
     
 <!-- main -->
-<main class="content column-page" id="quarto-document-content">
+<main class="content page-columns page-full column-page" id="quarto-document-content">
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
@@ -531,6 +531,13 @@ table.dataTable tbody td {
   font-weight: 600;
 }
 
+.projection-table-note {
+  color: #4f5a67;
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 2px 0 12px;
+}
+
 .player-profile-link {
   color: #13294b;
   font-weight: 800;
@@ -543,6 +550,25 @@ table.dataTable tbody td {
 .player-profile-link:hover {
   color: #2f78aa;
   text-decoration-style: solid;
+}
+
+.column-help {
+  cursor: help;
+}
+
+.column-tooltip {
+  position: fixed;
+  display: none;
+  max-width: 280px;
+  z-index: 2000;
+  background: #13294b;
+  color: #fff;
+  border-radius: 8px;
+  padding: 9px 11px;
+  font-size: 0.95rem;
+  line-height: 1.3;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.18);
+  pointer-events: none;
 }
 
 .dataTables_wrapper {
@@ -1195,12 +1221,18 @@ tr.shown td.details-control::before {
 
 </div>
 <div id="projection-table-wrapper">
+<div class="projection-table-note">
+Hover over a column name for a quick definition. Click a player name to open that player page in this tab, or use the plus button beside a player for projection details.
+</div>
 <table id="projection-table" class="display nowrap" style="width:100%">
 <thead>
 </thead>
 <tbody>
 </tbody>
 </table>
+</div>
+<div id="projection-tooltip" class="column-tooltip">
+
 </div>
 <script>
 let projectionData = [];
@@ -1330,6 +1362,22 @@ const customColumnTitles = {
   dest_prob_upper_mid_hi: "Upper Mid Prob High",
   dest_prob_low_lo: "Low Major Prob Low",
   dest_prob_low_hi: "Low Major Prob High"
+};
+
+const projectionColumnHelp = {
+  player: "Player name. Click a player name to open the full player page in this tab.",
+  team: "Current team listed in the player dataset.",
+  conf: "Current conference listed in the player dataset.",
+  class: "Player class year.",
+  height: "Listed player height.",
+  GP: "Games played.",
+  PTS: "Points per game.",
+  REB: "Rebounds per game.",
+  AST: "Assists per game.",
+  transfer_show: "Model-estimated transfer likelihood.",
+  return_show: "Model-estimated return likelihood.",
+  destination_show: "Most likely destination tier with model probability.",
+  bpm_show: "Projected BPM for the player based on the model outlook."
 };
 
 function prettifyLabel(col) {
@@ -1715,7 +1763,13 @@ function playerProfileLink(row) {
   const name = escapeHtml(row.player || "");
   const pid = encodeURIComponent(row.pid || "");
   if (!pid) return name;
-  return `<a class="player-profile-link" href="player_pages.html?pid=${pid}" title="Click to open the player page for ${name}">${name}</a>`;
+  return `<a class="player-profile-link" href="player_pages.html?pid=${pid}" data-help="Click to open the player page for ${name} in this tab" aria-label="Open player page for ${name}">${name}</a>`;
+}
+
+function projectionHeaderTitle(col) {
+  const label = customColumnTitles[col] || prettifyLabel(col);
+  const help = projectionColumnHelp[col] || label;
+  return `<span class="column-help" data-help="${escapeHtml(help)}">${label}</span>`;
 }
 
 function clampBPMPosition(val, minVal, maxVal) {
@@ -2483,7 +2537,7 @@ function buildTable(viewName) {
       width: '30px'
     },
     ...validCols.map(col => ({
-      title: customColumnTitles[col] || prettifyLabel(col),
+      title: projectionHeaderTitle(col),
       data: col,
       defaultContent: "",
       className: [
@@ -2515,6 +2569,8 @@ function buildTable(viewName) {
     deferRender: true
   });
 
+  setupProjectionTooltips();
+
   $('#projection-table tbody').off('click', 'td.details-control');
 
   $('#projection-table tbody').on('click', 'td.details-control', function () {
@@ -2529,6 +2585,59 @@ function buildTable(viewName) {
       tr.addClass('shown');
     }
   });
+}
+
+function setupProjectionTooltips() {
+  const tooltip = document.getElementById("projection-tooltip");
+  if (!tooltip) return;
+
+  $("#projection-table thead").off("mouseenter", ".column-help");
+  $("#projection-table thead").off("mousemove", ".column-help");
+  $("#projection-table thead").off("mouseleave", ".column-help");
+  $("#projection-table tbody").off("mouseenter", ".player-profile-link");
+  $("#projection-table tbody").off("mousemove", ".player-profile-link");
+  $("#projection-table tbody").off("mouseleave", ".player-profile-link");
+
+  $("#projection-table thead").on("mouseenter", ".column-help", function(event) {
+    tooltip.textContent = this.dataset.help || "";
+    tooltip.style.display = "block";
+    positionProjectionTooltip(event);
+  });
+
+  $("#projection-table thead").on("mousemove", ".column-help", function(event) {
+    positionProjectionTooltip(event);
+  });
+
+  $("#projection-table thead").on("mouseleave", ".column-help", function() {
+    tooltip.style.display = "none";
+  });
+
+  $("#projection-table tbody").on("mouseenter", ".player-profile-link", function(event) {
+    tooltip.textContent = this.dataset.help || "";
+    tooltip.style.display = "block";
+    positionProjectionTooltip(event);
+  });
+
+  $("#projection-table tbody").on("mousemove", ".player-profile-link", function(event) {
+    positionProjectionTooltip(event);
+  });
+
+  $("#projection-table tbody").on("mouseleave", ".player-profile-link", function() {
+    tooltip.style.display = "none";
+  });
+}
+
+function positionProjectionTooltip(event) {
+  const tooltip = document.getElementById("projection-tooltip");
+  if (!tooltip) return;
+
+  const offset = 12;
+  const tooltipWidth = tooltip.offsetWidth || 260;
+  const x = Math.min(event.clientX + offset, window.innerWidth - tooltipWidth - offset);
+  const y = event.clientY + offset;
+
+  tooltip.style.left = `${Math.max(offset, x)}px`;
+  tooltip.style.top = `${y}px`;
 }
 
 Papa.parse("data/complete_2026_scored.csv", {

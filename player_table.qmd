@@ -492,7 +492,7 @@ tr.shown td.details-control::before {
 <div id="filter-panel" class="filter-panel show"></div>
 <div id="filter-status" class="filter-status">Select at least one filter, then apply.</div>
 <div id="player-table-wrapper">
-<div class="table-usage-note">Hover over a column name for a quick definition. Use the plus button beside a player to open more player context and model details.</div>
+<div class="table-usage-note">Hover over a column name for a quick definition. Click a player name to open that player page in this tab, or use the plus button beside a player for table-level model details.</div>
 <table id="player-table" class="display nowrap">
 <thead></thead>
 <tbody></tbody>
@@ -569,7 +569,7 @@ function playerProfileLink(row) {
   const name = escapeHtml(row.player || "");
   const pid = encodeURIComponent(row.pid || "");
   if (!pid) return name;
-  return `<a class="player-profile-link" href="player_pages.html?pid=${pid}" title="Click to open the player page for ${name}">${name}</a>`;
+  return `<a class="player-profile-link" href="player_pages.html?pid=${pid}" data-help="Click to open the player page for ${name} in this tab" aria-label="Open player page for ${name}">${name}</a>`;
 }
 
 function parseOptionalNumber(val) {
@@ -1209,6 +1209,9 @@ function setupColumnTooltips() {
   $("#player-table thead").off("mouseenter", ".column-help");
   $("#player-table thead").off("mousemove", ".column-help");
   $("#player-table thead").off("mouseleave", ".column-help");
+  $("#player-table tbody").off("mouseenter", ".player-profile-link");
+  $("#player-table tbody").off("mousemove", ".player-profile-link");
+  $("#player-table tbody").off("mouseleave", ".player-profile-link");
 
   $("#player-table thead").on("mouseenter", ".column-help", function(event) {
     tooltip.textContent = this.dataset.help || "";
@@ -1221,6 +1224,20 @@ function setupColumnTooltips() {
   });
 
   $("#player-table thead").on("mouseleave", ".column-help", function() {
+    tooltip.style.display = "none";
+  });
+
+  $("#player-table tbody").on("mouseenter", ".player-profile-link", function(event) {
+    tooltip.textContent = this.dataset.help || "";
+    tooltip.style.display = "block";
+    positionColumnTooltip(event);
+  });
+
+  $("#player-table tbody").on("mousemove", ".player-profile-link", function(event) {
+    positionColumnTooltip(event);
+  });
+
+  $("#player-table tbody").on("mouseleave", ".player-profile-link", function() {
     tooltip.style.display = "none";
   });
 }
