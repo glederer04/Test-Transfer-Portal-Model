@@ -68,7 +68,6 @@ ul.task-list li input[type="checkbox"] {
   }
 }</script>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
 
@@ -543,56 +542,242 @@ ul.task-list li input[type="checkbox"] {
   position: fixed;
   left: 0;
   top: 0;
-  width: 1080px;
-  max-height: none;
-  background: #fff;
+  width: 816px;
+  height: 1056px;
+  box-sizing: border-box;
+  overflow: hidden;
+  background: #f6f8fb;
   color: var(--ink);
-  padding: 18px;
+  padding: 24px;
   z-index: 10000;
   pointer-events: none;
+  font-family: Arial, Helvetica, sans-serif;
 }
 
-.pdf-export-frame .selector-band,
-.pdf-export-frame .profile-action-btn {
-  display: none !important;
-}
-
-.pdf-export-frame .profile-view {
-  display: block !important;
-}
-
-.pdf-export-frame .profile-hero,
-.pdf-export-frame .section-grid,
-.pdf-export-frame .wide-grid {
+.pdf-report {
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
   gap: 10px;
-  margin-bottom: 10px;
 }
 
-.pdf-export-frame .player-identity,
-.pdf-export-frame .analysis-panel,
-.pdf-export-frame .insight-panel,
-.pdf-export-frame .section-panel {
-  padding: 12px;
-  break-inside: avoid;
+.pdf-report-header {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 16px;
+  align-items: start;
+  border-bottom: 2px solid #13294b;
+  padding-bottom: 10px;
 }
 
-.pdf-export-frame .player-name {
-  font-size: 2.35rem;
+.pdf-report-title {
+  font-size: 34px;
+  line-height: 0.94;
+  font-weight: 900;
+  color: #13294b;
 }
 
-.pdf-export-frame .chart-box,
-.pdf-export-frame .chart-box svg {
-  min-height: 255px;
+.pdf-report-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 7px;
 }
 
-.pdf-export-frame .role-grid,
-.pdf-export-frame .key-card-grid {
-  gap: 7px;
+.pdf-report-meta span,
+.pdf-pill {
+  border: 1px solid #d8e1ea;
+  border-radius: 999px;
+  background: #fff;
+  color: #334155;
+  padding: 3px 7px;
+  font-size: 10px;
+  font-weight: 800;
 }
 
-.pdf-export-frame .insight {
-  padding: 7px 9px;
-  font-size: 0.82rem;
+.pdf-report-mark {
+  text-align: right;
+  font-size: 10px;
+  color: #64748b;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.pdf-report-grid {
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: 10px;
+}
+
+.pdf-card {
+  background: #fff;
+  border: 1px solid #dce3ea;
+  border-radius: 8px;
+  padding: 10px;
+  min-width: 0;
+}
+
+.pdf-card-title {
+  color: #13294b;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 6px;
+}
+
+.pdf-summary {
+  font-size: 11px;
+  line-height: 1.33;
+  color: #334155;
+}
+
+.pdf-key-grid,
+.pdf-tile-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.pdf-key-grid .key-card,
+.pdf-tile-grid .role-tile {
+  border-radius: 7px;
+  padding: 7px;
+  background: #f8fafc;
+  min-height: 0;
+}
+
+.pdf-key-grid .key-value,
+.pdf-tile-grid .role-value,
+.pdf-card .big-score {
+  font-size: 17px;
+  line-height: 1;
+}
+
+.pdf-key-grid .key-label,
+.pdf-tile-grid .role-label,
+.pdf-card .key-sub,
+.pdf-card .field-note {
+  font-size: 9px;
+  line-height: 1.22;
+}
+
+.pdf-insights {
+  display: grid;
+  gap: 5px;
+}
+
+.pdf-insights .insight {
+  padding: 6px 7px;
+  font-size: 10px;
+  line-height: 1.24;
+  border-radius: 7px;
+}
+
+.pdf-comparison {
+  display: grid;
+  grid-template-columns: 0.45fr 0.55fr;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.pdf-comparison .bars-wrap {
+  grid-template-columns: 1fr;
+  gap: 5px;
+}
+
+.pdf-comparison .bar-row {
+  grid-template-columns: 50px minmax(82px, 1fr) 22px;
+  gap: 5px;
+  font-size: 9px;
+  padding: 5px 6px;
+}
+
+.pdf-comparison .chart-box {
+  min-height: 212px;
+  border-radius: 7px;
+}
+
+.pdf-comparison .chart-box svg {
+  min-height: 212px;
+}
+
+.pdf-report .model-score-line {
+  grid-template-columns: 0.42fr 0.58fr;
+  gap: 8px;
+}
+
+.pdf-report .role-grid {
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.pdf-report .role-tile {
+  padding: 7px;
+  min-height: 0;
+}
+
+.pdf-report .stacked-row {
+  grid-template-columns: 58px 1fr 32px;
+  gap: 5px;
+  font-size: 9px;
+  margin-bottom: 4px;
+}
+
+.pdf-report .rank-table {
+  font-size: 9px;
+}
+
+.pdf-report .rank-table th,
+.pdf-report .rank-table td {
+  padding: 4px 5px;
+}
+
+.pdf-peer-list {
+  display: grid;
+  gap: 4px;
+}
+
+.pdf-peer-row {
+  display: grid;
+  grid-template-columns: 1fr 38px 38px 38px;
+  gap: 6px;
+  align-items: center;
+  border-bottom: 1px solid #edf2f7;
+  padding-bottom: 4px;
+  font-size: 9px;
+}
+
+.pdf-peer-row.header {
+  color: #64748b;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.pdf-peer-name {
+  font-weight: 900;
+  color: #13294b;
+}
+
+.pdf-peer-sub {
+  color: #64748b;
+  font-size: 8px;
+}
+
+.pdf-peer-num {
+  text-align: right;
+  font-weight: 900;
+}
+
+.pdf-footer {
+  color: #64748b;
+  font-size: 9px;
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px solid #dce3ea;
+  padding-top: 6px;
 }
 
 .chart-box {
@@ -1252,68 +1437,337 @@ async function downloadPlayerPdf() {
 
   const btn = document.getElementById("download-player-pdf-btn");
   const originalText = btn.textContent;
-  const originalPeerCount = activePeerCount;
-  let frame = null;
   btn.disabled = true;
   btn.textContent = "Building PDF...";
 
   try {
-    activePeerCount = 5;
-    renderPeers(selectedPlayer);
-    await new Promise(resolve => requestAnimationFrame(resolve));
-
-    const source = document.getElementById("profile-view");
-    frame = document.createElement("div");
-    frame.className = "pdf-export-frame";
-    frame.appendChild(source.cloneNode(true));
-    document.body.appendChild(frame);
-
-    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-
-    const fileName = `${filenameSafe(selectedPlayer.player)}-player-page.pdf`;
-    if (!window.html2canvas || !(window.jspdf?.jsPDF || window.jsPDF)) {
-      throw new Error("PDF export libraries are not available.");
-    }
-    const canvas = await window.html2canvas(frame, {
-      scale: 1.5,
-      useCORS: true,
-      backgroundColor: "#ffffff",
-      width: frame.scrollWidth,
-      height: frame.scrollHeight,
-      windowWidth: frame.scrollWidth,
-      windowHeight: frame.scrollHeight,
-      scrollX: 0,
-      scrollY: 0
-    });
     const jsPDFCtor = window.jspdf?.jsPDF || window.jsPDF;
+    if (!jsPDFCtor) {
+      throw new Error("PDF export library is not available.");
+    }
     const pdf = new jsPDFCtor({
       unit: "in",
       format: "letter",
       orientation: "portrait"
     });
-    const pageWidth = 8.5;
-    const pageHeight = 11;
-    const margin = 0.18;
-    const maxWidth = pageWidth - margin * 2;
-    const maxHeight = pageHeight - margin * 2;
-    const ratio = Math.min(maxWidth / canvas.width, maxHeight / canvas.height);
-    const imageWidth = canvas.width * ratio;
-    const imageHeight = canvas.height * ratio;
-    const x = (pageWidth - imageWidth) / 2;
-    const y = (pageHeight - imageHeight) / 2;
-    pdf.addImage(canvas.toDataURL("image/jpeg", 0.96), "JPEG", x, y, imageWidth, imageHeight);
-    pdf.save(fileName);
-    frame.remove();
+
+    drawPlayerReportPdf(pdf, selectedPlayer);
+    pdf.save(`${filenameSafe(selectedPlayer.player)}-player-page.pdf`);
   } catch (error) {
     console.error(error);
     alert("PDF export could not be completed. Please try again.");
   } finally {
-    if (frame && frame.parentNode) frame.remove();
-    activePeerCount = originalPeerCount;
-    renderPeers(selectedPlayer);
     btn.disabled = false;
     btn.textContent = originalText;
   }
+}
+
+function stripHtml(html) {
+  const div = document.createElement("div");
+  div.innerHTML = html || "";
+  return div.textContent.replace(/\s+/g, " ").trim();
+}
+
+function pdfText(pdf, text, x, y, width, size = 8, style = "normal", maxLines = 4) {
+  pdf.setFont("helvetica", style);
+  pdf.setFontSize(size);
+  const lines = pdf.splitTextToSize(String(text || ""), width).slice(0, maxLines);
+  pdf.text(lines, x, y);
+  return y + lines.length * size * 0.014 + 0.03;
+}
+
+function pdfCard(pdf, x, y, w, h, title) {
+  pdf.setFillColor(255, 255, 255);
+  pdf.setDrawColor(220, 227, 234);
+  pdf.roundedRect(x, y, w, h, 0.06, 0.06, "FD");
+  pdf.setTextColor(19, 41, 75);
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(8.5);
+  pdf.text(String(title).toUpperCase(), x + 0.08, y + 0.18);
+  pdf.setTextColor(17, 24, 39);
+}
+
+function pdfKey(pdf, label, value, sub, x, y, w) {
+  pdf.setFillColor(248, 250, 252);
+  pdf.setDrawColor(226, 232, 239);
+  pdf.roundedRect(x, y, w, 0.48, 0.05, 0.05, "FD");
+  pdf.setTextColor(95, 107, 122);
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(6.5);
+  pdf.text(String(label).toUpperCase(), x + 0.06, y + 0.13);
+  pdf.setTextColor(17, 24, 39);
+  pdf.setFontSize(12);
+  pdf.text(String(value), x + 0.06, y + 0.31);
+  pdf.setTextColor(95, 107, 122);
+  pdf.setFontSize(6);
+  pdf.text(pdf.splitTextToSize(String(sub || ""), w - 0.12).slice(0, 1), x + 0.06, y + 0.42);
+}
+
+function pdfMetricTiles(player) {
+  const teamGroup = getScopeGroup(player, "team");
+  const confGroup = getScopeGroup(player, "conf");
+  const roleGroup = getScopeGroup(player, "role");
+  const configs = {
+    impact: {
+      note: "Impact combines offensive lift, defensive value, and how efficiently the role is being used.",
+      tiles: [
+        ["BPM", fmtSigned(player.BPM), `Team rank ${rankInGroup(player, teamGroup, "BPM")}`],
+        ["OBPM", fmtSigned(player.OBPM), "Offensive impact estimate"],
+        ["DBPM", fmtSigned(player.DBPM), "Defensive impact estimate"],
+        ["PORPAG", fmt(player.PORPAG), `Conference percentile ${Math.round(percentile(player.PORPAG, confGroup, "PORPAG"))}`],
+        ["Team Gap", fmtSigned(player.player_team_gap), "Player BPM vs team quality"],
+        ["Role Pct", Math.round(percentile(player.BPM, roleGroup, "BPM")), "BPM within position"]
+      ]
+    },
+    scoring: {
+      note: "Scoring shape looks at volume, shot mix, and efficiency.",
+      tiles: [
+        ["PTS", fmt(player.PTS), `${fmt(player.USG)}% usage`],
+        ["TS", fmtPct(player["TS."], 1), "True shooting"],
+        ["eFG", fmtPct(player["eFG."], 1), "Shot efficiency"],
+        ["Rim", fmtPct(player["Rim."], 1), "Rim accuracy"],
+        ["Mid", fmtPct(player["Mid."], 1), "Midrange accuracy"],
+        ["3PT", fmtPct(player["TP."], 1), `${fmt(player.TP_att_pg)} attempts/g`]
+      ]
+    },
+    playmaking: {
+      note: "Playmaking and possession profile show creation, security, and activity.",
+      tiles: [
+        ["AST", fmt(player.AST), `${fmt(player["AST."])}% assist rate`],
+        ["AST/TOV", fmt(player.ast_tov_calc), "Creation security"],
+        ["TO Rate", `${fmt(player["TO."])}%`, "Lower is better"],
+        ["REB", fmt(player.REB), `${fmt(player.ORB)} ORB / ${fmt(player.DRB)} DRB`],
+        ["STL", fmt(player.STL), `${fmt(player["STL."])}% steal rate`],
+        ["BLK", fmt(player.BLK), `${fmt(player["BLK."])}% block rate`]
+      ]
+    }
+  };
+  return configs[activeMetricView] || configs.impact;
+}
+
+function drawPlayerReportPdf(pdf, player) {
+  const scopeName = getScopeName(player, activeScope);
+  const metricLabel = metricViews[activeMetricView] || "Production";
+  const modelLabel = modelViews[activeModelView] || "Model";
+  const today = new Date().toLocaleDateString();
+  const meta = [player.team, player.conf, player.Role, player.class, player.height].filter(Boolean).join("  |  ");
+
+  pdf.setFillColor(246, 248, 251);
+  pdf.rect(0, 0, 8.5, 11, "F");
+  pdf.setTextColor(19, 41, 75);
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(24);
+  pdf.text(player.player, 0.35, 0.48);
+  pdf.setFontSize(7);
+  pdf.setTextColor(95, 107, 122);
+  pdf.text("PLAYER ANALYTICS REPORT", 6.35, 0.33);
+  pdf.text(today, 7.35, 0.48);
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(7.5);
+  pdf.text(meta, 0.35, 0.68);
+  pdf.setDrawColor(19, 41, 75);
+  pdf.setLineWidth(0.015);
+  pdf.line(0.35, 0.84, 8.15, 0.84);
+
+  pdfCard(pdf, 0.35, 0.98, 3.65, 1.85, "Profile Snapshot");
+  pdfText(pdf, stripHtml(buildSummary(player)), 0.45, 1.34, 3.45, 7.1, "bold", 3);
+  pdfKey(pdf, "BPM", fmtSigned(player.BPM), `${fmtSigned(player.OBPM)} OBPM / ${fmtSigned(player.DBPM)} DBPM`, 0.45, 1.78, 0.82);
+  pdfKey(pdf, "Production", `${fmt(player.PTS)} PTS`, `${fmt(player.REB)} REB / ${fmt(player.AST)} AST`, 1.35, 1.78, 0.82);
+  pdfKey(pdf, "Role Load", `${fmt(player.USG)}% USG`, `${fmt(player.MP)} MPG across ${fmt(player.GP, 0)} games`, 2.25, 1.78, 0.82);
+  pdfKey(pdf, "Transfer", pctProb(player.transfer_prob), `${pctProb(player.return_prob)} return probability`, 3.15, 1.78, 0.72);
+
+  pdfCard(pdf, 4.15, 0.98, 4.0, 1.85, "Read On The Player");
+  const insights = Array.from(document.querySelectorAll("#insight-list .insight")).map(el => el.textContent.trim());
+  let insightY = 1.32;
+  insights.slice(0, 4).forEach(note => {
+    insightY = pdfText(pdf, note, 4.27, insightY, 3.72, 6.2, "normal", 2) + 0.03;
+  });
+
+  pdfCard(pdf, 0.35, 3.0, 7.8, 2.38, `Comparison Snapshot | ${scopeName}`);
+  drawComparisonPdf(pdf, player, 0.52, 3.34, 2.75, 1.75);
+  drawScatterPdf(pdf, player, 3.45, 3.34, 4.45, 1.75);
+
+  pdfCard(pdf, 0.35, 5.55, 3.8, 1.5, metricLabel);
+  const metric = pdfMetricTiles(player);
+  pdfText(pdf, metric.note, 0.47, 5.8, 3.52, 6.2, "normal", 2);
+  metric.tiles.forEach(([label, value, sub], idx) => {
+    const col = idx % 3;
+    const row = Math.floor(idx / 3);
+    pdfKey(pdf, label, value, sub, 0.47 + col * 1.18, 6.14 + row * 0.48, 1.08);
+  });
+
+  pdfCard(pdf, 4.35, 5.55, 3.8, 1.5, modelLabel);
+  drawModelPdf(pdf, player, 4.5, 5.86, 3.45);
+
+  pdfCard(pdf, 0.35, 7.22, 3.95, 2.55, "Team And Rank Context");
+  drawRankPdf(pdf, player, 0.5, 7.54, 3.62);
+
+  pdfCard(pdf, 4.5, 7.22, 3.65, 2.55, "Similar Player Neighborhood");
+  drawPeersPdf(pdf, player, 4.65, 7.54, 3.3);
+
+  pdf.setDrawColor(220, 227, 234);
+  pdf.line(0.35, 10.28, 8.15, 10.28);
+  pdf.setTextColor(95, 107, 122);
+  pdf.setFont("helvetica", "normal");
+  pdf.setFontSize(7);
+  pdf.text(`Current on-screen lenses: ${scopeName} comparison, ${metricLabel}, ${modelLabel}.`, 0.35, 10.45);
+  pdf.text("Similar players capped at 5 for PDF export.", 6.15, 10.45);
+}
+
+function drawComparisonPdf(pdf, player, x, y, w, h) {
+  const group = getScopeGroup(player, activeScope);
+  comparisonMetrics.forEach((metric, idx) => {
+    const rowY = y + idx * (h / comparisonMetrics.length);
+    const pct = percentile(player[metric.key], group, metric.key);
+    pdf.setTextColor(41, 53, 72);
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(7.5);
+    pdf.text(metric.label, x, rowY + 0.08);
+    pdf.setFillColor(232, 244, 251);
+    pdf.roundedRect(x + 0.72, rowY, w - 1.04, 0.08, 0.04, 0.04, "F");
+    pdf.setFillColor(19, 41, 75);
+    pdf.roundedRect(x + 0.72, rowY, (w - 1.04) * pct / 100, 0.08, 0.04, 0.04, "F");
+    pdf.setFontSize(6.5);
+    pdf.text(String(Math.round(pct)), x + w - 0.18, rowY + 0.08, { align: "right" });
+  });
+}
+
+function drawScatterPdf(pdf, player, x, y, w, h) {
+  const group = getScopeGroup(player, activeScope);
+  const sample = group.filter(row => cleanNumber(row.USG) !== null && cleanNumber(row.BPM) !== null);
+  const stableSample = sample.filter(row => isLegitimateChartSample(row));
+  const axisSample = stableSample.length >= 5 ? stableSample : sample;
+  const usageValues = axisSample.map(row => num(row.USG));
+  const bpmValues = axisSample.map(row => num(row.BPM));
+  const selectedUsage = num(player.USG);
+  const selectedBpm = num(player.BPM);
+  const usageBaseLo = Math.min(quantile(usageValues, 0.005) ?? 0, selectedUsage);
+  const usageBaseHi = Math.max(35, quantile(usageValues, 0.995) ?? 35, selectedUsage);
+  const bpmBaseLo = Math.min(-8, quantile(bpmValues, 0.005) ?? -8, selectedBpm);
+  const bpmBaseHi = Math.max(8, quantile(bpmValues, 0.995) ?? 8, selectedBpm);
+  const usagePad = Math.max(1.5, (usageBaseHi - usageBaseLo) * 0.045);
+  const bpmPad = Math.max(0.75, (bpmBaseHi - bpmBaseLo) * 0.055);
+  const usageLo = Math.max(0, usageBaseLo - usagePad);
+  const usageHi = usageBaseHi + usagePad;
+  const bpmLo = bpmBaseLo - bpmPad;
+  const bpmHi = bpmBaseHi + bpmPad;
+  const visibleSample = sample.filter(row => {
+    if (row.pid === player.pid) return true;
+    const usage = num(row.USG);
+    const bpm = num(row.BPM);
+    const withinFrame = usage >= usageLo && usage <= usageHi && bpm >= bpmLo && bpm <= bpmHi;
+    return withinFrame || isLegitimateChartSample(row);
+  });
+  const xFor = value => x + ((clamp(num(value), usageLo, usageHi) - usageLo) / (usageHi - usageLo || 1)) * w;
+  const yFor = value => y + h - ((clamp(num(value), bpmLo, bpmHi) - bpmLo) / (bpmHi - bpmLo || 1)) * h;
+  const avgUsage = clamp(average(visibleSample, "USG") || 0, usageLo, usageHi);
+  const avgBpm = clamp(average(visibleSample, "BPM") || 0, bpmLo, bpmHi);
+
+  pdf.setDrawColor(226, 232, 239);
+  pdf.setFillColor(251, 252, 254);
+  pdf.roundedRect(x - 0.08, y - 0.08, w + 0.16, h + 0.18, 0.06, 0.06, "FD");
+  pdf.setDrawColor(216, 162, 74);
+  pdf.setLineDashPattern([0.03, 0.03], 0);
+  pdf.line(xFor(avgUsage), y, xFor(avgUsage), y + h);
+  pdf.line(x, yFor(avgBpm), x + w, yFor(avgBpm));
+  pdf.setLineDashPattern([], 0);
+  visibleSample.forEach(row => {
+    const isPlayer = row.pid === player.pid;
+    pdf.setFillColor(isPlayer ? 19 : 75, isPlayer ? 41 : 156, isPlayer ? 75 : 211);
+    pdf.circle(xFor(row.USG), yFor(row.BPM), isPlayer ? 0.035 : 0.018, "F");
+  });
+  pdf.setTextColor(95, 107, 122);
+  pdf.setFontSize(6);
+  pdf.text("BPM", x, y - 0.12);
+  pdf.text("Usage Rate", x + w - 0.62, y + h + 0.16);
+}
+
+function drawModelPdf(pdf, player, x, y, w) {
+  pdf.setTextColor(17, 24, 39);
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(14);
+  if (activeModelView === "destination") {
+    pdf.text(destinationTier(player), x, y);
+    [["High Major", player.dest_high_prob], ["Upper Mid", player.dest_upper_prob], ["Low Major", player.dest_low_prob]].forEach((row, idx) => {
+      const pct = parseProbability(row[1]) * 100;
+      pdfKey(pdf, row[0], `${pct.toFixed(0)}%`, "destination probability", x + (idx % 3) * 1.12, y + 0.25, 1.02);
+    });
+    return;
+  }
+  if (activeModelView === "bpm") {
+    pdf.text(fmtSigned(player.bpm_show || player.pred_BPM_low), x, y);
+    [["High", player.pred_BPM_high], ["Upper", player.pred_BPM_upper_mid], ["Low", player.pred_BPM_low]].forEach((row, idx) => {
+      pdfKey(pdf, row[0], fmtSigned(row[1]), "projected BPM", x + (idx % 3) * 1.12, y + 0.25, 1.02);
+    });
+    return;
+  }
+  pdf.text(pctProb(player.transfer_prob), x, y);
+  pdf.setFont("helvetica", "normal");
+  pdf.setFontSize(7);
+  pdf.text("Transfer probability", x, y + 0.16);
+  const transfer = parseProbability(player.transfer_prob);
+  pdf.setFillColor(232, 244, 251);
+  pdf.roundedRect(x + 1.25, y - 0.08, w - 1.35, 0.1, 0.04, 0.04, "F");
+  pdf.setFillColor(19, 41, 75);
+  pdf.roundedRect(x + 1.25, y - 0.08, (w - 1.35) * transfer, 0.1, 0.04, 0.04, "F");
+  pdfText(pdf, `Model range: ${pctProb(player.transfer_prob_lo)} to ${pctProb(player.transfer_prob_hi)}. Return probability is ${pctProb(player.return_prob)}.`, x + 1.25, y + 0.22, w - 1.35, 6.5, "normal", 3);
+}
+
+function drawRankPdf(pdf, player, x, y, w) {
+  const team = getScopeGroup(player, "team");
+  const conf = getScopeGroup(player, "conf");
+  const role = getScopeGroup(player, "role");
+  const rows = [
+    ["BPM", fmtSigned(player.BPM), rankInGroup(player, team, "BPM"), rankInGroup(player, conf, "BPM"), rankInGroup(player, role, "BPM")],
+    ["Usage", `${fmt(player.USG)}%`, rankInGroup(player, team, "USG"), rankInGroup(player, conf, "USG"), rankInGroup(player, role, "USG")],
+    ["Minutes", fmt(player.MP), rankInGroup(player, team, "MP"), rankInGroup(player, conf, "MP"), rankInGroup(player, role, "MP")],
+    ["Scoring", fmt(player.PTS), rankInGroup(player, team, "PTS"), rankInGroup(player, conf, "PTS"), rankInGroup(player, role, "PTS")],
+    ["PORPAG", fmt(player.PORPAG), rankInGroup(player, team, "PORPAG"), rankInGroup(player, conf, "PORPAG"), rankInGroup(player, role, "PORPAG")]
+  ];
+  const cols = [0, 0.75, 1.42, 2.12, 2.9];
+  ["Metric", "Value", "Team", "Conf", "Pos"].forEach((label, idx) => {
+    pdf.setTextColor(95, 107, 122);
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(6.5);
+    pdf.text(label.toUpperCase(), x + cols[idx], y);
+  });
+  rows.forEach((row, r) => {
+    row.forEach((value, idx) => {
+      pdf.setTextColor(idx === 0 ? 19 : 41, idx === 0 ? 41 : 53, idx === 0 ? 75 : 72);
+      pdf.setFont("helvetica", idx === 0 ? "bold" : "normal");
+      pdf.setFontSize(7);
+      pdf.text(String(value), x + cols[idx], y + 0.22 + r * 0.26);
+    });
+  });
+  pdfText(pdf, "Ranks are shown as player rank over eligible players in each group.", x, y + 1.6, w, 6, "normal", 2);
+}
+
+function drawPeersPdf(pdf, player, x, y, w) {
+  const peers = similarPeers(player, 5);
+  ["Player", "BPM", "USG", "PTS"].forEach((label, idx) => {
+    const offsets = [0, 2.2, 2.65, 3.02];
+    pdf.setTextColor(95, 107, 122);
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(6.5);
+    pdf.text(label.toUpperCase(), x + offsets[idx], y);
+  });
+  peers.forEach((row, idx) => {
+    const rowY = y + 0.25 + idx * 0.34;
+    pdf.setTextColor(19, 41, 75);
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(7.2);
+    pdf.text(pdf.splitTextToSize(row.player, 1.75).slice(0, 1), x, rowY);
+    pdf.setTextColor(95, 107, 122);
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(6);
+    pdf.text(pdf.splitTextToSize(`${row.team} - ${row.Role || ""}`, 1.75).slice(0, 1), x, rowY + 0.11);
+    pdf.setTextColor(17, 24, 39);
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(7);
+    pdf.text(fmtSigned(row.BPM), x + 2.42, rowY, { align: "right" });
+    pdf.text(fmt(row.USG), x + 2.88, rowY, { align: "right" });
+    pdf.text(fmt(row.PTS), x + 3.28, rowY, { align: "right" });
+  });
 }
 
 function loadPlayerFromUrl() {
@@ -1723,8 +2177,8 @@ function renderRankContext(player) {
   `;
 }
 
-function renderPeers(player) {
-  const peers = allPlayers
+function similarPeers(player, count) {
+  return allPlayers
     .filter(row => row.pid !== player.pid && cleanNumber(row.BPM) !== null)
     .map(row => ({
       row,
@@ -1735,8 +2189,12 @@ function renderPeers(player) {
         + (row.Role === player.Role ? 0 : 2.5)
     }))
     .sort((a, b) => a.dist - b.dist)
-    .slice(0, activePeerCount)
+    .slice(0, count)
     .map(item => item.row);
+}
+
+function renderPeers(player) {
+  const peers = similarPeers(player, activePeerCount);
 
   document.getElementById("peer-list").innerHTML = `
     <div class="peer-controls">
