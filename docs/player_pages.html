@@ -1476,6 +1476,32 @@ function pdfText(pdf, text, x, y, width, size = 8, style = "normal", maxLines = 
   return y + lines.length * size * 0.014 + 0.03;
 }
 
+function pdfInsightText(pdf, note, x, y, width, size = 6.2, maxLines = 3) {
+  const text = String(note || "").replace(/\s+/g, " ").trim();
+  const colon = text.indexOf(":");
+  if (colon === -1) return pdfText(pdf, text, x, y, width, size, "normal", maxLines);
+
+  const lead = text.slice(0, colon + 1);
+  const body = text.slice(colon + 1).trim();
+  const lines = pdf.splitTextToSize(`${lead} ${body}`, width).slice(0, maxLines);
+  let lineY = y;
+  lines.forEach((line, idx) => {
+    if (idx === 0 && line.startsWith(lead)) {
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(size);
+      pdf.text(lead, x, lineY);
+      pdf.setFont("helvetica", "normal");
+      pdf.text(line.slice(lead.length).trimStart(), x + pdf.getTextWidth(lead + " "), lineY);
+    } else {
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(size);
+      pdf.text(line, x, lineY);
+    }
+    lineY += size * 0.014;
+  });
+  return lineY + 0.035;
+}
+
 function pdfCard(pdf, x, y, w, h, title) {
   pdf.setFillColor(255, 255, 255);
   pdf.setDrawColor(220, 227, 234);
@@ -1490,17 +1516,17 @@ function pdfCard(pdf, x, y, w, h, title) {
 function pdfKey(pdf, label, value, sub, x, y, w) {
   pdf.setFillColor(248, 250, 252);
   pdf.setDrawColor(226, 232, 239);
-  pdf.roundedRect(x, y, w, 0.48, 0.05, 0.05, "FD");
+  pdf.roundedRect(x, y, w, 0.52, 0.05, 0.05, "FD");
   pdf.setTextColor(95, 107, 122);
   pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(6.5);
-  pdf.text(String(label).toUpperCase(), x + 0.06, y + 0.13);
+  pdf.setFontSize(6.2);
+  pdf.text(String(label).toUpperCase(), x + 0.06, y + 0.12);
   pdf.setTextColor(17, 24, 39);
-  pdf.setFontSize(12);
-  pdf.text(String(value), x + 0.06, y + 0.31);
+  pdf.setFontSize(11.2);
+  pdf.text(String(value), x + 0.06, y + 0.3);
   pdf.setTextColor(95, 107, 122);
-  pdf.setFontSize(6);
-  pdf.text(pdf.splitTextToSize(String(sub || ""), w - 0.12).slice(0, 1), x + 0.06, y + 0.42);
+  pdf.setFontSize(5.5);
+  pdf.text(pdf.splitTextToSize(String(sub || ""), w - 0.12).slice(0, 2), x + 0.06, y + 0.41);
 }
 
 function pdfMetricTiles(player) {
@@ -1557,61 +1583,61 @@ function drawPlayerReportPdf(pdf, player) {
   pdf.setTextColor(19, 41, 75);
   pdf.setFont("helvetica", "bold");
   pdf.setFontSize(24);
-  pdf.text(player.player, 0.35, 0.48);
+  pdf.text(player.player, 0.38, 0.46);
   pdf.setFontSize(7);
   pdf.setTextColor(95, 107, 122);
-  pdf.text("PLAYER ANALYTICS REPORT", 6.35, 0.33);
-  pdf.text(today, 7.35, 0.48);
+  pdf.text("PLAYER ANALYTICS REPORT", 8.12, 0.32, { align: "right" });
+  pdf.text(today, 8.12, 0.47, { align: "right" });
   pdf.setFont("helvetica", "bold");
   pdf.setFontSize(7.5);
-  pdf.text(meta, 0.35, 0.68);
+  pdf.text(meta, 0.38, 0.68);
   pdf.setDrawColor(19, 41, 75);
   pdf.setLineWidth(0.015);
-  pdf.line(0.35, 0.84, 8.15, 0.84);
+  pdf.line(0.38, 0.84, 8.12, 0.84);
 
-  pdfCard(pdf, 0.35, 0.98, 3.65, 1.85, "Profile Snapshot");
-  pdfText(pdf, stripHtml(buildSummary(player)), 0.45, 1.34, 3.45, 7.1, "bold", 3);
-  pdfKey(pdf, "BPM", fmtSigned(player.BPM), `${fmtSigned(player.OBPM)} OBPM / ${fmtSigned(player.DBPM)} DBPM`, 0.45, 1.78, 0.82);
-  pdfKey(pdf, "Production", `${fmt(player.PTS)} PTS`, `${fmt(player.REB)} REB / ${fmt(player.AST)} AST`, 1.35, 1.78, 0.82);
-  pdfKey(pdf, "Role Load", `${fmt(player.USG)}% USG`, `${fmt(player.MP)} MPG across ${fmt(player.GP, 0)} games`, 2.25, 1.78, 0.82);
-  pdfKey(pdf, "Transfer", pctProb(player.transfer_prob), `${pctProb(player.return_prob)} return probability`, 3.15, 1.78, 0.72);
+  pdfCard(pdf, 0.35, 0.96, 3.72, 2.1, "Profile Snapshot");
+  pdfText(pdf, stripHtml(buildSummary(player)), 0.47, 1.27, 3.48, 6.6, "bold", 4);
+  pdfKey(pdf, "BPM", fmtSigned(player.BPM), `${fmtSigned(player.OBPM)} OBPM / ${fmtSigned(player.DBPM)} DBPM`, 0.47, 2.2, 0.8);
+  pdfKey(pdf, "Production", `${fmt(player.PTS)} PTS`, `${fmt(player.REB)} REB / ${fmt(player.AST)} AST`, 1.34, 2.2, 0.82);
+  pdfKey(pdf, "Role Load", `${fmt(player.USG)}% USG`, `${fmt(player.MP)} MPG / ${fmt(player.GP, 0)} games`, 2.23, 2.2, 0.86);
+  pdfKey(pdf, "Transfer", pctProb(player.transfer_prob), `${pctProb(player.return_prob)} return`, 3.16, 2.2, 0.78);
 
-  pdfCard(pdf, 4.15, 0.98, 4.0, 1.85, "Read On The Player");
+  pdfCard(pdf, 4.25, 0.96, 3.9, 2.1, "Read On The Player");
   const insights = Array.from(document.querySelectorAll("#insight-list .insight")).map(el => el.textContent.trim());
-  let insightY = 1.32;
-  insights.slice(0, 4).forEach(note => {
-    insightY = pdfText(pdf, note, 4.27, insightY, 3.72, 6.2, "normal", 2) + 0.03;
+  let insightY = 1.22;
+  insights.slice(0, 5).forEach(note => {
+    insightY = pdfInsightText(pdf, note, 4.39, insightY, 3.56, 5.8, 3) + 0.025;
   });
 
-  pdfCard(pdf, 0.35, 3.0, 7.8, 2.38, `Comparison Snapshot | ${scopeName}`);
-  drawComparisonPdf(pdf, player, 0.52, 3.34, 2.75, 1.75);
-  drawScatterPdf(pdf, player, 3.45, 3.34, 4.45, 1.75);
+  pdfCard(pdf, 0.35, 3.22, 7.8, 2.25, `Comparison Snapshot | ${scopeName}`);
+  drawComparisonPdf(pdf, player, 0.52, 3.58, 2.85, 1.55);
+  drawScatterPdf(pdf, player, 3.6, 3.58, 4.25, 1.55);
 
-  pdfCard(pdf, 0.35, 5.55, 3.8, 1.5, metricLabel);
+  pdfCard(pdf, 0.35, 5.63, 3.8, 1.62, metricLabel);
   const metric = pdfMetricTiles(player);
-  pdfText(pdf, metric.note, 0.47, 5.8, 3.52, 6.2, "normal", 2);
+  pdfText(pdf, metric.note, 0.47, 5.9, 3.52, 6, "normal", 2);
   metric.tiles.forEach(([label, value, sub], idx) => {
     const col = idx % 3;
     const row = Math.floor(idx / 3);
-    pdfKey(pdf, label, value, sub, 0.47 + col * 1.18, 6.14 + row * 0.48, 1.08);
+    pdfKey(pdf, label, value, sub, 0.47 + col * 1.18, 6.22 + row * 0.48, 1.08);
   });
 
-  pdfCard(pdf, 4.35, 5.55, 3.8, 1.5, modelLabel);
-  drawModelPdf(pdf, player, 4.5, 5.86, 3.45);
+  pdfCard(pdf, 4.35, 5.63, 3.8, 1.62, modelLabel);
+  drawModelPdf(pdf, player, 4.52, 5.98, 3.42);
 
-  pdfCard(pdf, 0.35, 7.22, 3.95, 2.55, "Team And Rank Context");
-  drawRankPdf(pdf, player, 0.5, 7.54, 3.62);
+  pdfCard(pdf, 0.35, 7.42, 3.95, 2.35, "Team And Rank Context");
+  drawRankPdf(pdf, player, 0.5, 7.77, 3.62);
 
-  pdfCard(pdf, 4.5, 7.22, 3.65, 2.55, "Similar Player Neighborhood");
-  drawPeersPdf(pdf, player, 4.65, 7.54, 3.3);
+  pdfCard(pdf, 4.5, 7.42, 3.65, 2.35, "Similar Player Neighborhood");
+  drawPeersPdf(pdf, player, 4.65, 7.77, 3.3);
 
   pdf.setDrawColor(220, 227, 234);
   pdf.line(0.35, 10.28, 8.15, 10.28);
   pdf.setTextColor(95, 107, 122);
   pdf.setFont("helvetica", "normal");
   pdf.setFontSize(7);
-  pdf.text(`Current on-screen lenses: ${scopeName} comparison, ${metricLabel}, ${modelLabel}.`, 0.35, 10.45);
-  pdf.text("Similar players capped at 5 for PDF export.", 6.15, 10.45);
+  pdf.text("From Greg Lederer's Transfer Portal Website", 0.35, 10.45);
+  pdf.text("Generated player analytics report", 8.15, 10.45, { align: "right" });
 }
 
 function drawComparisonPdf(pdf, player, x, y, w, h) {
@@ -1621,14 +1647,15 @@ function drawComparisonPdf(pdf, player, x, y, w, h) {
     const pct = percentile(player[metric.key], group, metric.key);
     pdf.setTextColor(41, 53, 72);
     pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(7.5);
-    pdf.text(metric.label, x, rowY + 0.08);
+    pdf.setFontSize(7.2);
+    pdf.text(metric.label, x, rowY + 0.09);
     pdf.setFillColor(232, 244, 251);
-    pdf.roundedRect(x + 0.72, rowY, w - 1.04, 0.08, 0.04, 0.04, "F");
+    pdf.roundedRect(x + 0.82, rowY, w - 1.24, 0.09, 0.04, 0.04, "F");
     pdf.setFillColor(19, 41, 75);
-    pdf.roundedRect(x + 0.72, rowY, (w - 1.04) * pct / 100, 0.08, 0.04, 0.04, "F");
-    pdf.setFontSize(6.5);
-    pdf.text(String(Math.round(pct)), x + w - 0.18, rowY + 0.08, { align: "right" });
+    pdf.roundedRect(x + 0.82, rowY, (w - 1.24) * pct / 100, 0.09, 0.04, 0.04, "F");
+    pdf.setTextColor(19, 41, 75);
+    pdf.setFontSize(6.8);
+    pdf.text(String(Math.round(pct)), x + w - 0.12, rowY + 0.09, { align: "right" });
   });
 }
 
@@ -1680,24 +1707,29 @@ function drawScatterPdf(pdf, player, x, y, w, h) {
   pdf.setFontSize(6);
   pdf.text("BPM", x, y - 0.12);
   pdf.text("Usage Rate", x + w - 0.62, y + h + 0.16);
+  pdf.setTextColor(154, 104, 22);
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(5.7);
+  pdf.text("Avg usage", xFor(avgUsage) + 0.04, y + 0.14);
+  pdf.text("Avg BPM", x + 0.04, yFor(avgBpm) - 0.05);
 }
 
 function drawModelPdf(pdf, player, x, y, w) {
   pdf.setTextColor(17, 24, 39);
   pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(14);
+  pdf.setFontSize(13);
   if (activeModelView === "destination") {
     pdf.text(destinationTier(player), x, y);
     [["High Major", player.dest_high_prob], ["Upper Mid", player.dest_upper_prob], ["Low Major", player.dest_low_prob]].forEach((row, idx) => {
       const pct = parseProbability(row[1]) * 100;
-      pdfKey(pdf, row[0], `${pct.toFixed(0)}%`, "destination probability", x + (idx % 3) * 1.12, y + 0.25, 1.02);
+      pdfKey(pdf, row[0], `${pct.toFixed(0)}%`, "destination probability", x + (idx % 3) * 1.12, y + 0.34, 1.02);
     });
     return;
   }
   if (activeModelView === "bpm") {
     pdf.text(fmtSigned(player.bpm_show || player.pred_BPM_low), x, y);
     [["High", player.pred_BPM_high], ["Upper", player.pred_BPM_upper_mid], ["Low", player.pred_BPM_low]].forEach((row, idx) => {
-      pdfKey(pdf, row[0], fmtSigned(row[1]), "projected BPM", x + (idx % 3) * 1.12, y + 0.25, 1.02);
+      pdfKey(pdf, row[0], fmtSigned(row[1]), "projected BPM", x + (idx % 3) * 1.12, y + 0.34, 1.02);
     });
     return;
   }
@@ -1707,10 +1739,10 @@ function drawModelPdf(pdf, player, x, y, w) {
   pdf.text("Transfer probability", x, y + 0.16);
   const transfer = parseProbability(player.transfer_prob);
   pdf.setFillColor(232, 244, 251);
-  pdf.roundedRect(x + 1.25, y - 0.08, w - 1.35, 0.1, 0.04, 0.04, "F");
+  pdf.roundedRect(x + 1.25, y - 0.05, w - 1.35, 0.11, 0.04, 0.04, "F");
   pdf.setFillColor(19, 41, 75);
-  pdf.roundedRect(x + 1.25, y - 0.08, (w - 1.35) * transfer, 0.1, 0.04, 0.04, "F");
-  pdfText(pdf, `Model range: ${pctProb(player.transfer_prob_lo)} to ${pctProb(player.transfer_prob_hi)}. Return probability is ${pctProb(player.return_prob)}.`, x + 1.25, y + 0.22, w - 1.35, 6.5, "normal", 3);
+  pdf.roundedRect(x + 1.25, y - 0.05, (w - 1.35) * transfer, 0.11, 0.04, 0.04, "F");
+  pdfText(pdf, `Model range: ${pctProb(player.transfer_prob_lo)} to ${pctProb(player.transfer_prob_hi)}. Return probability is ${pctProb(player.return_prob)}.`, x + 1.25, y + 0.28, w - 1.35, 6.2, "normal", 3);
 }
 
 function drawRankPdf(pdf, player, x, y, w) {
@@ -1735,11 +1767,11 @@ function drawRankPdf(pdf, player, x, y, w) {
     row.forEach((value, idx) => {
       pdf.setTextColor(idx === 0 ? 19 : 41, idx === 0 ? 41 : 53, idx === 0 ? 75 : 72);
       pdf.setFont("helvetica", idx === 0 ? "bold" : "normal");
-      pdf.setFontSize(7);
-      pdf.text(String(value), x + cols[idx], y + 0.22 + r * 0.26);
+      pdf.setFontSize(7.2);
+      pdf.text(String(value), x + cols[idx], y + 0.24 + r * 0.28);
     });
   });
-  pdfText(pdf, "Ranks are shown as player rank over eligible players in each group.", x, y + 1.6, w, 6, "normal", 2);
+  pdfText(pdf, "Ranks are shown as player rank over eligible players in each group.", x, y + 1.78, w, 6.2, "normal", 2);
 }
 
 function drawPeersPdf(pdf, player, x, y, w) {
@@ -1752,18 +1784,18 @@ function drawPeersPdf(pdf, player, x, y, w) {
     pdf.text(label.toUpperCase(), x + offsets[idx], y);
   });
   peers.forEach((row, idx) => {
-    const rowY = y + 0.25 + idx * 0.34;
+    const rowY = y + 0.28 + idx * 0.36;
     pdf.setTextColor(19, 41, 75);
     pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(7.2);
+    pdf.setFontSize(7.4);
     pdf.text(pdf.splitTextToSize(row.player, 1.75).slice(0, 1), x, rowY);
     pdf.setTextColor(95, 107, 122);
     pdf.setFont("helvetica", "normal");
-    pdf.setFontSize(6);
+    pdf.setFontSize(6.2);
     pdf.text(pdf.splitTextToSize(`${row.team} - ${row.Role || ""}`, 1.75).slice(0, 1), x, rowY + 0.11);
     pdf.setTextColor(17, 24, 39);
     pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(7);
+    pdf.setFontSize(7.2);
     pdf.text(fmtSigned(row.BPM), x + 2.42, rowY, { align: "right" });
     pdf.text(fmt(row.USG), x + 2.88, rowY, { align: "right" });
     pdf.text(fmt(row.PTS), x + 3.28, rowY, { align: "right" });
