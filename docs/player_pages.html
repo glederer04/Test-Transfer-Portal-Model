@@ -1502,6 +1502,15 @@ function pdfInsightText(pdf, note, x, y, width, size = 6.2, maxLines = 3) {
   return lineY + 0.035;
 }
 
+function pdfTableRow(pdf, x, y, w, h, fill = false) {
+  if (fill) {
+    pdf.setFillColor(248, 250, 252);
+    pdf.rect(x, y, w, h, "F");
+  }
+  pdf.setDrawColor(232, 238, 245);
+  pdf.line(x, y + h, x + w, y + h);
+}
+
 function pdfCard(pdf, x, y, w, h, title) {
   pdf.setFillColor(255, 255, 255);
   pdf.setDrawColor(220, 227, 234);
@@ -1527,6 +1536,23 @@ function pdfKey(pdf, label, value, sub, x, y, w) {
   pdf.setTextColor(95, 107, 122);
   pdf.setFontSize(5.5);
   pdf.text(pdf.splitTextToSize(String(sub || ""), w - 0.12).slice(0, 2), x + 0.06, y + 0.41);
+}
+
+function pdfCompactKey(pdf, label, value, sub, x, y, w, h = 0.46) {
+  pdf.setFillColor(248, 250, 252);
+  pdf.setDrawColor(226, 232, 239);
+  pdf.roundedRect(x, y, w, h, 0.05, 0.05, "FD");
+  pdf.setTextColor(95, 107, 122);
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(6);
+  pdf.text(String(label).toUpperCase(), x + 0.06, y + 0.12);
+  pdf.setTextColor(17, 24, 39);
+  pdf.setFontSize(11.4);
+  pdf.text(String(value), x + 0.06, y + 0.3);
+  pdf.setTextColor(95, 107, 122);
+  pdf.setFont("helvetica", "normal");
+  pdf.setFontSize(5.4);
+  pdf.text(pdf.splitTextToSize(String(sub || ""), w - 0.12).slice(0, 2), x + 0.06, y + 0.4);
 }
 
 function pdfMetricTiles(player) {
@@ -1596,17 +1622,17 @@ function drawPlayerReportPdf(pdf, player) {
   pdf.line(0.38, 0.84, 8.12, 0.84);
 
   pdfCard(pdf, 0.35, 0.96, 3.72, 2.1, "Profile Snapshot");
-  pdfText(pdf, stripHtml(buildSummary(player)), 0.47, 1.27, 3.48, 6.6, "bold", 4);
-  pdfKey(pdf, "BPM", fmtSigned(player.BPM), `${fmtSigned(player.OBPM)} OBPM / ${fmtSigned(player.DBPM)} DBPM`, 0.47, 2.2, 0.8);
-  pdfKey(pdf, "Production", `${fmt(player.PTS)} PTS`, `${fmt(player.REB)} REB / ${fmt(player.AST)} AST`, 1.34, 2.2, 0.82);
-  pdfKey(pdf, "Role Load", `${fmt(player.USG)}% USG`, `${fmt(player.MP)} MPG / ${fmt(player.GP, 0)} games`, 2.23, 2.2, 0.86);
-  pdfKey(pdf, "Transfer", pctProb(player.transfer_prob), `${pctProb(player.return_prob)} return`, 3.16, 2.2, 0.78);
+  pdfText(pdf, stripHtml(buildSummary(player)), 0.47, 1.27, 3.48, 6.3, "bold", 4);
+  pdfCompactKey(pdf, "BPM", fmtSigned(player.BPM), `${fmtSigned(player.OBPM)} OBPM / ${fmtSigned(player.DBPM)} DBPM`, 0.47, 2.08, 1.68, 0.42);
+  pdfCompactKey(pdf, "Production", `${fmt(player.PTS)} PTS`, `${fmt(player.REB)} REB / ${fmt(player.AST)} AST`, 2.22, 2.08, 1.68, 0.42);
+  pdfCompactKey(pdf, "Role Load", `${fmt(player.USG)}% USG`, `${fmt(player.MP)} MPG / ${fmt(player.GP, 0)} games`, 0.47, 2.55, 1.68, 0.42);
+  pdfCompactKey(pdf, "Transfer", pctProb(player.transfer_prob), `${pctProb(player.return_prob)} return probability`, 2.22, 2.55, 1.68, 0.42);
 
   pdfCard(pdf, 4.25, 0.96, 3.9, 2.1, "Read On The Player");
   const insights = Array.from(document.querySelectorAll("#insight-list .insight")).map(el => el.textContent.trim());
-  let insightY = 1.22;
+  let insightY = 1.27;
   insights.slice(0, 5).forEach(note => {
-    insightY = pdfInsightText(pdf, note, 4.39, insightY, 3.56, 5.8, 3) + 0.025;
+    insightY = pdfInsightText(pdf, note, 4.39, insightY, 3.58, 5.35, 3) + 0.02;
   });
 
   pdfCard(pdf, 0.35, 3.22, 7.8, 2.25, `Comparison Snapshot | ${scopeName}`);
@@ -1615,11 +1641,11 @@ function drawPlayerReportPdf(pdf, player) {
 
   pdfCard(pdf, 0.35, 5.63, 3.8, 1.62, metricLabel);
   const metric = pdfMetricTiles(player);
-  pdfText(pdf, metric.note, 0.47, 5.9, 3.52, 6, "normal", 2);
+  pdfText(pdf, metric.note, 0.47, 5.9, 3.52, 5.7, "normal", 2);
   metric.tiles.forEach(([label, value, sub], idx) => {
     const col = idx % 3;
     const row = Math.floor(idx / 3);
-    pdfKey(pdf, label, value, sub, 0.47 + col * 1.18, 6.22 + row * 0.48, 1.08);
+    pdfCompactKey(pdf, label, value, sub, 0.47 + col * 1.18, 6.18 + row * 0.52, 1.08, 0.47);
   });
 
   pdfCard(pdf, 4.35, 5.63, 3.8, 1.62, modelLabel);
@@ -1642,17 +1668,25 @@ function drawPlayerReportPdf(pdf, player) {
 
 function drawComparisonPdf(pdf, player, x, y, w, h) {
   const group = getScopeGroup(player, activeScope);
+  pdf.setTextColor(95, 107, 122);
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(5.8);
+  pdf.text("STAT", x, y - 0.08);
+  pdf.text("PERCENTILE RANK", x + 0.82, y - 0.08);
+  pdf.text("VALUE", x + w - 0.12, y - 0.08, { align: "right" });
   comparisonMetrics.forEach((metric, idx) => {
-    const rowY = y + idx * (h / comparisonMetrics.length);
+    const rowH = h / comparisonMetrics.length;
+    const rowY = y + idx * rowH;
     const pct = percentile(player[metric.key], group, metric.key);
+    pdfTableRow(pdf, x - 0.04, rowY - 0.06, w, rowH * 0.78, idx % 2 === 0);
     pdf.setTextColor(41, 53, 72);
     pdf.setFont("helvetica", "bold");
     pdf.setFontSize(7.2);
     pdf.text(metric.label, x, rowY + 0.09);
     pdf.setFillColor(232, 244, 251);
-    pdf.roundedRect(x + 0.82, rowY, w - 1.24, 0.09, 0.04, 0.04, "F");
+    pdf.roundedRect(x + 0.88, rowY, w - 1.3, 0.09, 0.04, 0.04, "F");
     pdf.setFillColor(19, 41, 75);
-    pdf.roundedRect(x + 0.82, rowY, (w - 1.24) * pct / 100, 0.09, 0.04, 0.04, "F");
+    pdf.roundedRect(x + 0.88, rowY, (w - 1.3) * pct / 100, 0.09, 0.04, 0.04, "F");
     pdf.setTextColor(19, 41, 75);
     pdf.setFontSize(6.8);
     pdf.text(String(Math.round(pct)), x + w - 0.12, rowY + 0.09, { align: "right" });
@@ -1722,27 +1756,29 @@ function drawModelPdf(pdf, player, x, y, w) {
     pdf.text(destinationTier(player), x, y);
     [["High Major", player.dest_high_prob], ["Upper Mid", player.dest_upper_prob], ["Low Major", player.dest_low_prob]].forEach((row, idx) => {
       const pct = parseProbability(row[1]) * 100;
-      pdfKey(pdf, row[0], `${pct.toFixed(0)}%`, "destination probability", x + (idx % 3) * 1.12, y + 0.34, 1.02);
+      pdfCompactKey(pdf, row[0], `${pct.toFixed(0)}%`, "destination probability", x + (idx % 3) * 1.12, y + 0.34, 1.02, 0.52);
     });
     return;
   }
   if (activeModelView === "bpm") {
     pdf.text(fmtSigned(player.bpm_show || player.pred_BPM_low), x, y);
     [["High", player.pred_BPM_high], ["Upper", player.pred_BPM_upper_mid], ["Low", player.pred_BPM_low]].forEach((row, idx) => {
-      pdfKey(pdf, row[0], fmtSigned(row[1]), "projected BPM", x + (idx % 3) * 1.12, y + 0.34, 1.02);
+      pdfCompactKey(pdf, row[0], fmtSigned(row[1]), "projected BPM", x + (idx % 3) * 1.12, y + 0.34, 1.02, 0.52);
     });
     return;
   }
-  pdf.text(pctProb(player.transfer_prob), x, y);
-  pdf.setFont("helvetica", "normal");
-  pdf.setFontSize(7);
-  pdf.text("Transfer probability", x, y + 0.16);
+  pdfCompactKey(pdf, "Transfer", pctProb(player.transfer_prob), "transfer probability", x, y - 0.08, 1.05, 0.56);
+  pdfCompactKey(pdf, "Return", pctProb(player.return_prob), "return probability", x + 1.2, y - 0.08, 1.05, 0.56);
   const transfer = parseProbability(player.transfer_prob);
+  pdf.setTextColor(95, 107, 122);
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(6.2);
+  pdf.text("MODEL RANGE", x, y + 0.74);
   pdf.setFillColor(232, 244, 251);
-  pdf.roundedRect(x + 1.25, y - 0.05, w - 1.35, 0.11, 0.04, 0.04, "F");
+  pdf.roundedRect(x, y + 0.84, w, 0.1, 0.04, 0.04, "F");
   pdf.setFillColor(19, 41, 75);
-  pdf.roundedRect(x + 1.25, y - 0.05, (w - 1.35) * transfer, 0.11, 0.04, 0.04, "F");
-  pdfText(pdf, `Model range: ${pctProb(player.transfer_prob_lo)} to ${pctProb(player.transfer_prob_hi)}. Return probability is ${pctProb(player.return_prob)}.`, x + 1.25, y + 0.28, w - 1.35, 6.2, "normal", 3);
+  pdf.roundedRect(x, y + 0.84, w * transfer, 0.1, 0.04, 0.04, "F");
+  pdfText(pdf, `Estimated transfer window: ${pctProb(player.transfer_prob_lo)} to ${pctProb(player.transfer_prob_hi)}. Use return probability as the stay/retain context.`, x, y + 1.1, w, 6.2, "normal", 3);
 }
 
 function drawRankPdf(pdf, player, x, y, w) {
@@ -1764,6 +1800,7 @@ function drawRankPdf(pdf, player, x, y, w) {
     pdf.text(label.toUpperCase(), x + cols[idx], y);
   });
   rows.forEach((row, r) => {
+    pdfTableRow(pdf, x - 0.05, y + 0.1 + r * 0.28, w + 0.06, 0.24, r % 2 === 0);
     row.forEach((value, idx) => {
       pdf.setTextColor(idx === 0 ? 19 : 41, idx === 0 ? 41 : 53, idx === 0 ? 75 : 72);
       pdf.setFont("helvetica", idx === 0 ? "bold" : "normal");
@@ -1785,6 +1822,7 @@ function drawPeersPdf(pdf, player, x, y, w) {
   });
   peers.forEach((row, idx) => {
     const rowY = y + 0.28 + idx * 0.36;
+    pdfTableRow(pdf, x - 0.05, rowY - 0.16, w + 0.07, 0.3, idx % 2 === 0);
     pdf.setTextColor(19, 41, 75);
     pdf.setFont("helvetica", "bold");
     pdf.setFontSize(7.4);
