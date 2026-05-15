@@ -375,6 +375,20 @@ table.dataTable tbody td {
   text-align: center;
 }
 
+.player-profile-link {
+  color: #13294b;
+  font-weight: 800;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.player-profile-link:hover {
+  color: #2f78aa;
+  text-decoration-style: solid;
+}
+
 .table-usage-note {
   color: #4f5a67;
   font-size: 0.95rem;
@@ -681,6 +695,23 @@ function toNumber(val) {
   const cleaned = String(val).replace(/%/g, "").trim();
   const num = parseFloat(cleaned);
   return isNaN(num) ? 0 : num;
+}
+
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, ch => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;"
+  }[ch]));
+}
+
+function playerProfileLink(row) {
+  const name = escapeHtml(row.player || "");
+  const pid = encodeURIComponent(row.pid || "");
+  if (!pid) return name;
+  return `<a class="player-profile-link" href="player_pages.html?pid=${pid}" title="Click to open the player page for ${name}">${name}</a>`;
 }
 
 function parseOptionalNumber(val) {
@@ -1254,6 +1285,10 @@ function buildTable(dataToUse) {
       defaultContent: "",
       className: "",
       render: function(data, type, row) {
+        if (col === "player") {
+          if (type === "display") return playerProfileLink(row);
+          return data;
+        }
         if (col === "FG_display") {
           if (type === "sort" || type === "type") return row.FG_sort;
           return data;

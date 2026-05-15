@@ -401,6 +401,20 @@ table.dataTable tbody td {
   font-weight: 600;
 }
 
+.player-profile-link {
+  color: #13294b;
+  font-weight: 800;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.player-profile-link:hover {
+  color: #2f78aa;
+  text-decoration-style: solid;
+}
+
 .dataTables_wrapper {
   width: 100% !important;
   max-width: 100% !important;
@@ -1561,6 +1575,23 @@ function fmtBPM(val) {
   return num.toFixed(1);
 }
 
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, ch => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;"
+  }[ch]));
+}
+
+function playerProfileLink(row) {
+  const name = escapeHtml(row.player || "");
+  const pid = encodeURIComponent(row.pid || "");
+  if (!pid) return name;
+  return `<a class="player-profile-link" href="player_pages.html?pid=${pid}" title="Click to open the player page for ${name}">${name}</a>`;
+}
+
 function clampBPMPosition(val, minVal, maxVal) {
   if (!isFinite(val)) return 50;
   if (maxVal <= minVal) return 50;
@@ -2334,7 +2365,11 @@ function buildTable(viewName) {
         "return_show",
         "destination_show",
         "bpm_show"
-      ].includes(col) ? "projection-highlight-col" : ""
+      ].includes(col) ? "projection-highlight-col" : "",
+      render: function(data, type, row) {
+        if (col === "player" && type === "display") return playerProfileLink(row);
+        return data;
+      }
     }))
   ];
 
