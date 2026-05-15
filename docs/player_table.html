@@ -711,7 +711,7 @@ function playerProfileLink(row) {
   const name = escapeHtml(row.player || "");
   const pid = encodeURIComponent(row.pid || "");
   if (!pid) return name;
-  return `<a class="player-profile-link" href="player_pages.html?pid=${pid}" data-help="Click to open the player page for ${name} in this tab" aria-label="Open player page for ${name}">${name}</a>`;
+  return `<a class="player-profile-link" href="player_pages.html?open=player&pid=${pid}" data-help="Click to open the player page for ${name} in this tab" aria-label="Open player page for ${name}">${name}</a>`;
 }
 
 function parseOptionalNumber(val) {

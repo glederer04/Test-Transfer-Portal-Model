@@ -68,7 +68,8 @@ ul.task-list li input[type="checkbox"] {
   }
 }</script>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
 
 </head>
@@ -540,13 +541,15 @@ ul.task-list li input[type="checkbox"] {
 
 .pdf-export-frame {
   position: fixed;
-  left: -99999px;
+  left: 0;
   top: 0;
-  width: 1060px;
+  width: 1080px;
+  max-height: none;
   background: #fff;
   color: var(--ink);
   padding: 18px;
-  z-index: -1;
+  z-index: 10000;
+  pointer-events: none;
 }
 
 .pdf-export-frame .selector-band,
@@ -1257,6 +1260,7 @@ async function downloadPlayerPdf() {
   try {
     activePeerCount = 5;
     renderPeers(selectedPlayer);
+    await new Promise(resolve => requestAnimationFrame(resolve));
 
     const source = document.getElementById("profile-view");
     frame = document.createElement("div");
@@ -1264,50 +1268,41 @@ async function downloadPlayerPdf() {
     frame.appendChild(source.cloneNode(true));
     document.body.appendChild(frame);
 
-    await new Promise(resolve => requestAnimationFrame(resolve));
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
     const fileName = `${filenameSafe(selectedPlayer.player)}-player-page.pdf`;
-    const renderOptions = {
-      scale: 1.8,
+    if (!window.html2canvas || !(window.jspdf?.jsPDF || window.jsPDF)) {
+      throw new Error("PDF export libraries are not available.");
+    }
+    const canvas = await window.html2canvas(frame, {
+      scale: 1.5,
       useCORS: true,
       backgroundColor: "#ffffff",
-      windowWidth: 1100
-    };
-    if (!window.html2canvas && !window.html2pdf) {
-      throw new Error("PDF export library is not available.");
-    }
-    const canvas = window.html2canvas
-      ? await window.html2canvas(frame, renderOptions)
-      : await window.html2pdf().set({ html2canvas: renderOptions }).from(frame).toCanvas().get("canvas");
+      width: frame.scrollWidth,
+      height: frame.scrollHeight,
+      windowWidth: frame.scrollWidth,
+      windowHeight: frame.scrollHeight,
+      scrollX: 0,
+      scrollY: 0
+    });
     const jsPDFCtor = window.jspdf?.jsPDF || window.jsPDF;
-
-    if (jsPDFCtor) {
-      const pdf = new jsPDFCtor({
-        unit: "in",
-        format: "letter",
-        orientation: "portrait"
-      });
-      const pageWidth = 8.5;
-      const pageHeight = 11;
-      const margin = 0.18;
-      const maxWidth = pageWidth - margin * 2;
-      const maxHeight = pageHeight - margin * 2;
-      const ratio = Math.min(maxWidth / canvas.width, maxHeight / canvas.height);
-      const imageWidth = canvas.width * ratio;
-      const imageHeight = canvas.height * ratio;
-      const x = (pageWidth - imageWidth) / 2;
-      const y = margin;
-      pdf.addImage(canvas.toDataURL("image/jpeg", 0.96), "JPEG", x, y, imageWidth, imageHeight);
-      pdf.save(fileName);
-    } else if (window.html2pdf) {
-      await window.html2pdf().set({
-        margin: [0.18, 0.18, 0.18, 0.18],
-        filename: fileName,
-        image: { type: "jpeg", quality: 0.96 },
-        html2canvas: renderOptions,
-        jsPDF: { unit: "in", format: "letter", orientation: "portrait" }
-      }).from(frame).save();
-    }
+    const pdf = new jsPDFCtor({
+      unit: "in",
+      format: "letter",
+      orientation: "portrait"
+    });
+    const pageWidth = 8.5;
+    const pageHeight = 11;
+    const margin = 0.18;
+    const maxWidth = pageWidth - margin * 2;
+    const maxHeight = pageHeight - margin * 2;
+    const ratio = Math.min(maxWidth / canvas.width, maxHeight / canvas.height);
+    const imageWidth = canvas.width * ratio;
+    const imageHeight = canvas.height * ratio;
+    const x = (pageWidth - imageWidth) / 2;
+    const y = (pageHeight - imageHeight) / 2;
+    pdf.addImage(canvas.toDataURL("image/jpeg", 0.96), "JPEG", x, y, imageWidth, imageHeight);
+    pdf.save(fileName);
     frame.remove();
   } catch (error) {
     console.error(error);
@@ -1325,6 +1320,12 @@ function loadPlayerFromUrl() {
   const params = new URLSearchParams(window.location.search);
   const pid = params.get("pid");
   if (!pid) return;
+  const shouldOpen = params.get("open") === "player";
+  const isReload = performance.getEntriesByType("navigation")[0]?.type === "reload";
+  if (!shouldOpen || isReload) {
+    window.history.replaceState({}, "", "player_pages.html");
+    return;
+  }
 
   const player = allPlayers.find(row => String(row.pid) === String(pid));
   if (!player) return;
@@ -1884,7 +1885,6 @@ function setupChartTooltips() {
       document.getElementById("year-filter").value = "";
       updatePlayerChoices();
       document.getElementById("player-select").value = player.pid;
-      window.history.replaceState({}, "", `player_pages.html?pid=${encodeURIComponent(player.pid)}`);
       renderProfile(player);
       document.querySelector(".selector-band").scrollIntoView({ behavior: "smooth", block: "start" });
     });
