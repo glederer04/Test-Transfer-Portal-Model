@@ -350,7 +350,7 @@ ul.task-list li input[type="checkbox"] {
 
 .player-card-head {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto 1fr;
   gap: 9px;
   align-items: start;
   margin-bottom: 8px;
@@ -386,12 +386,6 @@ ul.task-list li input[type="checkbox"] {
   color: var(--pulse-muted);
   font-size: 0.86rem;
   margin-top: 2px;
-}
-
-.player-score {
-  color: var(--pulse-green);
-  font-weight: 950;
-  white-space: nowrap;
 }
 
 .stat-row {
@@ -527,10 +521,6 @@ ul.task-list li input[type="checkbox"] {
     grid-template-columns: auto 1fr;
   }
 
-  .player-score {
-    grid-column: 2;
-  }
-
   .stat-row {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -552,7 +542,7 @@ ul.task-list li input[type="checkbox"] {
           <button class="prompt-chip" type="button" data-prompt="best shooters in the Big Ten">Best shooters in the Big Ten</button>
           <button class="prompt-chip" type="button" data-prompt="top rebounders who may transfer">Top rebounders who may transfer</button>
           <button class="prompt-chip" type="button" data-prompt="best players on Duke">Best players on Duke</button>
-          <button class="prompt-chip" type="button" data-prompt="players similar to RJ Davis">Players similar to RJ Davis</button>
+          <button class="prompt-chip" type="button" data-prompt="players similar to Seth Trimble">Players similar to Seth Trimble</button>
         </div>
         <div id="pulse-scope" class="scope-list"></div>
       </div>
@@ -624,8 +614,8 @@ const metricProfiles = {
   },
   transfer: {
     title: "Likely transfer names",
-    note: "Ranked by model transfer probability, current impact, role size, and projected destination signal.",
-    score: row => transferProb(row) * 80 + n(row.BPM) * 4 + n(row.MP) * 0.25 + n(row.USG) * 0.12 + n(row.primaryBpm) * 2,
+    note: "Ranked by model transfer probability, current impact, role size, and usage context.",
+    score: row => transferProb(row) * 80 + n(row.BPM) * 4 + n(row.MP) * 0.25 + n(row.USG) * 0.12,
     focus: row => `${fmtPct(transferProb(row))} transfer`
   },
   underused: {
@@ -671,12 +661,6 @@ function returnProb(row) {
 function threeAttemptsPerGame(row) {
   const gp = Math.max(n(row.GP), 1);
   return n(row.TPA) / gp;
-}
-
-function destinationLabel(row) {
-  const clean = row.pred_destination_clean || row.pred_destination_tier || row.destination_show || "";
-  if (!clean) return "NA";
-  return String(clean).replaceAll("_", " ").replace(/\b\w/g, letter => letter.toUpperCase());
 }
 
 function minutesTrust(row) {
@@ -731,14 +715,9 @@ function playerLink(row) {
 }
 
 function enrich(row) {
-  const high = pct(row.dest_prob_high);
-  const upper = pct(row.dest_prob_upper_mid);
-  const low = pct(row.dest_prob_low);
-  const primaryBpm = high >= upper && high >= low ? n(row.pred_BPM_high) : upper >= low ? n(row.pred_BPM_upper_mid) : n(row.pred_BPM_low);
   return {
     ...row,
-    searchText: normalize([row.player, row.team, row.conf, row.Role, row.class, row.height, row.Hometown].filter(Boolean).join(" ")),
-    primaryBpm
+    searchText: normalize([row.player, row.team, row.conf, row.Role, row.class, row.height, row.Hometown].filter(Boolean).join(" "))
   };
 }
 
@@ -762,13 +741,13 @@ function detectRole(query) {
 function detectMetric(query) {
   if (/\b(similar|comp|compare|comparison|like)\b/.test(query)) return "similar";
   if (/\b(underused|sleeper|sleepers|hidden|undervalued|low role)\b/.test(query)) return "underused";
-  if (/\b(transfer|transfers|portal|leave|leaving|available|availability)\b/.test(query)) return "transfer";
   if (/\b(shoot|shooter|shooters|three|3pt|3 point|3-point|spacing|spacer)\b/.test(query)) return "shooting";
   if (/\b(efficient|efficiency|true shooting|ts|efg|ortg|offensive rating)\b/.test(query)) return "efficiency";
   if (/\b(rebound|rebounder|rebounders|boards|glass)\b/.test(query)) return "rebounding";
   if (/\b(assist|assists|playmaker|playmaking|passer|passing|creator|creation)\b/.test(query)) return "playmaking";
   if (/\b(defense|defensive|defender|steal|steals|block|blocks|rim protector)\b/.test(query)) return "defense";
   if (/\b(score|scorer|scorers|points|ppg|bucket)\b/.test(query)) return "scoring";
+  if (/\b(transfer|transfers|portal|leave|leaving|available|availability)\b/.test(query)) return "transfer";
   return "impact";
 }
 
@@ -876,7 +855,7 @@ function answerQuestion(question) {
     if (!parsed.mentionedPlayer) {
       return {
         title: "I need a player name for comps",
-        note: "Try something like: players similar to RJ Davis.",
+        note: "Try something like: players similar to Seth Trimble.",
         rows: [],
         metric: "similar"
       };
@@ -891,7 +870,7 @@ function answerQuestion(question) {
 
   const profile = metricProfiles[parsed.metric] || metricProfiles.impact;
   const rows = filteredPlayers(parsed)
-    .map(row => ({ ...row, pulseScore: profile.score(row) }))
+    .map(row => ({ ...row, pulseScore: profile.score(row), pulseQuery: parsed.query }))
     .sort((a, b) => b.pulseScore - a.pulseScore || n(b.BPM) - n(a.BPM))
     .slice(0, 8);
 
@@ -959,10 +938,10 @@ function statTilesFor(row, metric) {
       ["D-PORPAG", fmt(row.D_PORPAG)]
     ],
     transfer: [
-      ["Transfer", fmtPct(transferProb(row))],
       ["Return", fmtPct(returnProb(row))],
-      ["Dest", destinationLabel(row)],
-      ["Proj BPM", fmtSigned(row.primaryBpm)]
+      ["MPG", fmt(row.MP)],
+      ["USG", `${fmt(row.USG)}%`],
+      ["Transfer", fmtPct(transferProb(row))]
     ],
     underused: [
       ["MPG", fmt(row.MP)],
@@ -977,7 +956,12 @@ function statTilesFor(row, metric) {
       ["AST", fmt(row.AST)]
     ]
   };
-  return [...common, ...(profiles[metric] || profiles.impact)];
+  const tiles = [...common, ...(profiles[metric] || profiles.impact)];
+  const hasTransferIntent = /\b(transfer|transfers|portal|leave|leaving|available|availability)\b/.test(row.pulseQuery || "");
+  if (hasTransferIntent && !tiles.some(([label]) => label === "Transfer")) {
+    return [...tiles, ["Transfer", fmtPct(transferProb(row))]];
+  }
+  return tiles;
 }
 
 function renderRows(rows, focus, metric = "impact") {
@@ -995,7 +979,6 @@ function renderRows(rows, focus, metric = "impact") {
               <div>${playerLink(row)}</div>
               <div class="player-sub">${escapeHtml(row.team || "Team NA")} - ${escapeHtml(row.conf || "Conf NA")} - ${escapeHtml(row.Role || "Role NA")} - ${escapeHtml(row.class || "Class NA")}</div>
             </div>
-            <div class="player-score">${focus ? escapeHtml(focus(row)) : fmtSigned(row.BPM)}</div>
           </div>
           <div class="stat-row">
             ${statTilesFor(row, metric).map(([label, value]) => statTile(label, value)).join("")}
@@ -1025,7 +1008,7 @@ function renderEmptyState() {
         <div class="pulse-empty-example">efficient ACC guards</div>
         <div class="pulse-empty-example">best players on North Carolina</div>
         <div class="pulse-empty-example">top transfer bigs</div>
-        <div class="pulse-empty-example">players similar to RJ Davis</div>
+        <div class="pulse-empty-example">players similar to Seth Trimble</div>
       </div>
     </div>
   `;
