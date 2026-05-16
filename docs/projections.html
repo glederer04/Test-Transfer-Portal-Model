@@ -1299,7 +1299,7 @@ const viewColumns = {
     "PTS",
     "REB",
     "AST",
-    "bpm_show"
+    "new_bpm_likely_show"
   ]
 };
 
@@ -1318,15 +1318,11 @@ const detailColumns = {
     "pred_movement_direction"
   ],
   bpm: [
-    "pred_BPM_low",
-    "pred_BPM_low_lo",
-    "pred_BPM_low_hi",
-    "pred_BPM_upper_mid",
-    "pred_BPM_upper_mid_lo",
-    "pred_BPM_upper_mid_hi",
-    "pred_BPM_high",
-    "pred_BPM_high_lo",
-    "pred_BPM_high_hi"
+    "new_bpm_pred_likely_context",
+    "new_bpm_change_likely_context",
+    "new_bpm_pred_context_step_down",
+    "new_bpm_pred_context_lateral",
+    "new_bpm_pred_context_step_up"
   ]
 };
 
@@ -1335,7 +1331,7 @@ const customColumnTitles = {
   
   transfer_show: "Transfer Likelihood",
   movement_show: "Transfer Movement",
-  bpm_show: "Projected BPM",
+  new_bpm_likely_show: "Projected BPM",
 
   pred_transfer: "Predicted Transfer",
   transfer_prob_mean: "Transfer Prob Mean",
@@ -1348,15 +1344,11 @@ const customColumnTitles = {
   pred_movement_label: "Movement Label",
   pred_movement_direction: "Movement Direction",
 
-  pred_BPM_low: "Projected BPM (Development Level)",
-  pred_BPM_low_lo: "BPM Low CI",
-  pred_BPM_low_hi: "BPM High CI",
-  pred_BPM_upper_mid: "Projected BPM (Upper-Mid Level)",
-  pred_BPM_upper_mid_lo: "Upper Mid CI Low",
-  pred_BPM_upper_mid_hi: "Upper Mid CI High",
-  pred_BPM_high: "Projected BPM (High-Major Level)",
-  pred_BPM_high_lo: "High Major CI Low",
-  pred_BPM_high_hi: "High Major CI High"
+  new_bpm_pred_likely_context: "Likely Landing BPM",
+  new_bpm_change_likely_context: "Likely BPM Change",
+  new_bpm_pred_context_step_down: "BPM If Step Down",
+  new_bpm_pred_context_lateral: "BPM If Lateral",
+  new_bpm_pred_context_step_up: "BPM If Step Up"
 };
 
 const projectionColumnHelp = {
@@ -1371,7 +1363,7 @@ const projectionColumnHelp = {
   AST: "Assists per game.",
   transfer_show: "Model-estimated transfer likelihood.",
   movement_show: "Estimated transfer step based on how much the model expects the player's next program level to rise or fall.",
-  bpm_show: "Projected BPM for the player based on the model outlook."
+  new_bpm_likely_show: "Projected next-season BPM using the player's likely transfer movement."
 };
 
 function prettifyLabel(col) {
@@ -1719,45 +1711,20 @@ function clampBPMPosition(val, minVal, maxVal) {
 }
 
 function getBpmCardPrimaryTier(row) {
-  const projectedLevel = programLevelFromStrength(row.pred_projected_program_strength);
-
-  if (projectedLevel === "High-major level") {
-    return {
-      label: "High-major level",
-      value: parseFloat(row.pred_BPM_high),
-      lo: parseFloat(row.pred_BPM_high_lo),
-      hi: parseFloat(row.pred_BPM_high_hi)
-    };
-  }
-
-  if (projectedLevel === "Upper-mid level") {
-    return {
-      label: "Upper-mid level",
-      value: parseFloat(row.pred_BPM_upper_mid),
-      lo: parseFloat(row.pred_BPM_upper_mid_lo),
-      hi: parseFloat(row.pred_BPM_upper_mid_hi)
-    };
-  }
-
   return {
-    label: "Development level",
-    value: parseFloat(row.pred_BPM_low),
-    lo: parseFloat(row.pred_BPM_low_lo),
-    hi: parseFloat(row.pred_BPM_low_hi)
+    label: "Likely landing",
+    value: parseFloat(row.new_bpm_pred_likely_context),
+    change: parseFloat(row.new_bpm_change_likely_context)
   };
 }
 
 function getBpmAxisBounds(row) {
   const values = [
-    parseFloat(row.pred_BPM_low_lo),
-    parseFloat(row.pred_BPM_low),
-    parseFloat(row.pred_BPM_low_hi),
-    parseFloat(row.pred_BPM_upper_mid_lo),
-    parseFloat(row.pred_BPM_upper_mid),
-    parseFloat(row.pred_BPM_upper_mid_hi),
-    parseFloat(row.pred_BPM_high_lo),
-    parseFloat(row.pred_BPM_high),
-    parseFloat(row.pred_BPM_high_hi)
+    parseFloat(row.new_bpm_pred_context_step_down),
+    parseFloat(row.new_bpm_pred_context_lateral),
+    parseFloat(row.new_bpm_pred_context_step_up),
+    parseFloat(row.new_bpm_pred_likely_context),
+    parseFloat(row.BPM)
   ].filter(v => !isNaN(v));
 
   if (!values.length) {
@@ -1780,22 +1747,19 @@ function getBpmAxisBounds(row) {
   };
 }
 
-function formatBpmTierRow(label, value, lo, hi, axisMin, axisMax) {
+function formatBpmTierRow(label, value, change, axisMin, axisMax, helpText = "") {
   const valNum = parseFloat(value);
-  const loNum = parseFloat(lo);
-  const hiNum = parseFloat(hi);
+  const changeNum = parseFloat(change);
 
   const safeVal = isNaN(valNum) ? 0 : valNum;
-  const safeLo = isNaN(loNum) ? safeVal : loNum;
-  const safeHi = isNaN(hiNum) ? safeVal : hiNum;
 
-  const rangeLeft = `${clamp(clampBPMPosition(safeLo, axisMin, axisMax), 0, 100)}%`;
-  const rangeRight = clamp(clampBPMPosition(safeHi, axisMin, axisMax), 0, 100);
-  const rangeWidth = `${Math.max(rangeRight - clamp(clampBPMPosition(safeLo, axisMin, axisMax), 0, 100), 1.5)}%`;
   const dotLeft = `${clamp(clampBPMPosition(safeVal, axisMin, axisMax), 0, 100)}%`;
+  const currentLeft = `${clamp(clampBPMPosition(0, axisMin, axisMax), 0, 100)}%`;
+  const changeText = isNaN(changeNum) ? "Change unavailable" : `Change: ${fmtBPM(changeNum)}`;
+  const help = helpText || "Projected next-season BPM for this transfer movement scenario.";
 
   return `
-    <div class="bpm-tier-box">
+    <div class="bpm-tier-box" data-help="${escapeHtml(help)}" title="${escapeHtml(help)}">
       <div class="bpm-tier-header">
         <div class="bpm-tier-name">${label}</div>
         <div class="bpm-tier-value">${fmtBPM(safeVal)}</div>
@@ -1803,7 +1767,7 @@ function formatBpmTierRow(label, value, lo, hi, axisMin, axisMax) {
 
       <div class="bpm-ci-wrap">
         <div class="bpm-ci-base"></div>
-        <div class="bpm-ci-range" style="left:${rangeLeft}; width:${rangeWidth};"></div>
+        <div class="bpm-ci-range" style="left:${currentLeft}; width:1.5%;"></div>
         <div class="bpm-ci-dot" style="left:${dotLeft};"></div>
       </div>
 
@@ -1814,7 +1778,7 @@ function formatBpmTierRow(label, value, lo, hi, axisMin, axisMax) {
       </div>
 
       <div class="bpm-tier-meta">
-        <span>Interval: (${fmtBPM(safeLo)}, ${fmtBPM(safeHi)})</span>
+        <span>${changeText}</span>
         <span>${label}: ${fmtBPM(safeVal)}</span>
       </div>
     </div>
@@ -1832,7 +1796,7 @@ function formatBpmCard(row) {
           <div>
             <div class="bpm-card-title">Projected BPM Summary</div>
             <div class="bpm-card-subtitle">
-              Visual snapshot of projected post-transfer BPM across possible program levels
+              Movement-aware next-season BPM based on the likely landing path and step up/down scenarios
             </div>
           </div>
 
@@ -1843,33 +1807,33 @@ function formatBpmCard(row) {
         </div>
 
         <div class="bpm-card-section">
-          <div class="bpm-section-label">Projected BPM by Program Level</div>
+          <div class="bpm-section-label">Projected BPM by Transfer Movement</div>
           <div class="bpm-tier-grid">
             ${formatBpmTierRow(
-              "Development Level",
-              row.pred_BPM_low,
-              row.pred_BPM_low_lo,
-              row.pred_BPM_low_hi,
+              "Step Down",
+              row.new_bpm_pred_context_step_down,
+              row.new_bpm_change_context_step_down,
               axis.min,
-              axis.max
+              axis.max,
+              "Projected BPM if the player lands in a softer program environment."
             )}
 
             ${formatBpmTierRow(
-              "Upper-Mid Level",
-              row.pred_BPM_upper_mid,
-              row.pred_BPM_upper_mid_lo,
-              row.pred_BPM_upper_mid_hi,
+              "Lateral",
+              row.new_bpm_pred_context_lateral,
+              row.new_bpm_change_context_lateral,
               axis.min,
-              axis.max
+              axis.max,
+              "Projected BPM if the player lands in a similar program environment."
             )}
 
             ${formatBpmTierRow(
-              "High-Major Level",
-              row.pred_BPM_high,
-              row.pred_BPM_high_lo,
-              row.pred_BPM_high_hi,
+              "Step Up",
+              row.new_bpm_pred_context_step_up,
+              row.new_bpm_change_context_step_up,
               axis.min,
-              axis.max
+              axis.max,
+              "Projected BPM if the player lands in a stronger program environment."
             )}
           </div>
         </div>
@@ -1881,13 +1845,13 @@ function formatBpmCard(row) {
           </div>
 
           <div class="bpm-summary-box">
-            <div class="bpm-summary-label">Primary Program Level</div>
-            <div class="bpm-summary-value">${primary.label}</div>
+            <div class="bpm-summary-label">Likely Movement</div>
+            <div class="bpm-summary-value">${movementDirectionText(row.pred_movement_direction)}</div>
           </div>
 
           <div class="bpm-summary-box">
-            <div class="bpm-summary-label">Confidence Interval</div>
-            <div class="bpm-summary-value">(${fmtBPM(primary.lo)}, ${fmtBPM(primary.hi)})</div>
+            <div class="bpm-summary-label">Projected Change</div>
+            <div class="bpm-summary-value">${fmtBPM(primary.change)}</div>
           </div>
         </div>
       </div>
@@ -2429,7 +2393,7 @@ function buildTable(viewName) {
       className: [
         "transfer_show",
         "movement_show",
-        "bpm_show"
+        "new_bpm_likely_show"
       ].includes(col) ? "projection-highlight-col" : "",
       render: function(data, type, row) {
         if (col === "player" && type === "display") return playerProfileLink(row);

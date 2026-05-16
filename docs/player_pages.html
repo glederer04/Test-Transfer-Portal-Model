@@ -1183,7 +1183,7 @@ ul.task-list li input[type="checkbox"] {
         <div class="panel-head">
           <div>
             <div class="panel-title">Model Outlook</div>
-            <div class="panel-kicker">Transfer probability, likely movement level, and projected BPM by program level.</div>
+            <div class="panel-kicker">Transfer probability, likely movement level, and movement-aware projected BPM.</div>
           </div>
           <div id="view-buttons" class="view-buttons"></div>
         </div>
@@ -1485,6 +1485,8 @@ function enrich(row) {
     movement_score: cleanNumber(row.pred_movement_score),
     current_program_strength_num: cleanNumber(row.current_program_strength),
     projected_program_strength_num: cleanNumber(row.pred_projected_program_strength),
+    new_bpm_likely_num: cleanNumber(row.new_bpm_pred_likely_context),
+    new_bpm_change_likely_num: cleanNumber(row.new_bpm_change_likely_context),
     ast_tov_calc: astTov
   };
 }
@@ -1949,9 +1951,13 @@ function drawModelPdf(pdf, player, x, y, w) {
     return;
   }
   if (activeModelView === "bpm") {
-    pdf.text(fmtSigned(player.bpm_show || player.pred_BPM_low), x, y);
-    [["High", player.pred_BPM_high], ["Upper", player.pred_BPM_upper_mid], ["Develop", player.pred_BPM_low]].forEach((row, idx) => {
-      pdfCompactKey(pdf, row[0], fmtSigned(row[1]), "projected BPM", x + (idx % 3) * 1.12, y + 0.34, 1.02, 0.52);
+    pdf.text(fmtSigned(player.new_bpm_pred_likely_context || player.new_bpm_likely_show), x, y);
+    [
+      ["Down", player.new_bpm_pred_context_step_down],
+      ["Lateral", player.new_bpm_pred_context_lateral],
+      ["Up", player.new_bpm_pred_context_step_up]
+    ].forEach((row, idx) => {
+      pdfCompactKey(pdf, row[0], fmtSigned(row[1]), "movement BPM", x + (idx % 3) * 1.12, y + 0.34, 1.02, 0.52);
     });
     return;
   }
@@ -2372,13 +2378,14 @@ function renderModelViews(player) {
   document.getElementById("model-bpm").innerHTML = `
     <div class="model-score-line">
       <div>
-        <div class="big-score">${fmtSigned(player.bpm_show || player.pred_BPM_low)}</div>
-        <div class="key-sub">Displayed projected BPM</div>
+        <div class="big-score">${fmtSigned(player.new_bpm_pred_likely_context || player.new_bpm_likely_show)}</div>
+        <div class="key-sub">Likely next-season BPM</div>
       </div>
       <div>
-        ${bpmProjectionRow("High-major level", player.pred_BPM_high, player.pred_BPM_high_lo, player.pred_BPM_high_hi)}
-        ${bpmProjectionRow("Upper-mid level", player.pred_BPM_upper_mid, player.pred_BPM_upper_mid_lo, player.pred_BPM_upper_mid_hi)}
-        ${bpmProjectionRow("Development level", player.pred_BPM_low, player.pred_BPM_low_lo, player.pred_BPM_low_hi)}
+        ${bpmProjectionRow("Likely movement", player.new_bpm_pred_likely_context, player.new_bpm_change_likely_context)}
+        ${bpmProjectionRow("Step down", player.new_bpm_pred_context_step_down, player.new_bpm_change_context_step_down)}
+        ${bpmProjectionRow("Lateral", player.new_bpm_pred_context_lateral, player.new_bpm_change_context_lateral)}
+        ${bpmProjectionRow("Step up", player.new_bpm_pred_context_step_up, player.new_bpm_change_context_step_up)}
       </div>
     </div>
   `;
@@ -2406,12 +2413,12 @@ function stackedRow(label, value) {
   `;
 }
 
-function bpmProjectionRow(label, mid, lo, hi) {
+function bpmProjectionRow(label, projection, change) {
   return `
     <div class="stacked-row">
       <div class="bar-label">${label}</div>
-      <div class="score-note">${fmtSigned(lo)} to ${fmtSigned(hi)}</div>
-      <div class="bar-value">${fmtSigned(mid)}</div>
+      <div class="score-note">Change: ${fmtSigned(change)}</div>
+      <div class="bar-value">${fmtSigned(projection)}</div>
     </div>
   `;
 }

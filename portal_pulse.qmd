@@ -711,6 +711,10 @@ function hasMovementIntent(query) {
   return /\b(where|go|goes|going|land|lands|landing|spot|fit|location|closer to home|better team|better place|better program|better conference|stronger team|stronger place|stronger program|stronger conference|worse team|worse place|worse program|worse conference|weaker team|weaker place|weaker program|weaker conference|move up|move down|moving up|moving down|transfer up|transfer down|go up|go down|step up|step-up|step down|step-down|lateral|similar level|same level|movement)\b/.test(query);
 }
 
+function hasProjectedBpmIntent(query) {
+  return /\b(projected bpm|next bpm|next-season bpm|future bpm|bpm projection|bpm model|movement bpm|better bpm|worse bpm)\b/.test(query);
+}
+
 function playerLink(row) {
   const name = escapeHtml(row.player || "Unknown player");
   const pid = encodeURIComponent(row.pid || "");
@@ -977,26 +981,38 @@ function statTilesFor(row, metric) {
   const queryText = row.pulseQuery || "";
   const hasTransferIntent = /\b(transfer|transfers|portal|leave|leaving|available|availability)\b/.test(queryText);
   const hasMoveIntent = hasMovementIntent(queryText);
+  const hasBpmIntent = hasProjectedBpmIntent(queryText) || hasMoveIntent;
   const hasLabel = (items, label) => items.some(item => item.label === label);
+  const bpmTile = predicted(
+    "Proj BPM",
+    fmtSigned(row.new_bpm_pred_likely_context || row.new_bpm_likely_show),
+    "Movement-aware next-season BPM projection using the player's likely landing path."
+  );
+
+  let tilesOut = tiles;
 
   if (hasMoveIntent) {
-    const withMovement = hasLabel(tiles, "Movement")
-      ? tiles
-      : [...tiles, movementTile];
-    return hasLabel(withMovement, "Transfer")
-      ? withMovement
-      : [...withMovement, transferTile];
+    tilesOut = hasLabel(tilesOut, "Movement")
+      ? tilesOut
+      : [...tilesOut, movementTile];
+    tilesOut = hasLabel(tilesOut, "Transfer")
+      ? tilesOut
+      : [...tilesOut, transferTile];
   }
 
-  if (hasTransferIntent && !hasLabel(tiles, "Transfer")) {
-    return [...tiles, transferTile];
+  if (hasTransferIntent && !hasLabel(tilesOut, "Transfer")) {
+    tilesOut = [...tilesOut, transferTile];
   }
 
-  if (!hasLabel(tiles, "Transfer")) {
-    return [...tiles, transferTile];
+  if (hasBpmIntent && !hasLabel(tilesOut, "Proj BPM")) {
+    tilesOut = [...tilesOut, bpmTile];
   }
 
-  return tiles;
+  if (!hasLabel(tilesOut, "Transfer")) {
+    tilesOut = [...tilesOut, transferTile];
+  }
+
+  return tilesOut;
 }
 
 function renderRows(rows, focus, metric = "impact") {

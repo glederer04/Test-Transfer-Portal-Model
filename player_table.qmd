@@ -743,10 +743,11 @@ function programLevelFromStrength(value) {
 }
 
 function getPrimaryBpm(row) {
-  const projectedLevel = programLevelFromStrength(row.pred_projected_program_strength);
-  if (projectedLevel === "High-major level") return { label: "High-major level", value: row.pred_BPM_high };
-  if (projectedLevel === "Upper-mid level") return { label: "Upper-mid level", value: row.pred_BPM_upper_mid };
-  return { label: "Development level", value: row.pred_BPM_low };
+  return {
+    label: movementDirectionText(row.pred_movement_direction),
+    value: row.new_bpm_pred_likely_context,
+    change: row.new_bpm_change_likely_context
+  };
 }
 
 function enrichData(data) {
@@ -787,17 +788,15 @@ function enrichData(data) {
       TP_sort: parseProbability(row["TP."]),
       FT_display: pctAttemptsDisplay(row["FT."], ftAttemptsPerGame),
       FT_sort: parseProbability(row["FT."]),
-      primary_bpm_num: parseFloat(getPrimaryBpm({
-        ...row
-      }).value)
+      primary_bpm_num: parseFloat(getPrimaryBpm(row).value)
     };
 
     if (!enriched.movement_show || String(enriched.movement_show).trim() === "") {
       enriched.movement_show = `${movementLabel(enriched.pred_movement_label)} (${signedMovement(enriched.pred_movement_score)})`;
     }
 
-    if (!enriched.bpm_show || String(enriched.bpm_show).trim() === "") {
-      enriched.bpm_show = fmtBPM(enriched.primary_bpm_num);
+    if (!enriched.new_bpm_likely_show || String(enriched.new_bpm_likely_show).trim() === "") {
+      enriched.new_bpm_likely_show = fmtBPM(enriched.primary_bpm_num);
     }
 
     return enriched;
@@ -1169,18 +1168,16 @@ function formatModelDetails(row) {
             <div class="model-box-label">Transfer Movement Model</div>
             <div class="model-box-value">${movementLabel(row.pred_movement_label)}</div>
             <div class="model-box-note">${movementDirectionText(row.pred_movement_direction)} movement score: ${signedMovement(row.pred_movement_score)}</div>
-            <div class="bpm-row"><span>Current strength</span><strong>${fmt1(row.current_program_strength)}</strong></div>
-            <div class="bpm-row"><span>Projected strength</span><strong>${fmt1(row.pred_projected_program_strength)}</strong></div>
-            <div class="bpm-row"><span>Projected level</span><strong>${programLevelFromStrength(row.pred_projected_program_strength)}</strong></div>
           </div>
 
           <div class="model-box">
-            <div class="model-box-label">Projected BPM Model</div>
+            <div class="model-box-label">Movement-Based BPM Model</div>
             <div class="model-box-value">${fmtBPM(primaryBpm.value)}</div>
-            <div class="model-box-note">Primary projection for ${primaryBpm.label}</div>
-            <div class="bpm-row"><span>Development level</span><strong>${fmtBPM(row.pred_BPM_low)}</strong></div>
-            <div class="bpm-row"><span>Upper-mid level</span><strong>${fmtBPM(row.pred_BPM_upper_mid)}</strong></div>
-            <div class="bpm-row"><span>High-major level</span><strong>${fmtBPM(row.pred_BPM_high)}</strong></div>
+            <div class="model-box-note">Likely next-season BPM if his portal movement is ${primaryBpm.label.toLowerCase()}</div>
+            <div class="bpm-row"><span>Likely change</span><strong>${fmtBPM(primaryBpm.change)}</strong></div>
+            <div class="bpm-row"><span>Step down</span><strong>${fmtBPM(row.new_bpm_pred_context_step_down)}</strong></div>
+            <div class="bpm-row"><span>Lateral</span><strong>${fmtBPM(row.new_bpm_pred_context_lateral)}</strong></div>
+            <div class="bpm-row"><span>Step up</span><strong>${fmtBPM(row.new_bpm_pred_context_step_up)}</strong></div>
           </div>
         </div>
       </div>
