@@ -38,7 +38,6 @@ format:
 }
 
 .pulse-title-band,
-.pulse-panel,
 .pulse-chat {
   background: #fff;
   border: 1px solid var(--pulse-line);
@@ -607,10 +606,10 @@ function enrich(row) {
 
 function roleMatches(row, role) {
   const roleText = normalize(row.Role);
-  if (role === "guard") return roleText.includes("g") || roleText.includes("pg");
-  if (role === "wing") return roleText.includes("wing");
-  if (role === "big") return roleText.includes("c") || roleText.includes("pf") || roleText.includes("stretch 4");
-  if (role === "point") return roleText.includes("pg");
+  if (role === "guard") return ["pure pg", "scoring pg", "combo g"].includes(roleText);
+  if (role === "wing") return ["wing f", "wing g"].includes(roleText);
+  if (role === "big") return ["stretch 4", "pf/c", "c"].includes(roleText);
+  if (role === "point") return ["pure pg", "scoring pg"].includes(roleText);
   return true;
 }
 
@@ -841,7 +840,7 @@ function appendExchange(question, answerHtml) {
       ${answerHtml}
     </div>
   `;
-  wrap.appendChild(exchange);
+  wrap.insertBefore(exchange, wrap.firstChild);
   exchange.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
