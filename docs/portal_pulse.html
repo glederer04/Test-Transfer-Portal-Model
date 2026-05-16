@@ -122,7 +122,7 @@ ul.task-list li input[type="checkbox"] {
 <!-- margin-sidebar -->
     
 <!-- main -->
-<main class="content page-columns page-full column-page" id="quarto-document-content">
+<main class="content column-page" id="quarto-document-content">
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
@@ -167,10 +167,7 @@ ul.task-list li input[type="checkbox"] {
 }
 
 .pulse-top {
-  display: grid;
-  grid-template-columns: minmax(280px, 0.92fr) minmax(380px, 1.08fr);
-  gap: 16px;
-  align-items: stretch;
+  display: block;
   margin-bottom: 16px;
 }
 
@@ -184,10 +181,7 @@ ul.task-list li input[type="checkbox"] {
 
 .pulse-title-band {
   padding: 20px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  min-height: 238px;
+  min-height: 0;
 }
 
 .pulse-kicker {
@@ -215,26 +209,8 @@ ul.task-list li input[type="checkbox"] {
   max-width: 680px;
 }
 
-.pulse-status-row {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-top: 16px;
-}
-
-.pulse-pill {
-  display: inline-flex;
-  align-items: center;
-  border-radius: 999px;
-  background: #eef3f8;
-  color: #293548;
-  padding: 7px 10px;
-  font-weight: 850;
-  font-size: 0.84rem;
-}
-
 .pulse-panel {
-  padding: 16px;
+  padding-top: 18px;
 }
 
 .pulse-panel-title {
@@ -246,7 +222,7 @@ ul.task-list li input[type="checkbox"] {
 
 .prompt-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
 }
 
@@ -268,9 +244,9 @@ ul.task-list li input[type="checkbox"] {
 }
 
 .pulse-chat {
-  min-height: 560px;
+  min-height: 660px;
   display: grid;
-  grid-template-rows: 1fr auto;
+  grid-template-rows: auto 1fr;
   overflow: hidden;
 }
 
@@ -278,37 +254,74 @@ ul.task-list li input[type="checkbox"] {
   background: #f6f8fb;
   padding: 16px;
   overflow-y: auto;
-  min-height: 452px;
-  max-height: 68vh;
+  min-height: 540px;
+  max-height: 76vh;
 }
 
-.pulse-message {
-  display: grid;
-  gap: 8px;
-  margin-bottom: 14px;
-}
-
-.pulse-message.user {
-  justify-items: end;
-}
-
-.pulse-bubble {
-  max-width: min(860px, 100%);
+.pulse-empty {
+  border: 1px dashed #bdc9d6;
   border-radius: 8px;
-  padding: 12px 14px;
-  line-height: 1.42;
+  background: #fff;
+  color: #334155;
+  padding: 22px;
+}
+
+.pulse-empty-title {
+  color: var(--pulse-navy);
+  font-size: 1.2rem;
+  font-weight: 950;
+  margin-bottom: 8px;
+}
+
+.pulse-empty-examples {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.pulse-empty-example {
+  border-radius: 7px;
+  background: #eef6fc;
+  color: #24405f;
+  padding: 8px 10px;
+  font-weight: 850;
+  font-size: 0.9rem;
+}
+
+.pulse-exchange {
+  background: #fff;
+  border: 1px solid var(--pulse-line);
+  border-radius: 8px;
+  padding: 14px;
+  margin-bottom: 14px;
   box-shadow: 0 1px 3px rgba(19, 41, 75, 0.06);
 }
 
-.pulse-message.user .pulse-bubble {
-  background: var(--pulse-navy);
-  color: #fff;
+.question-block {
+  border-bottom: 1px solid #e5ebf2;
+  padding-bottom: 11px;
+  margin-bottom: 12px;
 }
 
-.pulse-message.bot .pulse-bubble {
-  background: #fff;
-  border: 1px solid var(--pulse-line);
-  color: var(--pulse-ink);
+.question-label,
+.answer-label {
+  color: var(--pulse-muted);
+  font-size: 0.76rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-bottom: 5px;
+}
+
+.question-text {
+  color: var(--pulse-navy);
+  font-size: 1.02rem;
+  font-weight: 900;
+}
+
+.answer-block {
+  line-height: 1.42;
 }
 
 .answer-title {
@@ -411,14 +424,14 @@ ul.task-list li input[type="checkbox"] {
 }
 
 .pulse-footer {
-  border-top: 1px solid var(--pulse-line);
+  border-bottom: 1px solid var(--pulse-line);
   background: #fff;
-  padding: 12px;
+  padding: 14px;
 }
 
 .pulse-form {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: 1fr auto auto;
   gap: 10px;
 }
 
@@ -444,6 +457,21 @@ ul.task-list li input[type="checkbox"] {
 
 .pulse-submit:hover {
   background: #1d3b68;
+}
+
+.pulse-clear {
+  border: 1px solid #cbd5df;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #293548;
+  min-height: 46px;
+  padding: 10px 14px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.pulse-clear:hover {
+  background: #eef3f8;
 }
 
 .pulse-submit:disabled {
@@ -474,10 +502,11 @@ ul.task-list li input[type="checkbox"] {
 }
 
 @media (max-width: 920px) {
-  .pulse-top {
-    grid-template-columns: 1fr;
+  .prompt-grid,
+  .pulse-empty-examples {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-
+  
   .stat-row {
     grid-template-columns: repeat(3, minmax(70px, 1fr));
   }
@@ -490,7 +519,8 @@ ul.task-list li input[type="checkbox"] {
   }
 
   .prompt-grid,
-  .pulse-form {
+  .pulse-form,
+  .pulse-empty-examples {
     grid-template-columns: 1fr;
   }
 
@@ -507,44 +537,39 @@ ul.task-list li input[type="checkbox"] {
   }
 }
 </style>
-<div class="pulse-shell page-columns page-full">
-  <div class="pulse-top page-columns page-full">
+<div class="pulse-shell">
+  <div class="pulse-top">
     <section class="pulse-title-band">
       <div>
         <div class="pulse-kicker">Free local data engine</div>
         <h1 class="pulse-title">Portal Pulse</h1>
         <div class="pulse-subtitle">Ask basketball questions and get ranked answers from the portal dataset. Player names open their profile pages in this tab.</div>
       </div>
-      <div class="pulse-status-row">
-        <span id="pulse-count" class="pulse-pill">Loading players...</span>
-        <span class="pulse-pill">No API key</span>
-        <span class="pulse-pill">No AI billing</span>
+      <div class="pulse-panel">
+        <div class="pulse-panel-title">Quick hits</div>
+        <div class="prompt-grid">
+          <button class="prompt-chip" type="button" data-prompt="best guards likely to transfer">Best guards likely to transfer</button>
+          <button class="prompt-chip" type="button" data-prompt="efficient ACC players">Efficient ACC players</button>
+          <button class="prompt-chip" type="button" data-prompt="best shooters in the Big Ten">Best shooters in the Big Ten</button>
+          <button class="prompt-chip" type="button" data-prompt="top rebounders who may transfer">Top rebounders who may transfer</button>
+          <button class="prompt-chip" type="button" data-prompt="best players on Duke">Best players on Duke</button>
+          <button class="prompt-chip" type="button" data-prompt="players similar to RJ Davis">Players similar to RJ Davis</button>
+        </div>
+        <div id="pulse-scope" class="scope-list"></div>
       </div>
     </section>
-
-    <aside class="pulse-panel">
-      <div class="pulse-panel-title">Quick hits</div>
-      <div class="prompt-grid">
-        <button class="prompt-chip" type="button" data-prompt="best guards likely to transfer">Best guards likely to transfer</button>
-        <button class="prompt-chip" type="button" data-prompt="efficient ACC players">Efficient ACC players</button>
-        <button class="prompt-chip" type="button" data-prompt="best shooters in the Big Ten">Best shooters in the Big Ten</button>
-        <button class="prompt-chip" type="button" data-prompt="top rebounders who may transfer">Top rebounders who may transfer</button>
-        <button class="prompt-chip" type="button" data-prompt="best players on Duke">Best players on Duke</button>
-        <button class="prompt-chip" type="button" data-prompt="players similar to RJ Davis">Players similar to RJ Davis</button>
-      </div>
-      <div id="pulse-scope" class="scope-list"></div>
-    </aside>
   </div>
 
   <section class="pulse-chat" aria-label="Portal Pulse chat">
-    <div id="pulse-messages" class="pulse-messages"></div>
     <div class="pulse-footer">
       <form id="pulse-form" class="pulse-form">
         <input id="pulse-input" class="pulse-input" type="text" autocomplete="off" placeholder="Try: efficient ACC guards, best players on North Carolina, top transfer bigs...">
         <button id="pulse-submit" class="pulse-submit" type="submit">Search</button>
+        <button id="pulse-clear" class="pulse-clear" type="button">Clear</button>
       </form>
       <div class="small-note">Portal Pulse only answers from the basketball data loaded on this site.</div>
     </div>
+    <div id="pulse-messages" class="pulse-messages"></div>
   </section>
 </div>
 
@@ -916,21 +941,52 @@ function statTile(label, value) {
   `;
 }
 
-function appendMessage(kind, html) {
+function renderEmptyState() {
   const wrap = document.getElementById("pulse-messages");
-  const message = document.createElement("div");
-  message.className = `pulse-message ${kind}`;
-  message.innerHTML = `<div class="pulse-bubble">${html}</div>`;
-  wrap.appendChild(message);
-  wrap.scrollTop = wrap.scrollHeight;
+  wrap.innerHTML = `
+    <div class="pulse-empty">
+      <div class="pulse-empty-title">Start with a basketball question.</div>
+      <div>Use the search box above or tap a quick hit. Portal Pulse will return ranked answers from the site data and make player names clickable.</div>
+      <div class="pulse-empty-examples">
+        <div class="pulse-empty-example">efficient ACC guards</div>
+        <div class="pulse-empty-example">best players on North Carolina</div>
+        <div class="pulse-empty-example">top transfer bigs</div>
+        <div class="pulse-empty-example">players similar to RJ Davis</div>
+      </div>
+    </div>
+  `;
+}
+
+function appendExchange(question, answerHtml) {
+  const wrap = document.getElementById("pulse-messages");
+  const empty = wrap.querySelector(".pulse-empty");
+  if (empty) wrap.innerHTML = "";
+  const exchange = document.createElement("div");
+  exchange.className = "pulse-exchange";
+  exchange.innerHTML = `
+    <div class="question-block">
+      <div class="question-label">Question</div>
+      <div class="question-text">${escapeHtml(question)}</div>
+    </div>
+    <div class="answer-block">
+      <div class="answer-label">Portal Pulse</div>
+      ${answerHtml}
+    </div>
+  `;
+  wrap.appendChild(exchange);
+  exchange.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function clearChat() {
+  renderEmptyState();
+  document.getElementById("pulse-input").focus();
 }
 
 function submitQuestion(question) {
   const trimmed = question.trim();
   if (!trimmed || !pulsePlayers.length) return;
-  appendMessage("user", escapeHtml(trimmed));
   const answer = answerQuestion(trimmed);
-  appendMessage("bot", `
+  appendExchange(trimmed, `
     <div class="answer-title">${escapeHtml(answer.title)}</div>
     <div class="answer-note">${escapeHtml(answer.note)}</div>
     ${renderRows(answer.rows, answer.focus)}
@@ -938,10 +994,10 @@ function submitQuestion(question) {
 }
 
 function setupPulse() {
-  document.getElementById("pulse-count").textContent = `${pulsePlayers.length.toLocaleString()} players loaded`;
   document.getElementById("pulse-scope").innerHTML = ["guards", "wings", "bigs", "ACC", "shooting", "transfer", "similar players"]
     .map(item => `<span class="scope-token">${escapeHtml(item)}</span>`)
     .join("");
+  renderEmptyState();
 
   document.getElementById("pulse-form").addEventListener("submit", event => {
     event.preventDefault();
@@ -959,11 +1015,7 @@ function setupPulse() {
     });
   });
 
-  appendMessage("bot", `
-    <div class="answer-title">Portal Pulse is live</div>
-    <div class="answer-note">Try a team, conference, role, player comp, or stat shape. I will stay inside the portal dataset.</div>
-    ${renderRows(answerQuestion("best guards likely to transfer").rows.slice(0, 3), metricProfiles.transfer.focus)}
-  `);
+  document.getElementById("pulse-clear").addEventListener("click", clearChat);
 }
 
 Papa.parse("data/complete_2026_scored.csv", {
@@ -977,8 +1029,7 @@ Papa.parse("data/complete_2026_scored.csv", {
     setupPulse();
   },
   error: function(error) {
-    document.getElementById("pulse-count").textContent = "Data failed to load";
-    appendMessage("bot", `<div class="answer-title">Data failed to load</div><div class="answer-note">${escapeHtml(error.message || error)}</div>`);
+    appendExchange("Load portal data", `<div class="answer-title">Data failed to load</div><div class="answer-note">${escapeHtml(error.message || error)}</div>`);
   }
 });
 </script>
