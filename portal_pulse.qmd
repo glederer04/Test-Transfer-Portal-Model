@@ -541,6 +541,12 @@ function threeAttemptsPerGame(row) {
   return n(row.TPA) / gp;
 }
 
+function destinationLabel(row) {
+  const clean = row.pred_destination_clean || row.pred_destination_tier || row.destination_show || "";
+  if (!clean) return "NA";
+  return String(clean).replaceAll("_", " ").replace(/\b\w/g, letter => letter.toUpperCase());
+}
+
 function minutesTrust(row) {
   return Math.min(n(row.MP), 28) * 0.22 + Math.min(n(row.GP), 25) * 0.08;
 }
@@ -729,7 +735,8 @@ function answerQuestion(question) {
     return {
       title: "Basketball data only",
       note: "Portal Pulse is limited to this site's player, team, transfer, and projection data.",
-      rows: []
+      rows: [],
+      metric: "impact"
     };
   }
 
@@ -738,13 +745,15 @@ function answerQuestion(question) {
       return {
         title: "I need a player name for comps",
         note: "Try something like: players similar to RJ Davis.",
-        rows: []
+        rows: [],
+        metric: "similar"
       };
     }
     return {
       title: `Players similar to ${parsed.mentionedPlayer.player}`,
       note: `Matched on BPM, usage, minutes, scoring, rebounding, assists, and role shape.`,
-      rows: similarPlayers(parsed.mentionedPlayer)
+      rows: similarPlayers(parsed.mentionedPlayer),
+      metric: "similar"
     };
   }
 
@@ -764,11 +773,82 @@ function answerQuestion(question) {
     title: scope ? `${profile.title}: ${scope}` : profile.title,
     note: profile.note,
     rows,
-    focus: profile.focus
+    focus: profile.focus,
+    metric: parsed.metric
   };
 }
 
-function renderRows(rows, focus) {
+function statTilesFor(row, metric) {
+  const common = [
+    ["BPM", fmtSigned(row.BPM)],
+    ["PTS", fmt(row.PTS)]
+  ];
+  const profiles = {
+    impact: [
+      ["PORPAG", fmt(row.PORPAG)],
+      ["USG", `${fmt(row.USG)}%`],
+      ["MPG", fmt(row.MP)],
+      ["Transfer", fmtPct(transferProb(row))]
+    ],
+    efficiency: [
+      ["TS", fmtPct(row["TS."])],
+      ["eFG", fmtPct(row["eFG."])],
+      ["ORTG", fmt(row.ORTG)],
+      ["USG", `${fmt(row.USG)}%`]
+    ],
+    shooting: [
+      ["3PT", fmtPct(row["TP."])],
+      ["3PA/G", fmt(threeAttemptsPerGame(row))],
+      ["TS", fmtPct(row["TS."])],
+      ["eFG", fmtPct(row["eFG."])]
+    ],
+    scoring: [
+      ["USG", `${fmt(row.USG)}%`],
+      ["TS", fmtPct(row["TS."])],
+      ["OBPM", fmtSigned(row.OBPM)],
+      ["MPG", fmt(row.MP)]
+    ],
+    playmaking: [
+      ["AST", fmt(row.AST)],
+      ["AST%", `${fmt(row["AST."])}%`],
+      ["AST/TOV", fmt(row.AST_TOV)],
+      ["TO%", `${fmt(row["TO."])}%`]
+    ],
+    rebounding: [
+      ["REB", fmt(row.REB)],
+      ["ORB", fmt(row.ORB)],
+      ["DRB", fmt(row.DRB)],
+      ["DRB%", `${fmt(row["DRB."])}%`]
+    ],
+    defense: [
+      ["DBPM", fmtSigned(row.DBPM)],
+      ["STL", fmt(row.STL)],
+      ["BLK", fmt(row.BLK)],
+      ["D-PORPAG", fmt(row.D_PORPAG)]
+    ],
+    transfer: [
+      ["Transfer", fmtPct(transferProb(row))],
+      ["Return", fmtPct(returnProb(row))],
+      ["Dest", destinationLabel(row)],
+      ["Proj BPM", fmtSigned(row.primaryBpm)]
+    ],
+    underused: [
+      ["MPG", fmt(row.MP)],
+      ["USG", `${fmt(row.USG)}%`],
+      ["PORPAG", fmt(row.PORPAG)],
+      ["Transfer", fmtPct(transferProb(row))]
+    ],
+    similar: [
+      ["USG", `${fmt(row.USG)}%`],
+      ["MPG", fmt(row.MP)],
+      ["REB", fmt(row.REB)],
+      ["AST", fmt(row.AST)]
+    ]
+  };
+  return [...common, ...(profiles[metric] || profiles.impact)];
+}
+
+function renderRows(rows, focus, metric = "impact") {
   if (!rows.length) {
     return `<div class="answer-note">No matching players were found in the current dataset.</div>`;
   }
@@ -786,12 +866,7 @@ function renderRows(rows, focus) {
             <div class="player-score">${focus ? escapeHtml(focus(row)) : fmtSigned(row.BPM)}</div>
           </div>
           <div class="stat-row">
-            ${statTile("BPM", fmtSigned(row.BPM))}
-            ${statTile("PTS", fmt(row.PTS))}
-            ${statTile("REB", fmt(row.REB))}
-            ${statTile("AST", fmt(row.AST))}
-            ${statTile("USG", `${fmt(row.USG)}%`)}
-            ${statTile("Transfer", fmtPct(transferProb(row)))}
+            ${statTilesFor(row, metric).map(([label, value]) => statTile(label, value)).join("")}
           </div>
         </article>
       `).join("")}
@@ -856,7 +931,7 @@ function submitQuestion(question) {
   appendExchange(trimmed, `
     <div class="answer-title">${escapeHtml(answer.title)}</div>
     <div class="answer-note">${escapeHtml(answer.note)}</div>
-    ${renderRows(answer.rows, answer.focus)}
+    ${renderRows(answer.rows, answer.focus, answer.metric)}
   `);
 }
 
