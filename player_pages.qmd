@@ -1211,7 +1211,7 @@ function playerBadgeMarkup(player) {
   const src = type === "eligibility" ? "images/flag.svg" : "images/NBA.png";
   const alt = type === "eligibility" ? "Eligibility flag" : "NBA flag";
   const help = badgeHelp[type];
-  return `<img class="player-status-badge player-status-badge-${type}" src="${src}" alt="${alt}" title="${escapeHtml(help)}" aria-label="${escapeHtml(help)}">`;
+  return `<img class="player-status-badge player-status-badge-${type}" src="${src}" alt="${alt}" data-help="${escapeHtml(help)}" aria-label="${escapeHtml(help)}">`;
 }
 
 function playerNameWithBadges(player, nameHtml) {
@@ -1993,6 +1993,7 @@ function renderPlayerSuggestions(search) {
       renderProfile(player);
     });
   });
+  setupTooltips();
 }
 
 function playerPickerScore(row) {
@@ -2027,6 +2028,7 @@ function renderProfile(player) {
   renderRankContext(player);
   renderPeers(player);
   renderInsights(player);
+  setupTooltips();
 }
 
 function buildSummary(player) {
@@ -2442,16 +2444,16 @@ function renderInsights(player) {
 
 function setupTooltips() {
   const tooltip = document.getElementById("chart-tooltip");
-  document.querySelectorAll(".column-help").forEach(el => {
-    el.addEventListener("mouseenter", event => {
+  document.querySelectorAll(".column-help, .player-status-badge").forEach(el => {
+    el.onmouseenter = event => {
       tooltip.textContent = el.dataset.help || "";
       tooltip.style.display = "block";
       moveTooltip(event);
-    });
-    el.addEventListener("mousemove", moveTooltip);
-    el.addEventListener("mouseleave", () => {
+    };
+    el.onmousemove = moveTooltip;
+    el.onmouseleave = () => {
       tooltip.style.display = "none";
-    });
+    };
   });
 }
 

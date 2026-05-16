@@ -1347,7 +1347,7 @@ function playerBadgeMarkup(row) {
   const src = type === "eligibility" ? "images/flag.svg" : "images/NBA.png";
   const alt = type === "eligibility" ? "Eligibility flag" : "NBA flag";
   const help = badgeHelp[type];
-  return `<img class="player-status-badge player-status-badge-${type}" src="${src}" alt="${alt}" title="${escapeHtml(help)}" aria-label="${escapeHtml(help)}">`;
+  return `<img class="player-status-badge player-status-badge-${type}" src="${src}" alt="${alt}" data-help="${escapeHtml(help)}" aria-label="${escapeHtml(help)}">`;
 }
 
 function playerNameWithBadges(row, nameHtml) {
@@ -2471,9 +2471,9 @@ function setupProjectionTooltips() {
   $("#projection-table thead").off("mouseenter", ".column-help");
   $("#projection-table thead").off("mousemove", ".column-help");
   $("#projection-table thead").off("mouseleave", ".column-help");
-  $("#projection-table tbody").off("mouseenter", ".player-profile-link");
-  $("#projection-table tbody").off("mousemove", ".player-profile-link");
-  $("#projection-table tbody").off("mouseleave", ".player-profile-link");
+  $("#projection-table tbody").off("mouseenter", ".player-profile-link, .player-status-badge");
+  $("#projection-table tbody").off("mousemove", ".player-profile-link, .player-status-badge");
+  $("#projection-table tbody").off("mouseleave", ".player-profile-link, .player-status-badge");
 
   $("#projection-table thead").on("mouseenter", ".column-help", function(event) {
     tooltip.textContent = this.dataset.help || "";
@@ -2489,17 +2489,17 @@ function setupProjectionTooltips() {
     tooltip.style.display = "none";
   });
 
-  $("#projection-table tbody").on("mouseenter", ".player-profile-link", function(event) {
+  $("#projection-table tbody").on("mouseenter", ".player-profile-link, .player-status-badge", function(event) {
     tooltip.textContent = this.dataset.help || "";
     tooltip.style.display = "block";
     positionProjectionTooltip(event);
   });
 
-  $("#projection-table tbody").on("mousemove", ".player-profile-link", function(event) {
+  $("#projection-table tbody").on("mousemove", ".player-profile-link, .player-status-badge", function(event) {
     positionProjectionTooltip(event);
   });
 
-  $("#projection-table tbody").on("mouseleave", ".player-profile-link", function() {
+  $("#projection-table tbody").on("mouseleave", ".player-profile-link, .player-status-badge", function() {
     tooltip.style.display = "none";
   });
 }
