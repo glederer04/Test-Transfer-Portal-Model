@@ -1930,6 +1930,11 @@ head(test_predictions_table, 25)
 bpm_formula <- formula(form)
 ```
 
+new bpm model
+```{r}
+
+```
+
 save training metadata
 ```{r}
 transfer_meta <- list(
