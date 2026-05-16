@@ -6,6 +6,7 @@ project:
     - projections.qmd
     - player_table.qmd
     - player_pages.qmd
+    - portal_pulse.qmd
   resources:
     - data/
     - favicon.ico
@@ -23,6 +24,8 @@ website:
         file: player_table.qmd
       - text: Player Pages
         file: player_pages.qmd
+      - text: Portal Pulse
+        file: portal_pulse.qmd
   favicon: favicon2.ico
 
 format:

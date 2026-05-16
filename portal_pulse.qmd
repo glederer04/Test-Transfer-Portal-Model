@@ -1,0 +1,853 @@
+---
+title: "Portal Pulse"
+format:
+  html:
+    page-layout: full
+    toc: false
+    include-in-header:
+      text: |
+        <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+---
+
+<style>
+:root {
+  --pulse-ink: #111827;
+  --pulse-muted: #5f6b7a;
+  --pulse-line: #dce3ea;
+  --pulse-soft: #f5f7fa;
+  --pulse-navy: #13294b;
+  --pulse-blue: #4b9cd3;
+  --pulse-green: #257a4b;
+  --pulse-gold: #a96f16;
+}
+
+.pulse-shell {
+  color: var(--pulse-ink);
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 4px 18px 42px;
+}
+
+#title-block-header {
+  display: none;
+}
+
+.pulse-top {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.92fr) minmax(380px, 1.08fr);
+  gap: 16px;
+  align-items: stretch;
+  margin-bottom: 16px;
+}
+
+.pulse-title-band,
+.pulse-panel,
+.pulse-chat {
+  background: #fff;
+  border: 1px solid var(--pulse-line);
+  border-radius: 8px;
+}
+
+.pulse-title-band {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 238px;
+}
+
+.pulse-kicker {
+  color: var(--pulse-blue);
+  font-weight: 900;
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.pulse-title {
+  color: var(--pulse-navy);
+  font-size: clamp(2.4rem, 5vw, 5.2rem);
+  line-height: 0.92;
+  font-weight: 950;
+  letter-spacing: 0;
+  margin: 0 0 12px;
+}
+
+.pulse-subtitle {
+  color: #334155;
+  font-size: 1rem;
+  line-height: 1.45;
+  max-width: 680px;
+}
+
+.pulse-status-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
+.pulse-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  background: #eef3f8;
+  color: #293548;
+  padding: 7px 10px;
+  font-weight: 850;
+  font-size: 0.84rem;
+}
+
+.pulse-panel {
+  padding: 16px;
+}
+
+.pulse-panel-title {
+  color: var(--pulse-navy);
+  font-weight: 900;
+  font-size: 1.02rem;
+  margin-bottom: 10px;
+}
+
+.prompt-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.prompt-chip {
+  border: 1px solid #cbd5df;
+  border-radius: 8px;
+  background: #f8fbff;
+  color: #243247;
+  padding: 9px 10px;
+  min-height: 42px;
+  font-weight: 850;
+  text-align: left;
+  cursor: pointer;
+}
+
+.prompt-chip:hover {
+  background: #e8f4fb;
+  border-color: #9ac7e4;
+}
+
+.pulse-chat {
+  min-height: 560px;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  overflow: hidden;
+}
+
+.pulse-messages {
+  background: #f6f8fb;
+  padding: 16px;
+  overflow-y: auto;
+  min-height: 452px;
+  max-height: 68vh;
+}
+
+.pulse-message {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.pulse-message.user {
+  justify-items: end;
+}
+
+.pulse-bubble {
+  max-width: min(860px, 100%);
+  border-radius: 8px;
+  padding: 12px 14px;
+  line-height: 1.42;
+  box-shadow: 0 1px 3px rgba(19, 41, 75, 0.06);
+}
+
+.pulse-message.user .pulse-bubble {
+  background: var(--pulse-navy);
+  color: #fff;
+}
+
+.pulse-message.bot .pulse-bubble {
+  background: #fff;
+  border: 1px solid var(--pulse-line);
+  color: var(--pulse-ink);
+}
+
+.answer-title {
+  color: var(--pulse-navy);
+  font-size: 1.08rem;
+  font-weight: 950;
+  margin-bottom: 4px;
+}
+
+.answer-note {
+  color: var(--pulse-muted);
+  font-size: 0.92rem;
+  margin-bottom: 12px;
+}
+
+.player-result-list {
+  display: grid;
+  gap: 9px;
+}
+
+.player-card {
+  background: #fbfdff;
+  border: 1px solid #e0e8f1;
+  border-radius: 8px;
+  padding: 11px;
+}
+
+.player-card-head {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 9px;
+  align-items: start;
+  margin-bottom: 8px;
+}
+
+.player-rank {
+  color: #fff;
+  background: var(--pulse-navy);
+  border-radius: 999px;
+  min-width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.84rem;
+  font-weight: 950;
+}
+
+.player-link {
+  color: var(--pulse-navy);
+  font-weight: 950;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 3px;
+}
+
+.player-link:hover {
+  color: #2f78aa;
+  text-decoration-style: solid;
+}
+
+.player-sub {
+  color: var(--pulse-muted);
+  font-size: 0.86rem;
+  margin-top: 2px;
+}
+
+.player-score {
+  color: var(--pulse-green);
+  font-weight: 950;
+  white-space: nowrap;
+}
+
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(70px, 1fr));
+  gap: 6px;
+}
+
+.stat-tile {
+  background: #f3f7fb;
+  border: 1px solid #e4ebf2;
+  border-radius: 7px;
+  padding: 7px;
+  min-width: 0;
+}
+
+.stat-value {
+  color: var(--pulse-ink);
+  font-weight: 950;
+  line-height: 1;
+}
+
+.stat-label {
+  color: var(--pulse-muted);
+  font-size: 0.72rem;
+  font-weight: 850;
+  margin-top: 3px;
+  text-transform: uppercase;
+}
+
+.pulse-footer {
+  border-top: 1px solid var(--pulse-line);
+  background: #fff;
+  padding: 12px;
+}
+
+.pulse-form {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+}
+
+.pulse-input {
+  border: 1px solid #cbd5df;
+  border-radius: 8px;
+  min-height: 46px;
+  padding: 10px 12px;
+  color: var(--pulse-ink);
+  background: #fff;
+}
+
+.pulse-submit {
+  border: none;
+  border-radius: 8px;
+  background: var(--pulse-navy);
+  color: #fff;
+  min-height: 46px;
+  padding: 10px 18px;
+  font-weight: 950;
+  cursor: pointer;
+}
+
+.pulse-submit:hover {
+  background: #1d3b68;
+}
+
+.pulse-submit:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.small-note {
+  color: var(--pulse-muted);
+  font-size: 0.86rem;
+  margin-top: 8px;
+}
+
+.scope-list {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.scope-token {
+  border-radius: 999px;
+  background: #eef6fc;
+  color: #24405f;
+  padding: 5px 8px;
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
+@media (max-width: 920px) {
+  .pulse-top {
+    grid-template-columns: 1fr;
+  }
+
+  .stat-row {
+    grid-template-columns: repeat(3, minmax(70px, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .pulse-shell {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .prompt-grid,
+  .pulse-form {
+    grid-template-columns: 1fr;
+  }
+
+  .player-card-head {
+    grid-template-columns: auto 1fr;
+  }
+
+  .player-score {
+    grid-column: 2;
+  }
+
+  .stat-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+</style>
+
+```{=html}
+<div class="pulse-shell">
+  <div class="pulse-top">
+    <section class="pulse-title-band">
+      <div>
+        <div class="pulse-kicker">Free local data engine</div>
+        <h1 class="pulse-title">Portal Pulse</h1>
+        <div class="pulse-subtitle">Ask basketball questions and get ranked answers from the portal dataset. Player names open their profile pages in this tab.</div>
+      </div>
+      <div class="pulse-status-row">
+        <span id="pulse-count" class="pulse-pill">Loading players...</span>
+        <span class="pulse-pill">No API key</span>
+        <span class="pulse-pill">No AI billing</span>
+      </div>
+    </section>
+
+    <aside class="pulse-panel">
+      <div class="pulse-panel-title">Quick hits</div>
+      <div class="prompt-grid">
+        <button class="prompt-chip" type="button" data-prompt="best guards likely to transfer">Best guards likely to transfer</button>
+        <button class="prompt-chip" type="button" data-prompt="efficient ACC players">Efficient ACC players</button>
+        <button class="prompt-chip" type="button" data-prompt="best shooters in the Big Ten">Best shooters in the Big Ten</button>
+        <button class="prompt-chip" type="button" data-prompt="top rebounders who may transfer">Top rebounders who may transfer</button>
+        <button class="prompt-chip" type="button" data-prompt="best players on Duke">Best players on Duke</button>
+        <button class="prompt-chip" type="button" data-prompt="players similar to RJ Davis">Players similar to RJ Davis</button>
+      </div>
+      <div id="pulse-scope" class="scope-list"></div>
+    </aside>
+  </div>
+
+  <section class="pulse-chat" aria-label="Portal Pulse chat">
+    <div id="pulse-messages" class="pulse-messages"></div>
+    <div class="pulse-footer">
+      <form id="pulse-form" class="pulse-form">
+        <input id="pulse-input" class="pulse-input" type="text" autocomplete="off" placeholder="Try: efficient ACC guards, best players on North Carolina, top transfer bigs..." />
+        <button id="pulse-submit" class="pulse-submit" type="submit">Search</button>
+      </form>
+      <div class="small-note">Portal Pulse only answers from the basketball data loaded on this site.</div>
+    </div>
+  </section>
+</div>
+
+<script>
+let pulsePlayers = [];
+let teamNames = [];
+let confNames = [];
+
+const stopWords = new Set(["a", "an", "and", "are", "as", "at", "be", "best", "for", "from", "give", "in", "is", "like", "me", "of", "on", "players", "player", "show", "the", "to", "top", "what", "who", "with"]);
+
+const metricProfiles = {
+  impact: {
+    title: "Impact leaders",
+    note: "Ranked by BPM, PORPAG, minutes, and role size.",
+    score: row => n(row.BPM) * 9 + n(row.PORPAG) * 7 + n(row.MP) * 0.35 + n(row.USG) * 0.16,
+    focus: row => fmtSigned(row.BPM)
+  },
+  efficiency: {
+    title: "Efficiency standouts",
+    note: "Ranked by true shooting, offensive rating, eFG, BPM, and enough role volume to matter.",
+    score: row => pct(row["TS."]) * 34 + pct(row["eFG."]) * 18 + n(row.ORTG) * 0.22 + n(row.BPM) * 4 + n(row.USG) * 0.1 + minutesTrust(row),
+    focus: row => `${fmt(row["TS."])}% TS`
+  },
+  shooting: {
+    title: "Shooting fits",
+    note: "Ranked by 3PT percentage, 3PT volume, eFG, free throw signal, and scoring impact.",
+    score: row => pct(row["TP."]) * 45 + threeAttemptsPerGame(row) * 5 + pct(row["FT."]) * 8 + pct(row["eFG."]) * 12 + n(row.BPM) * 2 + minutesTrust(row),
+    focus: row => `${fmtPct(row["TP."])} 3PT`
+  },
+  scoring: {
+    title: "Scoring options",
+    note: "Ranked by points, usage, true shooting, offensive BPM, and minutes.",
+    score: row => n(row.PTS) * 3 + n(row.USG) * 1.1 + pct(row["TS."]) * 15 + n(row.OBPM) * 5 + n(row.MP) * 0.3,
+    focus: row => `${fmt(row.PTS)} PPG`
+  },
+  playmaking: {
+    title: "Playmaking guards and connectors",
+    note: "Ranked by assists, assist rate, AST/TOV, turnover control, and role size.",
+    score: row => n(row.AST) * 8 + n(row["AST."]) * 1.3 + n(row.AST_TOV) * 6 - n(row["TO."]) * 0.45 + n(row.MP) * 0.3 + n(row.BPM) * 2,
+    focus: row => `${fmt(row.AST)} AST`
+  },
+  rebounding: {
+    title: "Rebounding targets",
+    note: "Ranked by rebounds, offensive and defensive rebounding rates, size role, and BPM.",
+    score: row => n(row.REB) * 7 + n(row["ORB."]) * 1.2 + n(row["DRB."]) * 1.1 + n(row.BPM) * 2 + minutesTrust(row),
+    focus: row => `${fmt(row.REB)} REB`
+  },
+  defense: {
+    title: "Defensive activity",
+    note: "Ranked by defensive BPM, steals, blocks, rebounding, and defensive PORPAG.",
+    score: row => n(row.DBPM) * 8 + n(row.STL) * 5 + n(row.BLK) * 5 + n(row["STL."]) * 0.9 + n(row["BLK."]) * 0.9 + n(row["D_PORPAG"]) * 4,
+    focus: row => `${fmtSigned(row.DBPM)} DBPM`
+  },
+  transfer: {
+    title: "Likely transfer names",
+    note: "Ranked by model transfer probability, current impact, role size, and projected destination signal.",
+    score: row => transferProb(row) * 80 + n(row.BPM) * 4 + n(row.MP) * 0.25 + n(row.USG) * 0.12 + n(row.primaryBpm) * 2,
+    focus: row => `${fmtPct(transferProb(row))} transfer`
+  },
+  underused: {
+    title: "Underused value signals",
+    note: "Ranked by impact relative to minutes and model flags for hidden production.",
+    score: row => flag(row.underused_star) * 40 + flag(row.underused_good_player) * 28 + flag(row.low_role_high_output) * 22 + n(row.BPM) * 6 - n(row.MP) * 0.28 + n(row.PORPAG) * 5,
+    focus: row => `${fmt(row.MP)} MPG`
+  }
+};
+
+function n(value) {
+  if (value === null || value === undefined || value === "") return 0;
+  const parsed = parseFloat(String(value).replace(/%/g, "").trim());
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function flag(value) {
+  return String(value ?? "").trim() === "1" ? 1 : 0;
+}
+
+function pct(value) {
+  const valueNum = n(value);
+  if (valueNum > 1) return valueNum / 100;
+  return valueNum;
+}
+
+function clamp(value, min, max) {
+  return Math.min(Math.max(value, min), max);
+}
+
+function transferProb(row) {
+  if (row.transfer_prob !== undefined) return pct(row.transfer_prob);
+  if (row.transfer_show !== undefined) return pct(row.transfer_show);
+  return pct(row.pred_transfer);
+}
+
+function returnProb(row) {
+  if (row.return_prob !== undefined) return pct(row.return_prob);
+  if (row.return_show !== undefined) return pct(row.return_show);
+  return pct(row.pred_return);
+}
+
+function threeAttemptsPerGame(row) {
+  const gp = Math.max(n(row.GP), 1);
+  return n(row.TPA) / gp;
+}
+
+function minutesTrust(row) {
+  return Math.min(n(row.MP), 28) * 0.22 + Math.min(n(row.GP), 25) * 0.08;
+}
+
+function reliableSample(row) {
+  return n(row.GP) >= 8 && n(row.MP) >= 8;
+}
+
+function broadSample(row) {
+  return n(row.GP) >= 5 && n(row.MP) >= 5;
+}
+
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, ch => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;"
+  }[ch]));
+}
+
+function normalize(value) {
+  return String(value ?? "").toLowerCase().replace(/[^a-z0-9.\s-]/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function fmt(value, digits = 1) {
+  const valueNum = n(value);
+  if (!Number.isFinite(valueNum)) return "-";
+  return valueNum.toFixed(digits);
+}
+
+function fmtSigned(value) {
+  const valueNum = n(value);
+  if (!Number.isFinite(valueNum)) return "-";
+  return `${valueNum >= 0 ? "+" : ""}${valueNum.toFixed(1)}`;
+}
+
+function fmtPct(value) {
+  const valueNum = pct(value) * 100;
+  if (!Number.isFinite(valueNum)) return "-";
+  return `${valueNum.toFixed(1)}%`;
+}
+
+function playerLink(row) {
+  const name = escapeHtml(row.player || "Unknown player");
+  const pid = encodeURIComponent(row.pid || "");
+  if (!pid) return name;
+  return `<a class="player-link" href="player_pages.html?open=player&pid=${pid}" aria-label="Open player page for ${name}">${name}</a>`;
+}
+
+function enrich(row) {
+  const high = pct(row.dest_prob_high);
+  const upper = pct(row.dest_prob_upper_mid);
+  const low = pct(row.dest_prob_low);
+  const primaryBpm = high >= upper && high >= low ? n(row.pred_BPM_high) : upper >= low ? n(row.pred_BPM_upper_mid) : n(row.pred_BPM_low);
+  return {
+    ...row,
+    searchText: normalize([row.player, row.team, row.conf, row.Role, row.class, row.height, row.Hometown].filter(Boolean).join(" ")),
+    primaryBpm
+  };
+}
+
+function roleMatches(row, role) {
+  const roleText = normalize(row.Role);
+  if (role === "guard") return roleText.includes("g") || roleText.includes("pg");
+  if (role === "wing") return roleText.includes("wing");
+  if (role === "big") return roleText.includes("c") || roleText.includes("pf") || roleText.includes("stretch 4");
+  if (role === "point") return roleText.includes("pg");
+  return true;
+}
+
+function detectRole(query) {
+  if (/\b(point guard|pg|pure pg)\b/.test(query)) return "point";
+  if (/\b(guard|guards|backcourt|ball handler|ball-handling)\b/.test(query)) return "guard";
+  if (/\b(wing|wings|small forward)\b/.test(query)) return "wing";
+  if (/\b(big|bigs|frontcourt|center|post|pf|stretch 4|rebounder|rebounders)\b/.test(query)) return "big";
+  return null;
+}
+
+function detectMetric(query) {
+  if (/\b(similar|comp|compare|comparison|like)\b/.test(query)) return "similar";
+  if (/\b(underused|sleeper|sleepers|hidden|undervalued|low role)\b/.test(query)) return "underused";
+  if (/\b(transfer|transfers|portal|leave|leaving|available|availability)\b/.test(query)) return "transfer";
+  if (/\b(shoot|shooter|shooters|three|3pt|3 point|3-point|spacing|spacer)\b/.test(query)) return "shooting";
+  if (/\b(efficient|efficiency|true shooting|ts|efg|ortg|offensive rating)\b/.test(query)) return "efficiency";
+  if (/\b(rebound|rebounder|rebounders|boards|glass)\b/.test(query)) return "rebounding";
+  if (/\b(assist|assists|playmaker|playmaking|passer|passing|creator|creation)\b/.test(query)) return "playmaking";
+  if (/\b(defense|defensive|defender|steal|steals|block|blocks|rim protector)\b/.test(query)) return "defense";
+  if (/\b(score|scorer|scorers|points|ppg|bucket)\b/.test(query)) return "scoring";
+  return "impact";
+}
+
+function findEntity(query, values) {
+  const sorted = [...values].sort((a, b) => String(b).length - String(a).length);
+  return sorted.find(value => {
+    const entity = normalize(value);
+    return entity && new RegExp(`(^|\\s)${escapeRegExp(entity)}(\\s|$)`).test(query);
+  }) || "";
+}
+
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function findMentionedPlayer(query) {
+  const direct = pulsePlayers
+    .filter(row => row.player)
+    .sort((a, b) => String(b.player).length - String(a.player).length)
+    .find(row => query.includes(normalize(row.player)));
+  if (direct) return direct;
+
+  const marker = query.match(/\b(?:similar to|like|compare|comp)\s+(.+)$/);
+  const target = marker ? marker[1].trim() : query;
+  const targetTokens = normalize(target).split(" ").filter(token => token && !stopWords.has(token));
+  if (!targetTokens.length) return null;
+
+  return pulsePlayers
+    .map(row => {
+      const name = normalize(row.player);
+      const score = targetTokens.reduce((sum, token) => sum + (name.includes(token) ? token.length : 0), 0);
+      return { row, score };
+    })
+    .filter(item => item.score >= 4)
+    .sort((a, b) => b.score - a.score || n(b.row.BPM) - n(a.row.BPM))[0]?.row || null;
+}
+
+function parseQuestion(question) {
+  const query = normalize(question);
+  const team = findEntity(query, teamNames);
+  const conf = findEntity(query, confNames);
+  const role = detectRole(query);
+  const metric = detectMetric(query);
+  const mentionedPlayer = metric === "similar" ? findMentionedPlayer(query) : null;
+  const hasBasketballIntent = metric !== "impact" || role || team || conf || /\b(team|teams|conference|conference|player|players|guard|wing|big|bpm|usage|minutes|portal|basketball|transfer|roster|target|fit)\b/.test(query);
+  return { query, team, conf, role, metric, mentionedPlayer, hasBasketballIntent };
+}
+
+function filteredPlayers(parsed) {
+  const allowsSmallRoles = parsed.metric === "underused";
+  let rows = pulsePlayers.filter(row => row.player && row.pid && (allowsSmallRoles ? broadSample(row) : reliableSample(row)));
+  if (parsed.team) rows = rows.filter(row => normalize(row.team) === normalize(parsed.team));
+  if (parsed.conf) rows = rows.filter(row => normalize(row.conf) === normalize(parsed.conf));
+  if (parsed.role) rows = rows.filter(row => roleMatches(row, parsed.role));
+  if (parsed.metric === "transfer" || /\b(transfer|portal|available|leave|leaving)\b/.test(parsed.query)) {
+    rows = rows.filter(row => transferProb(row) >= 0.08 || flag(row.pred_transfer_flag));
+  }
+  if (/\b(return|stay|staying)\b/.test(parsed.query)) {
+    rows = rows.filter(row => returnProb(row) >= 0.25);
+  }
+  if (/\b(high major|high-major)\b/.test(parsed.query)) {
+    rows = rows.filter(row => normalize(row.pred_destination_clean || row.pred_destination_tier).includes("high"));
+  }
+  if (/\b(upper mid|upper-mid)\b/.test(parsed.query)) {
+    rows = rows.filter(row => normalize(row.pred_destination_clean || row.pred_destination_tier).includes("upper"));
+  }
+  if (/\b(low major|low-major)\b/.test(parsed.query)) {
+    rows = rows.filter(row => normalize(row.pred_destination_clean || row.pred_destination_tier).includes("low"));
+  }
+  return rows;
+}
+
+function similarPlayers(player) {
+  return pulsePlayers
+    .filter(row => row.pid !== player.pid && reliableSample(row))
+    .map(row => ({
+      row,
+      score: -(
+        Math.abs(n(row.BPM) - n(player.BPM)) * 1.5
+        + Math.abs(n(row.USG) - n(player.USG)) * 0.45
+        + Math.abs(n(row.MP) - n(player.MP)) * 0.2
+        + Math.abs(n(row.PTS) - n(player.PTS)) * 0.34
+        + Math.abs(n(row.REB) - n(player.REB)) * 0.26
+        + Math.abs(n(row.AST) - n(player.AST)) * 0.35
+        + (normalize(row.Role) === normalize(player.Role) ? 0 : 2.5)
+      )
+    }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 8)
+    .map(item => ({ ...item.row, pulseScore: item.score }));
+}
+
+function answerQuestion(question) {
+  const parsed = parseQuestion(question);
+  if (!parsed.hasBasketballIntent) {
+    return {
+      title: "Basketball data only",
+      note: "Portal Pulse is limited to this site's player, team, transfer, and projection data.",
+      rows: []
+    };
+  }
+
+  if (parsed.metric === "similar") {
+    if (!parsed.mentionedPlayer) {
+      return {
+        title: "I need a player name for comps",
+        note: "Try something like: players similar to RJ Davis.",
+        rows: []
+      };
+    }
+    return {
+      title: `Players similar to ${parsed.mentionedPlayer.player}`,
+      note: `Matched on BPM, usage, minutes, scoring, rebounding, assists, and role shape.`,
+      rows: similarPlayers(parsed.mentionedPlayer)
+    };
+  }
+
+  const profile = metricProfiles[parsed.metric] || metricProfiles.impact;
+  const rows = filteredPlayers(parsed)
+    .map(row => ({ ...row, pulseScore: profile.score(row) }))
+    .sort((a, b) => b.pulseScore - a.pulseScore || n(b.BPM) - n(a.BPM))
+    .slice(0, 8);
+
+  const scope = [
+    parsed.role ? `${parsed.role} filter` : "",
+    parsed.team || "",
+    parsed.conf || ""
+  ].filter(Boolean).join(" / ");
+
+  return {
+    title: scope ? `${profile.title}: ${scope}` : profile.title,
+    note: profile.note,
+    rows,
+    focus: profile.focus
+  };
+}
+
+function renderRows(rows, focus) {
+  if (!rows.length) {
+    return `<div class="answer-note">No matching players were found in the current dataset.</div>`;
+  }
+
+  return `
+    <div class="player-result-list">
+      ${rows.map((row, idx) => `
+        <article class="player-card">
+          <div class="player-card-head">
+            <div class="player-rank">${idx + 1}</div>
+            <div>
+              <div>${playerLink(row)}</div>
+              <div class="player-sub">${escapeHtml(row.team || "Team NA")} - ${escapeHtml(row.conf || "Conf NA")} - ${escapeHtml(row.Role || "Role NA")} - ${escapeHtml(row.class || "Class NA")}</div>
+            </div>
+            <div class="player-score">${focus ? escapeHtml(focus(row)) : fmtSigned(row.BPM)}</div>
+          </div>
+          <div class="stat-row">
+            ${statTile("BPM", fmtSigned(row.BPM))}
+            ${statTile("PTS", fmt(row.PTS))}
+            ${statTile("REB", fmt(row.REB))}
+            ${statTile("AST", fmt(row.AST))}
+            ${statTile("USG", `${fmt(row.USG)}%`)}
+            ${statTile("Transfer", fmtPct(transferProb(row)))}
+          </div>
+        </article>
+      `).join("")}
+    </div>
+  `;
+}
+
+function statTile(label, value) {
+  return `
+    <div class="stat-tile">
+      <div class="stat-value">${escapeHtml(value)}</div>
+      <div class="stat-label">${escapeHtml(label)}</div>
+    </div>
+  `;
+}
+
+function appendMessage(kind, html) {
+  const wrap = document.getElementById("pulse-messages");
+  const message = document.createElement("div");
+  message.className = `pulse-message ${kind}`;
+  message.innerHTML = `<div class="pulse-bubble">${html}</div>`;
+  wrap.appendChild(message);
+  wrap.scrollTop = wrap.scrollHeight;
+}
+
+function submitQuestion(question) {
+  const trimmed = question.trim();
+  if (!trimmed || !pulsePlayers.length) return;
+  appendMessage("user", escapeHtml(trimmed));
+  const answer = answerQuestion(trimmed);
+  appendMessage("bot", `
+    <div class="answer-title">${escapeHtml(answer.title)}</div>
+    <div class="answer-note">${escapeHtml(answer.note)}</div>
+    ${renderRows(answer.rows, answer.focus)}
+  `);
+}
+
+function setupPulse() {
+  document.getElementById("pulse-count").textContent = `${pulsePlayers.length.toLocaleString()} players loaded`;
+  document.getElementById("pulse-scope").innerHTML = ["guards", "wings", "bigs", "ACC", "shooting", "transfer", "similar players"]
+    .map(item => `<span class="scope-token">${escapeHtml(item)}</span>`)
+    .join("");
+
+  document.getElementById("pulse-form").addEventListener("submit", event => {
+    event.preventDefault();
+    const input = document.getElementById("pulse-input");
+    submitQuestion(input.value);
+    input.value = "";
+  });
+
+  document.querySelectorAll(".prompt-chip").forEach(button => {
+    button.addEventListener("click", function() {
+      const prompt = this.dataset.prompt || this.textContent;
+      document.getElementById("pulse-input").value = prompt;
+      submitQuestion(prompt);
+      document.getElementById("pulse-input").value = "";
+    });
+  });
+
+  appendMessage("bot", `
+    <div class="answer-title">Portal Pulse is live</div>
+    <div class="answer-note">Try a team, conference, role, player comp, or stat shape. I will stay inside the portal dataset.</div>
+    ${renderRows(answerQuestion("best guards likely to transfer").rows.slice(0, 3), metricProfiles.transfer.focus)}
+  `);
+}
+
+Papa.parse("data/complete_2026_scored.csv", {
+  download: true,
+  header: true,
+  skipEmptyLines: true,
+  complete: function(results) {
+    pulsePlayers = results.data.filter(row => row.player && row.pid).map(enrich);
+    teamNames = [...new Set(pulsePlayers.map(row => row.team).filter(Boolean))].sort();
+    confNames = [...new Set(pulsePlayers.map(row => row.conf).filter(Boolean))].sort();
+    setupPulse();
+  },
+  error: function(error) {
+    document.getElementById("pulse-count").textContent = "Data failed to load";
+    appendMessage("bot", `<div class="answer-title">Data failed to load</div><div class="answer-note">${escapeHtml(error.message || error)}</div>`);
+  }
+});
+</script>
+```
