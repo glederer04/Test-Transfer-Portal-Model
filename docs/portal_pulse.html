@@ -541,7 +541,7 @@ ul.task-list li input[type="checkbox"] {
           <button class="prompt-chip" type="button" data-prompt="efficient ACC players">Efficient ACC players</button>
           <button class="prompt-chip" type="button" data-prompt="best shooters in the Big Ten">Best shooters in the Big Ten</button>
           <button class="prompt-chip" type="button" data-prompt="top rebounders who may transfer">Top rebounders who may transfer</button>
-          <button class="prompt-chip" type="button" data-prompt="best players on Duke">Best players on Duke</button>
+          <button class="prompt-chip" type="button" data-prompt="players projected to move up if they transfer">Players projected to move up</button>
           <button class="prompt-chip" type="button" data-prompt="players similar to Seth Trimble">Players similar to Seth Trimble</button>
         </div>
         <div id="pulse-scope" class="scope-list"></div>
@@ -622,7 +622,7 @@ const metricProfiles = {
     title: "Transfer movement outlook",
     note: "Ranked by transfer likelihood, projected movement score, current impact, and role context.",
     score: row => transferProb(row) * 45 + Math.abs(n(row.pred_movement_score)) * 1.8 + n(row.BPM) * 3 + n(row.MP) * 0.2,
-    focus: row => row.movement_show || `${movementLevel(row)} ${fmtSigned(row.pred_movement_score)}`
+    focus: row => `${row.movement_show || fmtSigned(row.pred_movement_score)} / ${fmtPct(transferProb(row))} transfer`
   },
   underused: {
     title: "Underused value signals",
@@ -722,7 +722,7 @@ function movementLevel(row) {
 }
 
 function hasMovementIntent(query) {
-  return /\b(where|go|goes|going|land|lands|landing|spot|fit|location|closer to home|better team|better program|stronger team|stronger program|worse team|worse program|weaker team|weaker program|move up|move down|step up|step-up|step down|step-down|lateral|similar level|same level|movement)\b/.test(query);
+  return /\b(where|go|goes|going|land|lands|landing|spot|fit|location|closer to home|better team|better place|better program|better conference|stronger team|stronger place|stronger program|stronger conference|worse team|worse place|worse program|worse conference|weaker team|weaker place|weaker program|weaker conference|move up|move down|moving up|moving down|transfer up|transfer down|go up|go down|step up|step-up|step down|step-down|lateral|similar level|same level|movement)\b/.test(query);
 }
 
 function playerLink(row) {
@@ -811,7 +811,7 @@ function parseQuestion(question) {
   const role = detectRole(query);
   const metric = detectMetric(query);
   const mentionedPlayer = metric === "similar" ? findMentionedPlayer(query) : null;
-  const hasBasketballIntent = metric !== "impact" || role || team || conf || /\b(team|teams|conference|conference|player|players|guard|wing|big|bpm|usage|minutes|portal|basketball|transfer|roster|target|fit|movement|where|landing|location|better team|worse team|step up|step down|lateral)\b/.test(query);
+  const hasBasketballIntent = metric !== "impact" || role || team || conf || /\b(team|teams|conference|conference|player|players|guard|wing|big|bpm|usage|minutes|portal|basketball|transfer|roster|target|fit|movement|where|landing|location|better team|better place|better conference|worse team|worse place|worse conference|move up|move down|transfer up|transfer down|go up|go down|step up|step down|lateral)\b/.test(query);
   return { query, team, conf, role, metric, mentionedPlayer, hasBasketballIntent };
 }
 
@@ -827,13 +827,13 @@ function filteredPlayers(parsed) {
   if (/\b(return|stay|staying)\b/.test(parsed.query)) {
     rows = rows.filter(row => returnProb(row) >= 0.25);
   }
-  if (/\b(step up|step-up|up transfer|move up|upside move|better team|better program|stronger team|stronger program)\b/.test(parsed.query)) {
+  if (/\b(step up|step-up|up transfer|transfer up|move up|moving up|go up|upside move|better team|better place|better program|better conference|stronger team|stronger place|stronger program|stronger conference)\b/.test(parsed.query)) {
     rows = rows.filter(row => movementDirection(row) === "up" || n(row.pred_movement_score) >= 10);
   }
   if (/\b(lateral|similar level|same level)\b/.test(parsed.query)) {
     rows = rows.filter(row => movementDirection(row) === "lateral" || Math.abs(n(row.pred_movement_score)) < 10);
   }
-  if (/\b(step down|step-down|move down|down transfer|worse team|worse program|weaker team|weaker program)\b/.test(parsed.query)) {
+  if (/\b(step down|step-down|move down|moving down|go down|down transfer|transfer down|worse team|worse place|worse program|worse conference|weaker team|weaker place|weaker program|weaker conference)\b/.test(parsed.query)) {
     rows = rows.filter(row => movementDirection(row) === "down" || n(row.pred_movement_score) <= -10);
   }
   if (/\b(major step up|big step up|huge step up)\b/.test(parsed.query)) {
@@ -965,6 +965,12 @@ function statTilesFor(row, metric) {
       ["USG", `${fmt(row.USG)}%`],
       ["Transfer", fmtPct(transferProb(row))]
     ],
+    movement: [
+      ["Movement", row.movement_show || fmtSigned(row.pred_movement_score)],
+      ["Transfer", fmtPct(transferProb(row))],
+      ["Current strength", fmt(row.current_program_strength)],
+      ["Projected strength", fmt(row.pred_projected_program_strength)]
+    ],
     underused: [
       ["MPG", fmt(row.MP)],
       ["USG", `${fmt(row.USG)}%`],
@@ -982,11 +988,16 @@ function statTilesFor(row, metric) {
   const queryText = row.pulseQuery || "";
   const hasTransferIntent = /\b(transfer|transfers|portal|leave|leaving|available|availability)\b/.test(queryText);
   const hasMoveIntent = hasMovementIntent(queryText);
+  if (hasMoveIntent) {
+    const withMovement = tiles.some(([label]) => label === "Movement")
+      ? tiles
+      : [...tiles, ["Movement", row.movement_show || fmtSigned(row.pred_movement_score)]];
+    return withMovement.some(([label]) => label === "Transfer")
+      ? withMovement
+      : [...withMovement, ["Transfer", fmtPct(transferProb(row))]];
+  }
   if (hasTransferIntent && !tiles.some(([label]) => label === "Transfer")) {
     return [...tiles, ["Transfer", fmtPct(transferProb(row))]];
-  }
-  if (hasMoveIntent && !tiles.some(([label]) => label === "Movement")) {
-    return [...tiles, ["Movement", row.movement_show || fmtSigned(row.pred_movement_score)]];
   }
   return tiles;
 }
