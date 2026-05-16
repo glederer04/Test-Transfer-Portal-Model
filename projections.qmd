@@ -1028,6 +1028,16 @@ tr.shown td.details-control::before {
   border-radius: 999px;
 }
 
+.bpm-current-marker {
+  position: absolute;
+  top: 5px;
+  width: 2px;
+  height: 18px;
+  background: #b7791f;
+  transform: translateX(-50%);
+  border-radius: 999px;
+}
+
 .bpm-ci-dot {
   position: absolute;
   top: 6px;
@@ -1056,6 +1066,10 @@ tr.shown td.details-control::before {
   flex-wrap: wrap;
   font-size: 0.84rem;
   color: #4f5a67;
+}
+
+.bpm-tier-meta strong {
+  color: #111;
 }
 
 .bpm-summary-grid {
@@ -1579,7 +1593,8 @@ function getBpmCardPrimaryTier(row) {
   return {
     label: "Likely landing",
     value: parseFloat(row.new_bpm_pred_likely_context),
-    change: parseFloat(row.new_bpm_change_likely_context)
+    change: parseFloat(row.new_bpm_change_likely_context),
+    current: parseFloat(row.BPM)
   };
 }
 
@@ -1604,23 +1619,29 @@ function getBpmAxisBounds(row) {
     max += 1;
   }
 
-  const pad = Math.max((max - min) * 0.08, 0.5);
+  const pad = Math.max((max - min) * 0.12, 1);
 
   return {
-    min: min - pad,
-    max: max + pad
+    min: Math.floor((min - pad) * 2) / 2,
+    max: Math.ceil((max + pad) * 2) / 2
   };
 }
 
-function formatBpmTierRow(label, value, change, axisMin, axisMax, helpText = "") {
+function formatBpmTierRow(label, value, change, currentBpm, axisMin, axisMax, helpText = "") {
   const valNum = parseFloat(value);
   const changeNum = parseFloat(change);
+  const currentNum = parseFloat(currentBpm);
 
   const safeVal = isNaN(valNum) ? 0 : valNum;
+  const safeCurrent = isNaN(currentNum) ? 0 : currentNum;
 
   const dotLeft = `${clamp(clampBPMPosition(safeVal, axisMin, axisMax), 0, 100)}%`;
-  const currentLeft = `${clamp(clampBPMPosition(0, axisMin, axisMax), 0, 100)}%`;
-  const changeText = isNaN(changeNum) ? "Change unavailable" : `Change: ${fmtBPM(changeNum)}`;
+  const currentLeftNum = clamp(clampBPMPosition(safeCurrent, axisMin, axisMax), 0, 100);
+  const projectedLeftNum = clamp(clampBPMPosition(safeVal, axisMin, axisMax), 0, 100);
+  const rangeLeft = `${Math.min(currentLeftNum, projectedLeftNum)}%`;
+  const rangeWidth = `${Math.max(Math.abs(projectedLeftNum - currentLeftNum), 1.5)}%`;
+  const currentLeft = `${currentLeftNum}%`;
+  const changeText = isNaN(changeNum) ? "Change unavailable" : `Change: ${signedMovement(changeNum)}`;
   const help = helpText || "Projected next-season BPM for this transfer movement scenario.";
 
   return `
@@ -1632,7 +1653,8 @@ function formatBpmTierRow(label, value, change, axisMin, axisMax, helpText = "")
 
       <div class="bpm-ci-wrap">
         <div class="bpm-ci-base"></div>
-        <div class="bpm-ci-range" style="left:${currentLeft}; width:1.5%;"></div>
+        <div class="bpm-ci-range" style="left:${rangeLeft}; width:${rangeWidth};"></div>
+        <div class="bpm-current-marker" style="left:${currentLeft};"></div>
         <div class="bpm-ci-dot" style="left:${dotLeft};"></div>
       </div>
 
@@ -1643,8 +1665,9 @@ function formatBpmTierRow(label, value, change, axisMin, axisMax, helpText = "")
       </div>
 
       <div class="bpm-tier-meta">
+        <span>Current: <strong>${fmtBPM(safeCurrent)}</strong></span>
         <span>${changeText}</span>
-        <span>${label}: ${fmtBPM(safeVal)}</span>
+        <span>Projected: <strong>${fmtBPM(safeVal)}</strong></span>
       </div>
     </div>
   `;
@@ -1667,7 +1690,7 @@ function formatBpmCard(row) {
 
           <div class="bpm-card-score">
             <div class="bpm-card-score-value">${fmtBPM(primary.value)}</div>
-            <div class="bpm-card-score-tier">${primary.label}</div>
+            <div class="bpm-card-score-tier">Projected BPM (${signedMovement(primary.change)} change)</div>
           </div>
         </div>
 
@@ -1678,6 +1701,7 @@ function formatBpmCard(row) {
               "Step Down",
               row.new_bpm_pred_context_step_down,
               row.new_bpm_change_context_step_down,
+              row.BPM,
               axis.min,
               axis.max,
               "Projected BPM if the player lands in a softer program environment."
@@ -1687,6 +1711,7 @@ function formatBpmCard(row) {
               "Lateral",
               row.new_bpm_pred_context_lateral,
               row.new_bpm_change_context_lateral,
+              row.BPM,
               axis.min,
               axis.max,
               "Projected BPM if the player lands in a similar program environment."
@@ -1696,6 +1721,7 @@ function formatBpmCard(row) {
               "Step Up",
               row.new_bpm_pred_context_step_up,
               row.new_bpm_change_context_step_up,
+              row.BPM,
               axis.min,
               axis.max,
               "Projected BPM if the player lands in a stronger program environment."
@@ -1705,18 +1731,18 @@ function formatBpmCard(row) {
 
         <div class="bpm-summary-grid">
           <div class="bpm-summary-box">
-            <div class="bpm-summary-label">Primary Projection</div>
+            <div class="bpm-summary-label">Current BPM</div>
+            <div class="bpm-summary-value">${fmtBPM(primary.current)}</div>
+          </div>
+
+          <div class="bpm-summary-box">
+            <div class="bpm-summary-label">Likely Projection</div>
             <div class="bpm-summary-value">${fmtBPM(primary.value)}</div>
           </div>
 
           <div class="bpm-summary-box">
-            <div class="bpm-summary-label">Likely Movement</div>
-            <div class="bpm-summary-value">${movementDirectionText(row.pred_movement_direction)}</div>
-          </div>
-
-          <div class="bpm-summary-box">
-            <div class="bpm-summary-label">Projected Change</div>
-            <div class="bpm-summary-value">${fmtBPM(primary.change)}</div>
+            <div class="bpm-summary-label">Change From Current</div>
+            <div class="bpm-summary-value">${signedMovement(primary.change)}</div>
           </div>
         </div>
       </div>

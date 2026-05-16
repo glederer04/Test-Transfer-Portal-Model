@@ -909,14 +909,17 @@ ul.task-list li input[type="checkbox"] {
   color: var(--muted);
   font-size: 0.9rem;
   line-height: 1.4;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .stacked-row {
   display: grid;
-  grid-template-columns: 118px 1fr 64px;
+  grid-template-columns: minmax(116px, 0.72fr) minmax(0, 1fr) auto;
   gap: 10px;
   align-items: center;
   margin-top: 10px;
+  min-width: 0;
 }
 
 .rank-table {
@@ -1953,9 +1956,9 @@ function drawModelPdf(pdf, player, x, y, w) {
   if (activeModelView === "bpm") {
     pdf.text(fmtSigned(player.new_bpm_pred_likely_context || player.new_bpm_likely_show), x, y);
     [
-      ["Down", player.new_bpm_pred_context_step_down],
-      ["Lateral", player.new_bpm_pred_context_lateral],
-      ["Up", player.new_bpm_pred_context_step_up]
+      ["Current", player.BPM],
+      ["Projected", player.new_bpm_pred_likely_context],
+      ["Change", player.new_bpm_change_likely_context]
     ].forEach((row, idx) => {
       pdfCompactKey(pdf, row[0], fmtSigned(row[1]), "movement BPM", x + (idx % 3) * 1.12, y + 0.34, 1.02, 0.52);
     });
@@ -2382,10 +2385,11 @@ function renderModelViews(player) {
         <div class="key-sub">Likely next-season BPM</div>
       </div>
       <div>
-        ${bpmProjectionRow("Likely movement", player.new_bpm_pred_likely_context, player.new_bpm_change_likely_context)}
-        ${bpmProjectionRow("Step down", player.new_bpm_pred_context_step_down, player.new_bpm_change_context_step_down)}
-        ${bpmProjectionRow("Lateral", player.new_bpm_pred_context_lateral, player.new_bpm_change_context_lateral)}
-        ${bpmProjectionRow("Step up", player.new_bpm_pred_context_step_up, player.new_bpm_change_context_step_up)}
+        ${valueRow("Current BPM", fmtSigned(player.BPM))}
+        ${bpmProjectionRow("Likely projection", player.new_bpm_pred_likely_context, player.new_bpm_change_likely_context)}
+        ${bpmProjectionRow("Step-down scenario", player.new_bpm_pred_context_step_down, player.new_bpm_change_context_step_down)}
+        ${bpmProjectionRow("Lateral scenario", player.new_bpm_pred_context_lateral, player.new_bpm_change_context_lateral)}
+        ${bpmProjectionRow("Step-up scenario", player.new_bpm_pred_context_step_up, player.new_bpm_change_context_step_up)}
       </div>
     </div>
   `;
@@ -2417,7 +2421,7 @@ function bpmProjectionRow(label, projection, change) {
   return `
     <div class="stacked-row">
       <div class="bar-label">${label}</div>
-      <div class="score-note">Change: ${fmtSigned(change)}</div>
+      <div class="score-note">Change from current: ${fmtSigned(change)}</div>
       <div class="bar-value">${fmtSigned(projection)}</div>
     </div>
   `;

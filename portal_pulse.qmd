@@ -988,6 +988,11 @@ function statTilesFor(row, metric) {
     fmtSigned(row.new_bpm_pred_likely_context || row.new_bpm_likely_show),
     "Movement-aware next-season BPM projection using the player's likely landing path."
   );
+  const bpmChangeTile = predicted(
+    "BPM Chg",
+    fmtSigned(row.new_bpm_change_likely_context),
+    "Difference between projected next-season BPM and current BPM."
+  );
 
   let tilesOut = tiles;
 
@@ -1006,6 +1011,9 @@ function statTilesFor(row, metric) {
 
   if (hasBpmIntent && !hasLabel(tilesOut, "Proj BPM")) {
     tilesOut = [...tilesOut, bpmTile];
+  }
+  if (hasBpmIntent && !hasLabel(tilesOut, "BPM Chg")) {
+    tilesOut = [...tilesOut, bpmChangeTile];
   }
 
   if (!hasLabel(tilesOut, "Transfer")) {
