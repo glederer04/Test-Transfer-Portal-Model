@@ -1233,7 +1233,7 @@ tr.shown td.details-control::before {
 </style>
 <p>Use the buttons below to switch between projection views.</p>
 <div class="projection-button-row">
-<p><button class="proj-btn active" data-view="transfer">Transfer Likelihood</button> <button class="proj-btn" data-view="return">Return / Leave</button> <button class="proj-btn" data-view="movement">Transfer Movement</button> <button class="proj-btn" data-view="bpm">Projected BPM</button></p>
+<p><button class="proj-btn active" data-view="transfer">Transfer Likelihood</button> <button class="proj-btn" data-view="movement">Transfer Movement</button> <button class="proj-btn" data-view="bpm">Projected BPM</button></p>
 </div>
 <div id="projection-filters">
 
@@ -1277,18 +1277,6 @@ const viewColumns = {
     "AST",
     "transfer_show"
   ],
-  return: [
-    "player",
-    "team",
-    "conf",
-    "class",
-    "height",
-    "GP",
-    "PTS",
-    "REB",
-    "AST",
-    "return_show"
-  ],
   movement: [
     "player",
     "team",
@@ -1322,12 +1310,6 @@ const detailColumns = {
     "transfer_prob_lo",
     "transfer_prob_hi"
   ],
-  return: [
-    "pred_return",
-    "pred_leave",
-    "return_prob_lo",
-    "return_prob_hi"
-  ],
   movement: [
     "current_program_strength",
     "pred_movement_score",
@@ -1352,7 +1334,6 @@ const customColumnTitles = {
   class: "Year",
   
   transfer_show: "Transfer Likelihood",
-  return_show: "Return Likelihood",
   movement_show: "Transfer Movement",
   bpm_show: "Projected BPM",
 
@@ -1360,11 +1341,6 @@ const customColumnTitles = {
   transfer_prob_mean: "Transfer Prob Mean",
   transfer_prob_lo: "Transfer Prob Low",
   transfer_prob_hi: "Transfer Prob High",
-
-  pred_return: "Predicted Return",
-  pred_leave: "Predicted Leave",
-  return_prob_lo: "Leave Prob Low",
-  return_prob_hi: "Leave Prob High",
 
   current_program_strength: "Current Program Strength",
   pred_movement_score: "Movement Score",
@@ -1394,7 +1370,6 @@ const projectionColumnHelp = {
   REB: "Rebounds per game.",
   AST: "Assists per game.",
   transfer_show: "Model-estimated transfer likelihood.",
-  return_show: "Model-estimated return likelihood.",
   movement_show: "Estimated transfer step based on how much the model expects the player's next program level to rise or fall.",
   bpm_show: "Projected BPM for the player based on the model outlook."
 };
@@ -1583,102 +1558,6 @@ function formatTransferCard(row) {
 
           <div class="transfer-stat-box">
             <div class="transfer-stat-box-label">Confidence Interval</div>
-            <div class="transfer-stat-box-value">(${pct1(lo)}, ${pct1(hi)})</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  `;
-}
-
-function formatReturnRankText(row) {
-  const topPct = row.leave_top_pct;
-  const rank = row.leave_rank_all;
-
-  if (topPct === undefined || rank === undefined) return "Ranking unavailable";
-
-  const roundedTopPct = Math.max(1, Math.round(topPct));
-  return `Top ${roundedTopPct}% highest leave likelihood (#${rank})`;
-}
-
-function formatReturnCard(row) {
-  const leaveProb = clamp(toNumber(row.leave_display_num), 0, 1);
-  const returnProb = clamp(toNumber(row.return_display_num), 0, 1);
-
-  const lo = clamp(toNumber(row.leave_prob_lo_num), 0, 1);
-  const hi = clamp(toNumber(row.leave_prob_hi_num), 0, 1);
-
-  const percentile = clamp(toNumber(row.leave_percentile), 0, 100);
-  const percentileFill = `${percentile}%`;
-
-  const ciLeft = probToLeft(lo);
-  const ciWidth = `${Math.max((hi - lo) * 100, 1.5)}%`;
-  const dotLeft = probToLeft(leaveProb);
-
-  return `
-    <div class="transfer-card-wrap">
-      <div class="transfer-card">
-        <div class="transfer-card-top">
-          <div>
-            <div class="transfer-card-title">Return / Leave Projection Summary</div>
-            <div class="transfer-card-subtitle">
-              Visual snapshot of predicted leave risk, return likelihood, confidence range, and rank versus all players
-            </div>
-          </div>
-
-          <div class="transfer-card-score">
-            <div class="transfer-card-score-value">${pct1(leaveProb)}</div>
-            <div class="transfer-risk-pill ${row.leave_risk_tier_class}">
-              ${row.leave_risk_tier} Risk
-            </div>
-          </div>
-        </div>
-
-        <div class="transfer-stat-grid" style="margin-top: 4px;">
-          <div class="transfer-stat-box">
-            <div class="transfer-stat-box-label">Chance to Return</div>
-            <div class="transfer-stat-box-value">${pct1(returnProb)}</div>
-          </div>
-
-          <div class="transfer-stat-box">
-            <div class="transfer-stat-box-label">Chance to Leave</div>
-            <div class="transfer-stat-box-value">${pct1(leaveProb)}</div>
-          </div>
-        </div>
-
-        <div class="transfer-card-section">
-          <div class="transfer-section-label">Leave Risk Percentile Rank</div>
-          <div class="transfer-bar-track">
-            <div class="transfer-bar-fill" style="width:${percentileFill};"></div>
-          </div>
-          <div class="transfer-scale-row">
-            <span>Low Risk</span>
-            <span>High Risk</span>
-          </div>
-        </div>
-
-        <div class="transfer-card-section">
-          <div class="transfer-section-label">Confidence Interval (Leave Probability)</div>
-          <div class="transfer-ci-wrap">
-            <div class="transfer-ci-base"></div>
-            <div class="transfer-ci-range" style="left:${ciLeft}; width:${ciWidth};"></div>
-            <div class="transfer-ci-dot" style="left:${dotLeft};"></div>
-          </div>
-          <div class="transfer-ci-label-row">
-            <span>0%</span>
-            <span>50%</span>
-            <span>100%</span>
-          </div>
-        </div>
-
-        <div class="transfer-stat-grid">
-          <div class="transfer-stat-box">
-            <div class="transfer-stat-box-label">Rank vs All Players</div>
-            <div class="transfer-stat-box-value">${formatReturnRankText(row)}</div>
-          </div>
-
-          <div class="transfer-stat-box">
-            <div class="transfer-stat-box-label">Leave Confidence Interval</div>
             <div class="transfer-stat-box-value">(${pct1(lo)}, ${pct1(hi)})</div>
           </div>
         </div>
@@ -2483,10 +2362,6 @@ function formatRowDetails(row, viewName) {
     return formatTransferCard(row);
   }
 
-  if (viewName === "return") {
-    return formatReturnCard(row);
-  }
-
   if (viewName === "movement") {
     return formatMovementCard(row);
   }
@@ -2553,7 +2428,6 @@ function buildTable(viewName) {
       defaultContent: "",
       className: [
         "transfer_show",
-        "return_show",
         "movement_show",
         "bpm_show"
       ].includes(col) ? "projection-highlight-col" : "",

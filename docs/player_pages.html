@@ -1808,7 +1808,7 @@ function drawPlayerReportPdf(pdf, player) {
   pdfCompactKey(pdf, "BPM", fmtSigned(player.BPM), `${fmtSigned(player.OBPM)} OBPM / ${fmtSigned(player.DBPM)} DBPM`, 0.47, 1.9, 1.68, 0.52);
   pdfCompactKey(pdf, "Production", `${fmt(player.PTS)} PTS`, `${fmt(player.REB)} REB / ${fmt(player.AST)} AST`, 2.22, 1.9, 1.68, 0.52);
   pdfCompactKey(pdf, "Role Load", `${fmt(player.USG)}% USG`, `${fmt(player.MP)} MPG / ${fmt(player.GP, 0)} games`, 0.47, 2.47, 1.68, 0.52);
-  pdfCompactKey(pdf, "Transfer", pctProb(player.transfer_prob), `${pctProb(player.return_prob)} return probability`, 2.22, 2.47, 1.68, 0.52);
+  pdfCompactKey(pdf, "Transfer", pctProb(player.transfer_prob), "transfer probability", 2.22, 2.47, 1.68, 0.52);
 
   pdfCard(pdf, 4.25, 0.96, 3.9, 2.1, "Read On The Player");
   const insights = Array.from(document.querySelectorAll("#insight-list .insight")).map(el => el.textContent.trim());
@@ -1956,7 +1956,6 @@ function drawModelPdf(pdf, player, x, y, w) {
     return;
   }
   pdfCompactKey(pdf, "Transfer", pctProb(player.transfer_prob), "transfer probability", x, y - 0.08, 1.05, 0.56);
-  pdfCompactKey(pdf, "Return", pctProb(player.return_prob), "return probability", x + 1.2, y - 0.08, 1.05, 0.56);
   const transfer = parseProbability(player.transfer_prob);
   pdf.setTextColor(95, 107, 122);
   pdf.setFont("helvetica", "bold");
@@ -1966,7 +1965,7 @@ function drawModelPdf(pdf, player, x, y, w) {
   pdf.roundedRect(x, y + 0.84, w, 0.1, 0.04, 0.04, "F");
   pdf.setFillColor(19, 41, 75);
   pdf.roundedRect(x, y + 0.84, w * transfer, 0.1, 0.04, 0.04, "F");
-  pdfText(pdf, `Estimated transfer window: ${pctProb(player.transfer_prob_lo)} to ${pctProb(player.transfer_prob_hi)}. Use return probability as the stay/retain context.`, x, y + 1.1, w, 6.2, "normal", 3);
+  pdfText(pdf, `Estimated transfer window: ${pctProb(player.transfer_prob_lo)} to ${pctProb(player.transfer_prob_hi)}.`, x, y + 1.1, w, 6.2, "normal", 3);
 }
 
 function drawRankPdf(pdf, player, x, y, w) {
@@ -2180,7 +2179,7 @@ function buildKeyCards(player) {
     ["BPM", fmtSigned(player.BPM), `${fmtSigned(player.OBPM)} OBPM / ${fmtSigned(player.DBPM)} DBPM`],
     ["Production", `${fmt(player.PTS)} PTS`, `${fmt(player.REB)} REB / ${fmt(player.AST)} AST`],
     ["Role Load", `${fmt(player.USG)}% USG`, `${fmt(player.MP)} MPG across ${fmt(player.GP, 0)} games`],
-    ["Transfer", pctProb(player.transfer_prob), `${pctProb(player.return_prob)} return probability`]
+    ["Transfer", pctProb(player.transfer_prob), "transfer probability"]
   ];
   return cards.map(([label, value, sub]) => `
     <div class="key-card">
@@ -2351,7 +2350,7 @@ function renderModelViews(player) {
       </div>
       <div>
         <div class="bar-track"><div class="bar-fill" style="width:${transfer * 100}%"></div></div>
-        <div class="field-note">Model range: ${pctProb(transferLo)} to ${pctProb(transferHi)}. Return probability is ${pctProb(player.return_prob)}.</div>
+        <div class="field-note">Model range: ${pctProb(transferLo)} to ${pctProb(transferHi)}.</div>
       </div>
     </div>
   `;
@@ -2566,7 +2565,7 @@ function renderInsights(player) {
   if (transfer >= 0.45) {
     notes.push(`<strong>Roster decision:</strong> The model flags an elevated transfer probability at ${pctProb(transfer)}, so movement score, projected BPM, and role fit should be reviewed together before treating the current production as directly portable.`);
   } else {
-    notes.push(`<strong>Roster decision:</strong> The model is more return-leaning at ${pctProb(player.return_prob)} return probability. If the player does move, the movement and projected BPM panels show how the current profile is most likely to translate.`);
+    notes.push(`<strong>Roster decision:</strong> The model does not flag an elevated transfer probability at ${pctProb(transfer)}, so movement score and projected BPM are best read as context if the player does move.`);
   }
 
   document.getElementById("insight-list").innerHTML = notes.map(note => `<div class="insight">${note}</div>`).join("");

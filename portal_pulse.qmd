@@ -812,9 +812,6 @@ function filteredPlayers(parsed) {
   if (parsed.metric === "transfer" || parsed.metric === "movement" || /\b(transfer|portal|available|leave|leaving)\b/.test(parsed.query)) {
     rows = rows.filter(row => transferProb(row) >= 0.08 || flag(row.pred_transfer_flag));
   }
-  if (/\b(return|stay|staying)\b/.test(parsed.query)) {
-    rows = rows.filter(row => returnProb(row) >= 0.25);
-  }
   if (/\b(step up|step-up|up transfer|transfer up|move up|moving up|go up|upside move|better team|better place|better program|better conference|stronger team|stronger place|stronger program|stronger conference)\b/.test(parsed.query)) {
     rows = rows.filter(row => movementDirection(row) === "up" || n(row.pred_movement_score) >= 10);
   }
@@ -908,11 +905,6 @@ function statTilesFor(row, metric) {
     fmtPct(transferProb(row)),
     "Model estimate of how likely this player is to enter the portal."
   );
-  const returnTile = predicted(
-    "Return",
-    fmtPct(returnProb(row)),
-    "Model estimate of how likely this player is to stay with the current team."
-  );
   const movementTile = predicted(
     "Movement",
     row.movement_show || fmtSigned(row.pred_movement_score),
@@ -962,7 +954,6 @@ function statTilesFor(row, metric) {
     transfer: [
       stat("MPG", fmt(row.MP)),
       stat("USG", `${fmt(row.USG)}%`),
-      returnTile,
       transferTile
     ],
     movement: [

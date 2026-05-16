@@ -1263,8 +1263,6 @@ function tierRow(label, value) {
 function formatModelDetails(row) {
   const primaryBpm = getPrimaryBpm(row);
   const transfer = row.transfer_num;
-  const leave = row.leave_num;
-  const returnProb = row.return_num;
 
   return `
     <div class="model-card-wrap">
@@ -1311,13 +1309,6 @@ function formatModelDetails(row) {
             <div class="model-box-value">${pct1(transfer)}</div>
             ${miniBar(transfer)}
             <div class="model-box-note">${modelRiskLabel(transfer)} transfer likelihood</div>
-          </div>
-
-          <div class="model-box">
-            <div class="model-box-label">Return / Leave Model</div>
-            <div class="model-box-value">${pct1(returnProb)} return</div>
-            ${miniBar(returnProb)}
-            <div class="model-box-note">${pct1(leave)} leave probability</div>
           </div>
 
           <div class="model-box">
