@@ -1126,8 +1126,8 @@ let currentView = "transfer";
 let nbaBadgePidSet = new Set();
 
 const badgeHelp = {
-  eligibility: "Model flag: senior who is likely to leave and likely to be out of college eligibility. This is not a certainty.",
-  nba: "Model flag: likely NBA-departure profile based on strong production, low transfer probability, leave probability, and youth. This is not a certainty."
+  eligibility: "Potentially exhausted NCAA eligibility flag.",
+  nba: "Potential NBA prospect flag."
 };
 
 const viewColumns = {
