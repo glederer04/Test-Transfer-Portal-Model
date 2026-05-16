@@ -344,22 +344,6 @@ format:
   margin-top: 8px;
 }
 
-.scope-list {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  margin-top: 10px;
-}
-
-.scope-token {
-  border-radius: 999px;
-  background: #eef6fc;
-  color: #24405f;
-  padding: 5px 8px;
-  font-size: 0.78rem;
-  font-weight: 850;
-}
-
 @media (max-width: 920px) {
   .prompt-grid,
   .pulse-empty-examples {
@@ -412,7 +396,6 @@ format:
           <button class="prompt-chip" type="button" data-prompt="players projected to move up if they transfer">Players projected to move up</button>
           <button class="prompt-chip" type="button" data-prompt="players similar to Seth Trimble">Players similar to Seth Trimble</button>
         </div>
-        <div id="pulse-scope" class="scope-list"></div>
       </div>
     </section>
   </div>
@@ -835,9 +818,7 @@ function statTilesFor(row, metric) {
     ],
     movement: [
       ["Movement", row.movement_show || fmtSigned(row.pred_movement_score)],
-      ["Transfer", fmtPct(transferProb(row))],
-      ["Current strength", fmt(row.current_program_strength)],
-      ["Projected strength", fmt(row.pred_projected_program_strength)]
+      ["Transfer", fmtPct(transferProb(row))]
     ],
     underused: [
       ["MPG", fmt(row.MP)],
@@ -957,9 +938,6 @@ function submitQuestion(question) {
 }
 
 function setupPulse() {
-  document.getElementById("pulse-scope").innerHTML = ["guards", "wings", "bigs", "ACC", "shooting", "transfer", "similar players"]
-    .map(item => `<span class="scope-token">${escapeHtml(item)}</span>`)
-    .join("");
   renderEmptyState();
 
   document.getElementById("pulse-form").addEventListener("submit", event => {
