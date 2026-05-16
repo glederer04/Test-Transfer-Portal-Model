@@ -166,7 +166,7 @@ complete_data_2026 <- players_model_26 %>%
 
 transfer likelihood model
 
-```{r, eval=FALSE}
+```{r, eval=TRUE}
 model_table <- model_table_START %>%
   mutate(
     year = as.integer(year),
@@ -497,7 +497,7 @@ transfer_formula <- formula(glm_fit)
 
 return vs leave
 
-```{r, eval=FALSE}
+```{r, eval=TRUE}
 return_leave_base <- model_table_START %>%
   mutate(
     year = as.integer(year),
@@ -849,7 +849,7 @@ return_leave_formula <- formula(glm_return)
 
 destination conference model
 
-```{r, eval=FALSE}
+```{r, eval=TRUE}
 model_table <- model_table_START %>%
   mutate(
     year = as.integer(year),
@@ -1095,9 +1095,637 @@ ll_test
 destination_tier_formula <- formula(dest_tier_model)
 ```
 
+transfer movement model
+```{r}
+movement_base <- model_table_START %>%
+  mutate(
+    year = as.integer(year),
+    pid = as.character(pid),
+    player = str_squish(player),
+    team = str_squish(team),
+    conf = str_squish(conf),
+    conf = str_to_lower(conf),
+    conf = if_else(conf == "ind", "independent", conf),
+    class = str_squish(class),
+    class = na_if(class, ""),
+    class = na_if(class, "N/A"),
+    class = na_if(class, "--"),
+    class = case_when(
+      class %in% c("Fr", "So", "Jr", "Sr") ~ class,
+      TRUE ~ NA_character_
+    ),
+    Role = str_squish(Role),
+    Role = na_if(Role, "")
+  )
+
+movement_high_major_confs <- c("acc", "b10", "b12", "sec", "be", "p12")
+movement_upper_mid_confs  <- c("amer", "a10", "wcc", "mwc", "mvc", "wac", "caa", "ivy", "mac", "cusa")
+movement_low_major_confs  <- c("ae", "asun", "bsth", "bsky", "bw", "horz", "maac", "meac", "nec", "ovc",
+                               "pat", "sb", "sc", "slnd", "sum", "swac", "ind", "independent")
+
+movement_tier_score_map <- c(
+  "low" = 8,
+  "upper_mid" = 18,
+  "high" = 30
+)
+
+rescale_0_100 <- function(x) {
+  if (all(is.na(x))) {
+    return(rep(NA_real_, length(x)))
+  }
+
+  rng <- range(x, na.rm = TRUE)
+
+  if (!is.finite(rng[1]) || !is.finite(rng[2]) || rng[1] == rng[2]) {
+    return(rep(50, length(x)))
+  }
+
+  rescale(x, to = c(0, 100), from = rng)
+}
+
+movement_base <- movement_base %>%
+  mutate(
+    conf_tier_movement = case_when(
+      conf %in% movement_high_major_confs ~ "high",
+      conf %in% movement_upper_mid_confs ~ "upper_mid",
+      conf %in% movement_low_major_confs ~ "low",
+      TRUE ~ NA_character_
+    ),
+    conf_tier_movement = factor(conf_tier_movement, levels = c("low", "upper_mid", "high")),
+    conf_tier_score = unname(movement_tier_score_map[as.character(conf_tier_movement)]),
+    team_win_pct = if_else(
+      team_wins + team_losses > 0,
+      team_wins / (team_wins + team_losses),
+      NA_real_
+    ),
+    conf_win_pct_model = if_else(
+      conf_wins + conf_losses > 0,
+      conf_wins / (conf_wins + conf_losses),
+      NA_real_
+    )
+  ) %>%
+  group_by(year) %>%
+  mutate(
+    barthag_score = rescale_0_100(barthag),
+    wab_score = rescale_0_100(WAB),
+    adjoe_score = rescale_0_100(adjoe),
+    adjde_score = 100 - rescale_0_100(adjde),
+    sos_score = rescale_0_100(sos),
+    win_score = rescale_0_100(team_win_pct),
+    conf_win_score = rescale_0_100(conf_win_pct_model),
+    program_strength_score = 0.34 * barthag_score +
+      0.18 * wab_score +
+      0.14 * adjoe_score +
+      0.12 * adjde_score +
+      0.08 * sos_score +
+      0.07 * win_score +
+      0.04 * conf_win_score +
+      0.03 * conf_tier_score,
+    program_strength_score = if_else(
+      is.na(program_strength_score),
+      0.50 * barthag_score + 0.20 * adjoe_score + 0.15 * adjde_score + 0.15 * conf_tier_score,
+      program_strength_score
+    )
+  ) %>%
+  ungroup()
+
+movement_next_year_lookup <- movement_base %>%
+  transmute(
+    pid,
+    year = year - 1,
+    next_team = team,
+    next_conf = conf,
+    next_conf_tier_movement = conf_tier_movement,
+    next_program_strength_score = program_strength_score,
+    next_barthag = barthag,
+    next_WAB = WAB
+  )
+
+movement_model_table <- movement_base %>%
+  left_join(movement_next_year_lookup, by = c("pid", "year")) %>%
+  mutate(
+    has_next_year = !is.na(next_team),
+    transfer_next_year = if_else(has_next_year & next_team != team, 1, 0, missing = 0),
+    movement_score = next_program_strength_score - program_strength_score,
+    movement_label_actual = case_when(
+      movement_score >= 25 ~ "major_step_up",
+      movement_score >= 10 ~ "step_up",
+      movement_score > -10 ~ "lateral",
+      movement_score > -25 ~ "step_down",
+      movement_score <= -25 ~ "major_step_down",
+      TRUE ~ NA_character_
+    )
+  ) %>%
+  group_by(team, year) %>%
+  mutate(
+    team_total_mp = sum(MP, na.rm = TRUE),
+    minutes_share = if_else(team_total_mp > 0, MP / team_total_mp, NA_real_),
+    mp_rank_team = min_rank(desc(MP)),
+    bpm_rank_team = min_rank(desc(BPM)),
+    usg_rank_team = min_rank(desc(USG)),
+    porpag_rank_team = min_rank(desc(PORPAG)),
+    mp_pct_team = percent_rank(MP),
+    bpm_pct_team = percent_rank(BPM),
+    usg_pct_team = percent_rank(USG),
+    porpag_pct_team = percent_rank(PORPAG),
+    bpm_minutes_gap = bpm_pct_team - mp_pct_team
+  ) %>%
+  ungroup() %>%
+  group_by(conf, year) %>%
+  mutate(
+    bpm_pct_conf = percent_rank(BPM),
+    porpag_pct_conf = percent_rank(PORPAG),
+    mp_pct_conf = percent_rank(MP),
+    usg_pct_conf = percent_rank(USG)
+  ) %>%
+  ungroup() %>%
+  mutate(
+    underclass = if_else(class %in% c("Fr", "So"), 1L, 0L, missing = 0L),
+    mid_major_star = if_else(
+      conf_tier_movement %in% c("upper_mid", "low") & bpm_pct_conf >= 0.90 & porpag_pct_conf >= 0.85,
+      1L,
+      0L,
+      missing = 0L
+    ),
+    underused_star = if_else(BPM >= 6 & mp_rank_team > 5, 1L, 0L, missing = 0L),
+    high_major_role_player = if_else(
+      conf_tier_movement == "high" & MP >= 10 & MP <= 25 & BPM >= 0,
+      1L,
+      0L,
+      missing = 0L
+    ),
+    low_role_high_output = if_else(porpag_pct_conf >= 0.75 & mp_pct_team <= 0.40, 1L, 0L, missing = 0L)
+  )
+
+movement_model_data <- movement_model_table %>%
+  filter(transfer_next_year == 1) %>%
+  filter(!is.na(movement_score), !is.na(program_strength_score), !is.na(next_program_strength_score)) %>%
+  filter(!is.na(BPM), !is.na(MP), !is.na(PORPAG), !is.na(USG), !is.na(ORTG)) %>%
+  filter(!is.na(team_wins), !is.na(barthag), !is.na(`Conf Win%`)) %>%
+  filter(!is.na(minutes_share), !is.na(bpm_minutes_gap), !is.na(bpm_pct_team), !is.na(porpag_pct_team), !is.na(bpm_pct_conf)) %>%
+  filter(!is.na(class), !is.na(Role), !is.na(conf_tier_movement)) %>%
+  mutate(
+    class = factor(class, levels = c("Fr", "So", "Jr", "Sr")),
+    Role = fct_lump_min(as.factor(Role), min = 25),
+    conf_tier_movement = factor(conf_tier_movement, levels = c("low", "upper_mid", "high")),
+    next_conf_tier_movement = factor(next_conf_tier_movement, levels = c("low", "upper_mid", "high")),
+    movement_label_actual = factor(
+      movement_label_actual,
+      levels = c("major_step_down", "step_down", "lateral", "step_up", "major_step_up")
+    )
+  )
+
+train_movement <- movement_model_data %>% filter(year <= 2022)
+valid_movement <- movement_model_data %>% filter(year == 2023)
+test_movement  <- movement_model_data %>% filter(year == 2024)
+
+movement_formula <- movement_score ~
+  BPM + MP + PORPAG + USG + ORTG +
+  conf_tier_movement + class + Role +
+  minutes_share + bpm_minutes_gap +
+  bpm_pct_team + porpag_pct_team + bpm_pct_conf + usg_pct_conf +
+  team_wins + `Conf Win%` + barthag + program_strength_score +
+  mid_major_star + underused_star + high_major_role_player + low_role_high_output
+
+movement_x_train <- model.matrix(movement_formula, data = train_movement)[, -1, drop = FALSE]
+movement_y_train <- train_movement$movement_score
+
+movement_x_valid <- model.matrix(movement_formula, data = valid_movement)[, -1, drop = FALSE]
+movement_y_valid <- valid_movement$movement_score
+
+movement_x_test <- model.matrix(movement_formula, data = test_movement)[, -1, drop = FALSE]
+movement_y_test <- test_movement$movement_score
+
+set.seed(123)
+
+movement_cv_fit <- cv.glmnet(
+  x = movement_x_train,
+  y = movement_y_train,
+  alpha = 0,
+  family = "gaussian",
+  nfolds = 5
+)
+
+movement_best_lambda <- movement_cv_fit$lambda.min
+movement_best_lambda
+
+valid_movement_pred <- as.numeric(predict(movement_cv_fit, s = movement_best_lambda, newx = movement_x_valid))
+test_movement_pred  <- as.numeric(predict(movement_cv_fit, s = movement_best_lambda, newx = movement_x_test))
+
+movement_label_from_score <- function(score) {
+  case_when(
+    score >= 25 ~ "major_step_up",
+    score >= 10 ~ "step_up",
+    score > -10 ~ "lateral",
+    score > -25 ~ "step_down",
+    score <= -25 ~ "major_step_down",
+    TRUE ~ NA_character_
+  )
+}
+
+movement_rmse <- function(actual, pred) {
+  sqrt(mean((actual - pred)^2, na.rm = TRUE))
+}
+
+movement_mae <- function(actual, pred) {
+  mean(abs(actual - pred), na.rm = TRUE)
+}
+
+movement_r2 <- function(actual, pred) {
+  ss_res <- sum((actual - pred)^2, na.rm = TRUE)
+  ss_tot <- sum((actual - mean(actual, na.rm = TRUE))^2, na.rm = TRUE)
+  1 - ss_res / ss_tot
+}
+
+movement_eval_metrics <- function(actual, pred) {
+  tibble(
+    RMSE = movement_rmse(actual, pred),
+    MAE = movement_mae(actual, pred),
+    R2 = movement_r2(actual, pred)
+  )
+}
+
+movement_valid_metrics <- movement_eval_metrics(movement_y_valid, valid_movement_pred)
+movement_test_metrics  <- movement_eval_metrics(movement_y_test, test_movement_pred)
+
+movement_valid_metrics
+movement_test_metrics
+
+valid_movement_results <- valid_movement %>%
+  mutate(
+    pred_movement_score = valid_movement_pred,
+    pred_projected_program_strength = pmin(pmax(program_strength_score + pred_movement_score, 0), 100),
+    pred_movement_label = movement_label_from_score(pred_movement_score),
+    pred_movement_label = factor(
+      pred_movement_label,
+      levels = c("major_step_down", "step_down", "lateral", "step_up", "major_step_up")
+    )
+  )
+
+test_movement_results <- test_movement %>%
+  mutate(
+    pred_movement_score = test_movement_pred,
+    pred_projected_program_strength = pmin(pmax(program_strength_score + pred_movement_score, 0), 100),
+    pred_movement_label = movement_label_from_score(pred_movement_score),
+    pred_movement_label = factor(
+      pred_movement_label,
+      levels = c("major_step_down", "step_down", "lateral", "step_up", "major_step_up")
+    )
+  )
+
+movement_valid_confusion <- confusionMatrix(
+  data = valid_movement_results$pred_movement_label,
+  reference = valid_movement_results$movement_label_actual
+)
+
+movement_test_confusion <- confusionMatrix(
+  data = test_movement_results$pred_movement_label,
+  reference = test_movement_results$movement_label_actual
+)
+
+movement_valid_confusion
+movement_test_confusion
+
+movement_direction_from_score <- function(score) {
+  case_when(
+    score > 10 ~ "up",
+    score < -10 ~ "down",
+    score >= -10 & score <= 10 ~ "lateral",
+    TRUE ~ NA_character_
+  )
+}
+
+movement_adjacent_accuracy <- function(actual_label, pred_label) {
+  label_levels <- c("major_step_down", "step_down", "lateral", "step_up", "major_step_up")
+  actual_num <- match(as.character(actual_label), label_levels)
+  pred_num <- match(as.character(pred_label), label_levels)
+
+  mean(abs(actual_num - pred_num) <= 1, na.rm = TRUE)
+}
+
+movement_baseline_metrics <- bind_rows(
+  movement_eval_metrics(
+    movement_y_valid,
+    rep(mean(train_movement$movement_score, na.rm = TRUE), length(movement_y_valid))
+  ) %>% mutate(split = "valid", model = "train_mean_baseline"),
+  movement_eval_metrics(movement_y_valid, valid_movement_pred) %>%
+    mutate(split = "valid", model = "ridge_movement_model"),
+  movement_eval_metrics(
+    movement_y_test,
+    rep(mean(train_movement$movement_score, na.rm = TRUE), length(movement_y_test))
+  ) %>% mutate(split = "test", model = "train_mean_baseline"),
+  movement_eval_metrics(movement_y_test, test_movement_pred) %>%
+    mutate(split = "test", model = "ridge_movement_model")
+) %>%
+  select(split, model, RMSE, MAE, R2)
+
+movement_baseline_metrics
+
+valid_movement_direction_results <- valid_movement_results %>%
+  mutate(
+    actual_direction = factor(
+      movement_direction_from_score(movement_score),
+      levels = c("down", "lateral", "up")
+    ),
+    pred_direction = factor(
+      movement_direction_from_score(pred_movement_score),
+      levels = c("down", "lateral", "up")
+    )
+  )
+
+test_movement_direction_results <- test_movement_results %>%
+  mutate(
+    actual_direction = factor(
+      movement_direction_from_score(movement_score),
+      levels = c("down", "lateral", "up")
+    ),
+    pred_direction = factor(
+      movement_direction_from_score(pred_movement_score),
+      levels = c("down", "lateral", "up")
+    )
+  )
+
+movement_valid_direction_confusion <- confusionMatrix(
+  data = valid_movement_direction_results$pred_direction,
+  reference = valid_movement_direction_results$actual_direction
+)
+
+movement_test_direction_confusion <- confusionMatrix(
+  data = test_movement_direction_results$pred_direction,
+  reference = test_movement_direction_results$actual_direction
+)
+
+movement_valid_direction_confusion
+movement_test_direction_confusion
+
+movement_summary_diagnostics <- tibble(
+  split = c("valid", "test"),
+  n = c(nrow(valid_movement_results), nrow(test_movement_results)),
+  score_correlation = c(
+    cor(valid_movement_results$movement_score, valid_movement_results$pred_movement_score, use = "complete.obs"),
+    cor(test_movement_results$movement_score, test_movement_results$pred_movement_score, use = "complete.obs")
+  ),
+  five_bucket_accuracy = c(
+    mean(valid_movement_results$movement_label_actual == valid_movement_results$pred_movement_label, na.rm = TRUE),
+    mean(test_movement_results$movement_label_actual == test_movement_results$pred_movement_label, na.rm = TRUE)
+  ),
+  adjacent_bucket_accuracy = c(
+    movement_adjacent_accuracy(valid_movement_results$movement_label_actual, valid_movement_results$pred_movement_label),
+    movement_adjacent_accuracy(test_movement_results$movement_label_actual, test_movement_results$pred_movement_label)
+  ),
+  direction_accuracy = c(
+    mean(valid_movement_direction_results$actual_direction == valid_movement_direction_results$pred_direction, na.rm = TRUE),
+    mean(test_movement_direction_results$actual_direction == test_movement_direction_results$pred_direction, na.rm = TRUE)
+  )
+)
+
+movement_summary_diagnostics
+
+movement_prediction_distribution <- bind_rows(
+  valid_movement_results %>%
+    transmute(split = "valid", actual = movement_score, pred = pred_movement_score),
+  test_movement_results %>%
+    transmute(split = "test", actual = movement_score, pred = pred_movement_score)
+) %>%
+  group_by(split) %>%
+  summarise(
+    actual_min = min(actual, na.rm = TRUE),
+    actual_q25 = quantile(actual, 0.25, na.rm = TRUE),
+    actual_median = median(actual, na.rm = TRUE),
+    actual_q75 = quantile(actual, 0.75, na.rm = TRUE),
+    actual_max = max(actual, na.rm = TRUE),
+    pred_min = min(pred, na.rm = TRUE),
+    pred_q25 = quantile(pred, 0.25, na.rm = TRUE),
+    pred_median = median(pred, na.rm = TRUE),
+    pred_q75 = quantile(pred, 0.75, na.rm = TRUE),
+    pred_max = max(pred, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+movement_prediction_distribution
+
+movement_valid_by_actual_label <- valid_movement_results %>%
+  group_by(movement_label_actual) %>%
+  summarise(
+    n = n(),
+    actual_avg = mean(movement_score, na.rm = TRUE),
+    pred_avg = mean(pred_movement_score, na.rm = TRUE),
+    RMSE = movement_rmse(movement_score, pred_movement_score),
+    MAE = movement_mae(movement_score, pred_movement_score),
+    .groups = "drop"
+  )
+
+movement_test_by_actual_label <- test_movement_results %>%
+  group_by(movement_label_actual) %>%
+  summarise(
+    n = n(),
+    actual_avg = mean(movement_score, na.rm = TRUE),
+    pred_avg = mean(pred_movement_score, na.rm = TRUE),
+    RMSE = movement_rmse(movement_score, pred_movement_score),
+    MAE = movement_mae(movement_score, pred_movement_score),
+    .groups = "drop"
+  )
+
+movement_valid_by_actual_label
+movement_test_by_actual_label
+
+movement_valid_by_current_tier <- valid_movement_results %>%
+  group_by(conf_tier_movement) %>%
+  summarise(
+    n = n(),
+    actual_avg = mean(movement_score, na.rm = TRUE),
+    pred_avg = mean(pred_movement_score, na.rm = TRUE),
+    RMSE = movement_rmse(movement_score, pred_movement_score),
+    MAE = movement_mae(movement_score, pred_movement_score),
+    .groups = "drop"
+  )
+
+movement_test_by_current_tier <- test_movement_results %>%
+  group_by(conf_tier_movement) %>%
+  summarise(
+    n = n(),
+    actual_avg = mean(movement_score, na.rm = TRUE),
+    pred_avg = mean(pred_movement_score, na.rm = TRUE),
+    RMSE = movement_rmse(movement_score, pred_movement_score),
+    MAE = movement_mae(movement_score, pred_movement_score),
+    .groups = "drop"
+  )
+
+movement_valid_by_current_tier
+movement_test_by_current_tier
+
+movement_coef_table <- coef(movement_cv_fit, s = "lambda.min") %>%
+  as.matrix() %>%
+  as.data.frame() %>%
+  rownames_to_column("term")
+
+names(movement_coef_table)[2] <- "coef"
+
+movement_coef_table <- movement_coef_table %>%
+  arrange(desc(abs(coef)))
+
+head(movement_coef_table, 30)
+
+movement_test_predictions_table <- test_movement_results %>%
+  select(
+    player,
+    team,
+    conf,
+    next_team,
+    next_conf,
+    conf_tier_movement,
+    next_conf_tier_movement,
+    BPM,
+    PORPAG,
+    MP,
+    program_strength_score,
+    next_program_strength_score,
+    movement_score,
+    pred_movement_score,
+    movement_label_actual,
+    pred_movement_label,
+    pred_projected_program_strength
+  ) %>%
+  mutate(error = movement_score - pred_movement_score) %>%
+  arrange(desc(pred_movement_score))
+
+head(movement_test_predictions_table, 30)
+
+tail(movement_test_predictions_table, 30)
+```
+
+score transfer movement model
+```{r}
+movement_meta <- list(
+  formula = movement_formula,
+  lambda = movement_best_lambda,
+  class_levels = levels(train_movement$class),
+  role_levels = levels(train_movement$Role),
+  conf_tier_movement_levels = levels(train_movement$conf_tier_movement),
+  x_colnames = colnames(movement_x_train)
+)
+
+make_movement_design_matrix <- function(df, meta) {
+  rhs_terms <- delete.response(terms(meta$formula))
+  mm <- model.matrix(rhs_terms, data = df)
+
+  if ("(Intercept)" %in% colnames(mm)) {
+    mm <- mm[, colnames(mm) != "(Intercept)", drop = FALSE]
+  }
+
+  missing_cols <- setdiff(meta$x_colnames, colnames(mm))
+  if (length(missing_cols) > 0) {
+    zero_mat <- matrix(0, nrow = nrow(mm), ncol = length(missing_cols))
+    colnames(zero_mat) <- missing_cols
+    mm <- cbind(mm, zero_mat)
+  }
+
+  extra_cols <- setdiff(colnames(mm), meta$x_colnames)
+  if (length(extra_cols) > 0) {
+    mm <- mm[, !(colnames(mm) %in% extra_cols), drop = FALSE]
+  }
+
+  mm <- mm[, meta$x_colnames, drop = FALSE]
+  mm
+}
+
+prep_movement_newdata <- function(newdata, meta) {
+  newdata %>%
+    mutate(
+      conf = str_squish(conf),
+      conf = str_to_lower(conf),
+      conf = if_else(conf == "ind", "independent", conf),
+      conf_tier_movement = case_when(
+        conf %in% movement_high_major_confs ~ "high",
+        conf %in% movement_upper_mid_confs ~ "upper_mid",
+        conf %in% movement_low_major_confs ~ "low",
+        TRUE ~ NA_character_
+      ),
+      conf_tier_movement = factor(conf_tier_movement, levels = meta$conf_tier_movement_levels),
+      conf_tier_score = unname(movement_tier_score_map[as.character(conf_tier_movement)]),
+      team_win_pct = if_else(
+        team_wins + team_losses > 0,
+        team_wins / (team_wins + team_losses),
+        NA_real_
+      ),
+      conf_win_pct_model = if_else(
+        conf_wins + conf_losses > 0,
+        conf_wins / (conf_wins + conf_losses),
+        NA_real_
+      )
+    ) %>%
+    group_by(year) %>%
+    mutate(
+      barthag_score = rescale_0_100(barthag),
+      wab_score = rescale_0_100(WAB),
+      adjoe_score = rescale_0_100(adjoe),
+      adjde_score = 100 - rescale_0_100(adjde),
+      sos_score = rescale_0_100(sos),
+      win_score = rescale_0_100(team_win_pct),
+      conf_win_score = rescale_0_100(conf_win_pct_model),
+      program_strength_score = 0.34 * barthag_score +
+        0.18 * wab_score +
+        0.14 * adjoe_score +
+        0.12 * adjde_score +
+        0.08 * sos_score +
+        0.07 * win_score +
+        0.04 * conf_win_score +
+        0.03 * conf_tier_score,
+      program_strength_score = if_else(
+        is.na(program_strength_score),
+        0.50 * barthag_score + 0.20 * adjoe_score + 0.15 * adjde_score + 0.15 * conf_tier_score,
+        program_strength_score
+      )
+    ) %>%
+    ungroup() %>%
+    mutate(
+      class = factor(class, levels = meta$class_levels),
+      Role = factor(Role, levels = meta$role_levels),
+      bpm_minutes_gap = bpm_pct_team - mp_pct_team,
+      underclass = if_else(class %in% c("Fr", "So"), 1L, 0L, missing = 0L),
+      mid_major_star = if_else(
+        conf_tier_movement %in% c("upper_mid", "low") & bpm_pct_conf >= 0.90 & porpag_pct_conf >= 0.85,
+        1L,
+        0L,
+        missing = 0L
+      ),
+      underused_star = if_else(BPM >= 6 & mp_rank_team > 5, 1L, 0L, missing = 0L),
+      high_major_role_player = if_else(
+        conf_tier_movement == "high" & MP >= 10 & MP <= 25 & BPM >= 0,
+        1L,
+        0L,
+        missing = 0L
+      ),
+      low_role_high_output = if_else(porpag_pct_conf >= 0.75 & mp_pct_team <= 0.40, 1L, 0L, missing = 0L)
+    )
+}
+
+score_movement_model <- function(newdata, fit, meta) {
+  newdata2 <- prep_movement_newdata(newdata, meta)
+  x_new <- make_movement_design_matrix(newdata2, meta)
+
+  pred_score <- as.numeric(predict(fit, s = meta$lambda, newx = x_new))
+
+  newdata2 %>%
+    mutate(
+      pred_movement_score = pred_score,
+      pred_projected_program_strength = pmin(pmax(program_strength_score + pred_movement_score, 0), 100),
+      pred_movement_label = movement_label_from_score(pred_movement_score),
+      pred_movement_direction = movement_direction_from_score(pred_movement_score),
+      movement_show = paste0(
+        str_to_title(str_replace_all(pred_movement_label, "_", " ")),
+        " (",
+        if_else(pred_movement_score > 0, "+", ""),
+        round(pred_movement_score, 1),
+        ")"
+      )
+    )
+}
+```
+
 #projected stats
 
-```{r, eval=FALSE}
+```{r, eval=TRUE}
 high_major_confs <- c("acc", "b10", "b12", "sec", "be", "p12")
 upper_mid_confs  <- c("amer", "a10", "wcc", "mwc", "mvc", "wac", "caa", "ivy", "mac", "cusa")
 low_major_confs  <- c("ae", "asun", "bsth", "bsky", "bw", "horz", "maac", "meac", "nec", "ovc", 
@@ -1897,6 +2525,44 @@ complete_2026_dest_preds <- complete_2026_dest_preds %>%
     starts_with("dest_prob_")
   )
 
+complete_2026_movement_base <- complete_2026_FE %>%
+  prep_movement_newdata(movement_meta) %>%
+  filter(
+    !is.na(BPM),
+    !is.na(MP),
+    !is.na(PORPAG),
+    !is.na(USG),
+    !is.na(ORTG),
+    !is.na(conf_tier_movement),
+    !is.na(class),
+    !is.na(Role),
+    !is.na(minutes_share),
+    !is.na(bpm_minutes_gap),
+    !is.na(bpm_pct_team),
+    !is.na(porpag_pct_team),
+    !is.na(bpm_pct_conf),
+    !is.na(usg_pct_conf),
+    !is.na(team_wins),
+    !is.na(`Conf Win%`),
+    !is.na(barthag),
+    !is.na(program_strength_score)
+  )
+
+complete_2026_movement_preds <- score_movement_model(
+  newdata = complete_2026_movement_base,
+  fit = movement_cv_fit,
+  meta = movement_meta
+) %>%
+  select(
+    pid, year,
+    current_program_strength = program_strength_score,
+    pred_movement_score,
+    pred_projected_program_strength,
+    pred_movement_label,
+    pred_movement_direction,
+    movement_show
+  )
+
 complete_2026_bpm_base <- complete_2026_FE %>%
   mutate(
     conf_tier_current = case_when(
@@ -1957,14 +2623,17 @@ complete_2026_scored <- complete_2026_FE %>%
   left_join(complete_2026_transfer_preds, by = c("pid", "year")) %>%
   left_join(complete_2026_return_preds,   by = c("pid", "year")) %>%
   left_join(complete_2026_dest_preds,     by = c("pid", "year")) %>%
+  left_join(complete_2026_movement_preds, by = c("pid", "year")) %>%
   left_join(complete_2026_bpm_preds,      by = c("pid", "year"))
 
 #dir.create("docs/data", recursive = TRUE, showWarnings = FALSE)
 #write_csv(complete_2026_scored, "docs/data/complete_2026_scored.csv")
 ```
 
-```{r, eval=FALSE}
+```{r, eval=TRUE}
 #yo <- read.csv('docs/data/complete_2026_scored.csv')
+
+yo <- complete_2026_scored
 
 yo <- yo %>%
   mutate(conf = tolower(conf)) %>%  # make sure everything is lowercase first
@@ -2021,6 +2690,17 @@ yo <- yo %>%
     transfer_show = paste0(round(pred_transfer*100,2), '%'),
     return_show = paste0(round(pred_return*100,2), '%'),
     destination_show = paste0(pred_destination_tier, ' (', round(ifelse(pred_destination_tier=='low_major', dest_prob_low, ifelse(pred_destination_tier=='mid_major', dest_prob_upper_mid, dest_prob_high))*100,1), '%)'),
+    movement_show = if_else(
+      is.na(pred_movement_label) | is.na(pred_movement_score),
+      NA_character_,
+      paste0(
+        str_to_title(str_replace_all(pred_movement_label, "_", " ")),
+        " (",
+        ifelse(pred_movement_score > 0, "+", ""),
+        round(pred_movement_score, 1),
+        ")"
+      )
+    ),
     bpm_show = round(ifelse(pred_destination_tier=='low_major', pred_BPM_low, ifelse(pred_destination_tier=='mid_major', pred_BPM_upper_mid, pred_BPM_high)),2)
   )
 
@@ -2038,3 +2718,35 @@ yo <- yo %>%
 #write_csv(yo, "data/complete_2026_scored.csv")
 ```
 
+```{r verify movement model site data, eval=TRUE}
+yo %>%
+  summarise(
+    players = n(),
+    movement_predictions = sum(!is.na(pred_movement_score)),
+    missing_movement_predictions = sum(is.na(pred_movement_score)),
+    min_movement_score = min(pred_movement_score, na.rm = TRUE),
+    avg_movement_score = mean(pred_movement_score, na.rm = TRUE),
+    max_movement_score = max(pred_movement_score, na.rm = TRUE)
+  )
+
+yo %>%
+  select(
+    player, team, conf,
+    current_program_strength,
+    pred_movement_score,
+    pred_projected_program_strength,
+    pred_movement_label,
+    pred_movement_direction,
+    movement_show
+  ) %>%
+  arrange(desc(pred_movement_score)) %>%
+  head(25)
+```
+
+```{r save scored site data, eval=FALSE}
+dir.create("docs/data", recursive = TRUE, showWarnings = FALSE)
+dir.create("data", recursive = TRUE, showWarnings = FALSE)
+
+write_csv(yo, "docs/data/complete_2026_scored.csv")
+write_csv(yo, "data/complete_2026_scored.csv")
+```
