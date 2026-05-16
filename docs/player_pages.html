@@ -1357,6 +1357,12 @@ function movementDirectionText(value) {
   return "Unknown";
 }
 
+function movementDisplayLabel(player) {
+  const direction = movementDirectionText(player.pred_movement_direction);
+  if (direction !== "Unknown") return direction;
+  return movementLabel(player.pred_movement_label);
+}
+
 function programLevelFromStrength(value) {
   const score = cleanNumber(value);
   if (score === null) return "Unknown";
@@ -1842,7 +1848,7 @@ function drawModelPdf(pdf, player, x, y, w) {
   pdf.setFont("helvetica", "bold");
   pdf.setFontSize(13);
   if (activeModelView === "movement") {
-    pdf.text(movementLabel(player.pred_movement_label), x, y);
+    pdf.text(movementDisplayLabel(player), x, y);
     [["Score", fmtSigned(player.pred_movement_score)], ["Current", fmt(player.current_program_strength)], ["Projected", fmt(player.pred_projected_program_strength)]].forEach((row, idx) => {
       pdfCompactKey(pdf, row[0], row[1], "movement model", x + (idx % 3) * 1.12, y + 0.34, 1.02, 0.52);
     });
@@ -2068,7 +2074,7 @@ function buildSummary(player) {
     <strong>${fmtSigned(player.BPM)} BPM</strong>, <strong>${fmt(player.USG)}% usage</strong>, and
     <strong>${fmt(player.MP)} MPG</strong>. Within ${escapeHtml(player.team)}, the current data places him
     <strong>${bpmRank}</strong> in BPM and <strong>${usgRank}</strong> in usage. Movement model read:
-    <strong>${escapeHtml(movementLabel(player.pred_movement_label))}</strong>
+    <strong>${escapeHtml(movementDisplayLabel(player))}</strong>
     (${fmtSigned(player.pred_movement_score)}).
   `;
 }
@@ -2257,8 +2263,7 @@ function renderModelViews(player) {
   document.getElementById("model-movement").innerHTML = `
     <div class="model-score-line">
       <div>
-        <div class="big-score" style="font-size:1.9rem">${escapeHtml(movementLabel(player.pred_movement_label))}</div>
-        <div class="key-sub">${escapeHtml(movementDirectionText(player.pred_movement_direction))}</div>
+        <div class="big-score" style="font-size:1.9rem">${escapeHtml(movementDisplayLabel(player))}</div>
       </div>
       <div>
         ${valueRow("Movement score", fmtSigned(player.pred_movement_score))}

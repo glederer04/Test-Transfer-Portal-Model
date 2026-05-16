@@ -618,6 +618,12 @@ const metricProfiles = {
     score: row => transferProb(row) * 80 + n(row.BPM) * 4 + n(row.MP) * 0.25 + n(row.USG) * 0.12,
     focus: row => `${fmtPct(transferProb(row))} transfer`
   },
+  movement: {
+    title: "Transfer movement outlook",
+    note: "Ranked by transfer likelihood, projected movement score, current impact, and role context.",
+    score: row => transferProb(row) * 45 + Math.abs(n(row.pred_movement_score)) * 1.8 + n(row.BPM) * 3 + n(row.MP) * 0.2,
+    focus: row => row.movement_show || `${movementLevel(row)} ${fmtSigned(row.pred_movement_score)}`
+  },
   underused: {
     title: "Underused value signals",
     note: "Ranked by impact relative to minutes and model flags for hidden production.",
@@ -715,6 +721,10 @@ function movementLevel(row) {
   return normalize(row.pred_movement_label);
 }
 
+function hasMovementIntent(query) {
+  return /\b(where|go|goes|going|land|lands|landing|spot|fit|location|closer to home|better team|better program|stronger team|stronger program|worse team|worse program|weaker team|weaker program|move up|move down|step up|step-up|step down|step-down|lateral|similar level|same level|movement)\b/.test(query);
+}
+
 function playerLink(row) {
   const name = escapeHtml(row.player || "Unknown player");
   const pid = encodeURIComponent(row.pid || "");
@@ -749,6 +759,7 @@ function detectRole(query) {
 function detectMetric(query) {
   if (/\b(similar|comp|compare|comparison|like)\b/.test(query)) return "similar";
   if (/\b(underused|sleeper|sleepers|hidden|undervalued|low role)\b/.test(query)) return "underused";
+  if (hasMovementIntent(query)) return "movement";
   if (/\b(shoot|shooter|shooters|three|3pt|3 point|3-point|spacing|spacer)\b/.test(query)) return "shooting";
   if (/\b(efficient|efficiency|true shooting|ts|efg|ortg|offensive rating)\b/.test(query)) return "efficiency";
   if (/\b(rebound|rebounder|rebounders|boards|glass)\b/.test(query)) return "rebounding";
@@ -800,7 +811,7 @@ function parseQuestion(question) {
   const role = detectRole(query);
   const metric = detectMetric(query);
   const mentionedPlayer = metric === "similar" ? findMentionedPlayer(query) : null;
-  const hasBasketballIntent = metric !== "impact" || role || team || conf || /\b(team|teams|conference|conference|player|players|guard|wing|big|bpm|usage|minutes|portal|basketball|transfer|roster|target|fit|movement|step up|step down|lateral)\b/.test(query);
+  const hasBasketballIntent = metric !== "impact" || role || team || conf || /\b(team|teams|conference|conference|player|players|guard|wing|big|bpm|usage|minutes|portal|basketball|transfer|roster|target|fit|movement|where|landing|location|better team|worse team|step up|step down|lateral)\b/.test(query);
   return { query, team, conf, role, metric, mentionedPlayer, hasBasketballIntent };
 }
 
@@ -810,19 +821,19 @@ function filteredPlayers(parsed) {
   if (parsed.team) rows = rows.filter(row => normalize(row.team) === normalize(parsed.team));
   if (parsed.conf) rows = rows.filter(row => normalize(row.conf) === normalize(parsed.conf));
   if (parsed.role) rows = rows.filter(row => roleMatches(row, parsed.role));
-  if (parsed.metric === "transfer" || /\b(transfer|portal|available|leave|leaving)\b/.test(parsed.query)) {
+  if (parsed.metric === "transfer" || parsed.metric === "movement" || /\b(transfer|portal|available|leave|leaving)\b/.test(parsed.query)) {
     rows = rows.filter(row => transferProb(row) >= 0.08 || flag(row.pred_transfer_flag));
   }
   if (/\b(return|stay|staying)\b/.test(parsed.query)) {
     rows = rows.filter(row => returnProb(row) >= 0.25);
   }
-  if (/\b(step up|step-up|up transfer|move up|upside move)\b/.test(parsed.query)) {
+  if (/\b(step up|step-up|up transfer|move up|upside move|better team|better program|stronger team|stronger program)\b/.test(parsed.query)) {
     rows = rows.filter(row => movementDirection(row) === "up" || n(row.pred_movement_score) >= 10);
   }
   if (/\b(lateral|similar level|same level)\b/.test(parsed.query)) {
     rows = rows.filter(row => movementDirection(row) === "lateral" || Math.abs(n(row.pred_movement_score)) < 10);
   }
-  if (/\b(step down|step-down|move down|down transfer)\b/.test(parsed.query)) {
+  if (/\b(step down|step-down|move down|down transfer|worse team|worse program|weaker team|weaker program)\b/.test(parsed.query)) {
     rows = rows.filter(row => movementDirection(row) === "down" || n(row.pred_movement_score) <= -10);
   }
   if (/\b(major step up|big step up|huge step up)\b/.test(parsed.query)) {
@@ -968,9 +979,14 @@ function statTilesFor(row, metric) {
     ]
   };
   const tiles = [...common, ...(profiles[metric] || profiles.impact)];
-  const hasTransferIntent = /\b(transfer|transfers|portal|leave|leaving|available|availability)\b/.test(row.pulseQuery || "");
+  const queryText = row.pulseQuery || "";
+  const hasTransferIntent = /\b(transfer|transfers|portal|leave|leaving|available|availability)\b/.test(queryText);
+  const hasMoveIntent = hasMovementIntent(queryText);
   if (hasTransferIntent && !tiles.some(([label]) => label === "Transfer")) {
     return [...tiles, ["Transfer", fmtPct(transferProb(row))]];
+  }
+  if (hasMoveIntent && !tiles.some(([label]) => label === "Movement")) {
+    return [...tiles, ["Movement", row.movement_show || fmtSigned(row.pred_movement_score)]];
   }
   return tiles;
 }
