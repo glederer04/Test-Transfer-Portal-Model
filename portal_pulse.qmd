@@ -248,6 +248,20 @@ format:
   text-decoration-style: solid;
 }
 
+.player-name-with-badges {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.player-status-badge {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  flex: 0 0 auto;
+  vertical-align: -2px;
+}
+
 .player-sub {
   color: var(--pulse-muted);
   font-size: 0.86rem;
@@ -453,6 +467,12 @@ format:
 let pulsePlayers = [];
 let teamNames = [];
 let confNames = [];
+let nbaBadgePidSet = new Set();
+
+const badgeHelp = {
+  eligibility: "Model flag: senior who is likely to leave and likely to be out of college eligibility. This is not a certainty.",
+  nba: "Model flag: likely NBA-departure profile based on strong production, low transfer probability, leave probability, and youth. This is not a certainty."
+};
 
 const stopWords = new Set(["a", "an", "and", "are", "as", "at", "be", "best", "for", "from", "give", "in", "is", "like", "me", "of", "on", "players", "player", "show", "the", "to", "top", "what", "who", "with"]);
 
@@ -551,6 +571,69 @@ function returnProb(row) {
   return pct(row.pred_return);
 }
 
+function leaveProb(row) {
+  if (row.pred_leave !== undefined && row.pred_leave !== "") return pct(row.pred_leave);
+  return clamp(1 - returnProb(row), 0, 1);
+}
+
+function isEligibilityBadgePlayer(row) {
+  return String(row.class || "").trim() === "Sr"
+    && leaveProb(row) >= 0.65
+    && transferProb(row) <= 0.45;
+}
+
+function nbaBadgeScore(row) {
+  const classNum = n(row.class_num);
+  return leaveProb(row) * 45
+    + (1 - transferProb(row)) * 20
+    + n(row.BPM) * 4
+    + n(row.PTS) * 1.3
+    + n(row.USG) * 0.35
+    + n(row.MP) * 0.15
+    + (classNum <= 1 ? 18 : classNum === 2 ? 10 : classNum === 3 ? 3 : 0);
+}
+
+function isNbaBadgeCandidate(row) {
+  return !isEligibilityBadgePlayer(row)
+    && ["Fr", "So", "Jr"].includes(String(row.class || "").trim())
+    && n(row.GP) >= 8
+    && n(row.MP) >= 15
+    && n(row.PTS) >= 8
+    && n(row.BPM) >= 6
+    && n(row.USG) >= 18
+    && leaveProb(row) >= 0.35
+    && transferProb(row) <= 0.18;
+}
+
+function prepareNbaBadgeSet(rows) {
+  nbaBadgePidSet = new Set(
+    rows
+      .filter(isNbaBadgeCandidate)
+      .sort((a, b) => nbaBadgeScore(b) - nbaBadgeScore(a))
+      .slice(0, 50)
+      .map(row => String(row.pid))
+  );
+}
+
+function playerBadgeType(row) {
+  if (isEligibilityBadgePlayer(row)) return "eligibility";
+  if (nbaBadgePidSet.has(String(row.pid))) return "nba";
+  return "";
+}
+
+function playerBadgeMarkup(row) {
+  const type = playerBadgeType(row);
+  if (!type) return "";
+  const src = type === "eligibility" ? "images/flag.svg" : "images/NBA.png";
+  const alt = type === "eligibility" ? "Eligibility flag" : "NBA flag";
+  const help = badgeHelp[type];
+  return `<img class="player-status-badge player-status-badge-${type}" src="${src}" alt="${alt}" title="${escapeHtml(help)}" aria-label="${escapeHtml(help)}">`;
+}
+
+function playerNameWithBadges(row, nameHtml) {
+  return `<span class="player-name-with-badges">${nameHtml}${playerBadgeMarkup(row)}</span>`;
+}
+
 function threeAttemptsPerGame(row) {
   const gp = Math.max(n(row.GP), 1);
   return n(row.TPA) / gp;
@@ -615,8 +698,10 @@ function hasMovementIntent(query) {
 function playerLink(row) {
   const name = escapeHtml(row.player || "Unknown player");
   const pid = encodeURIComponent(row.pid || "");
-  if (!pid) return name;
-  return `<a class="player-link" href="player_pages.html?open=player&pid=${pid}" aria-label="Open player page for ${name}">${name}</a>`;
+  const linkedName = pid
+    ? `<a class="player-link" href="player_pages.html?open=player&pid=${pid}" aria-label="Open player page for ${name}">${name}</a>`
+    : name;
+  return playerNameWithBadges(row, linkedName);
 }
 
 function enrich(row) {
@@ -1023,6 +1108,7 @@ Papa.parse("data/complete_2026_scored.csv", {
   skipEmptyLines: true,
   complete: function(results) {
     pulsePlayers = results.data.filter(row => row.player && row.pid).map(enrich);
+    prepareNbaBadgeSet(pulsePlayers);
     teamNames = [...new Set(pulsePlayers.map(row => row.team).filter(Boolean))].sort();
     confNames = [...new Set(pulsePlayers.map(row => row.conf).filter(Boolean))].sort();
     setupPulse();

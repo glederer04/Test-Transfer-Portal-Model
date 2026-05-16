@@ -259,6 +259,20 @@ table.dataTable tbody td {
   text-decoration-style: solid;
 }
 
+.player-name-with-badges {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.player-status-badge {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  flex: 0 0 auto;
+  vertical-align: -2px;
+}
+
 .table-usage-note {
   color: #4f5a67;
   font-size: 0.95rem;
@@ -505,6 +519,12 @@ tr.shown td.details-control::before {
 let playerData = [];
 let filteredPlayers = [];
 let playerTable = null;
+let nbaBadgePidSet = new Set();
+
+const badgeHelp = {
+  eligibility: "Model flag: senior who is likely to leave and likely to be out of college eligibility. This is not a certainty.",
+  nba: "Model flag: likely NBA-departure profile based on strong production, low transfer probability, leave probability, and youth. This is not a certainty."
+};
 
 const tableColumns = [
   "player",
@@ -568,8 +588,10 @@ function escapeHtml(value) {
 function playerProfileLink(row) {
   const name = escapeHtml(row.player || "");
   const pid = encodeURIComponent(row.pid || "");
-  if (!pid) return name;
-  return `<a class="player-profile-link" href="player_pages.html?open=player&pid=${pid}" data-help="Click to open the player page for ${name} in this tab" aria-label="Open player page for ${name}">${name}</a>`;
+  const linkedName = pid
+    ? `<a class="player-profile-link" href="player_pages.html?open=player&pid=${pid}" data-help="Click to open the player page for ${name} in this tab" aria-label="Open player page for ${name}">${name}</a>`
+    : name;
+  return playerNameWithBadges(row, linkedName);
 }
 
 function parseOptionalNumber(val) {
@@ -590,6 +612,64 @@ function parseProbability(val) {
   const num = toNumber(str);
   if (num > 1) return clamp(num / 100, 0, 1);
   return clamp(num, 0, 1);
+}
+
+function isEligibilityBadgePlayer(row) {
+  return String(row.class || "").trim() === "Sr"
+    && parseProbability(row.pred_leave) >= 0.65
+    && parseProbability(row.transfer_show || row.transfer_prob_mean || row.pred_transfer) <= 0.45;
+}
+
+function nbaBadgeScore(row) {
+  const classNum = toNumber(row.class_num);
+  return parseProbability(row.pred_leave) * 45
+    + (1 - parseProbability(row.transfer_show || row.transfer_prob_mean || row.pred_transfer)) * 20
+    + toNumber(row.BPM) * 4
+    + toNumber(row.PTS) * 1.3
+    + toNumber(row.USG) * 0.35
+    + toNumber(row.MP) * 0.15
+    + (classNum <= 1 ? 18 : classNum === 2 ? 10 : classNum === 3 ? 3 : 0);
+}
+
+function isNbaBadgeCandidate(row) {
+  return !isEligibilityBadgePlayer(row)
+    && ["Fr", "So", "Jr"].includes(String(row.class || "").trim())
+    && toNumber(row.GP) >= 8
+    && toNumber(row.MP) >= 15
+    && toNumber(row.PTS) >= 8
+    && toNumber(row.BPM) >= 6
+    && toNumber(row.USG) >= 18
+    && parseProbability(row.pred_leave) >= 0.35
+    && parseProbability(row.transfer_show || row.transfer_prob_mean || row.pred_transfer) <= 0.18;
+}
+
+function prepareNbaBadgeSet(rows) {
+  nbaBadgePidSet = new Set(
+    rows
+      .filter(isNbaBadgeCandidate)
+      .sort((a, b) => nbaBadgeScore(b) - nbaBadgeScore(a))
+      .slice(0, 50)
+      .map(row => String(row.pid))
+  );
+}
+
+function playerBadgeType(row) {
+  if (isEligibilityBadgePlayer(row)) return "eligibility";
+  if (nbaBadgePidSet.has(String(row.pid))) return "nba";
+  return "";
+}
+
+function playerBadgeMarkup(row) {
+  const type = playerBadgeType(row);
+  if (!type) return "";
+  const src = type === "eligibility" ? "images/flag.svg" : "images/NBA.png";
+  const alt = type === "eligibility" ? "Eligibility flag" : "NBA flag";
+  const help = badgeHelp[type];
+  return `<img class="player-status-badge player-status-badge-${type}" src="${src}" alt="${alt}" title="${escapeHtml(help)}" aria-label="${escapeHtml(help)}">`;
+}
+
+function playerNameWithBadges(row, nameHtml) {
+  return `<span class="player-name-with-badges">${nameHtml}${playerBadgeMarkup(row)}</span>`;
 }
 
 function pct1(value) {
@@ -1259,6 +1339,7 @@ Papa.parse("data/complete_2026_scored.csv", {
   skipEmptyLines: true,
   complete: function(results) {
     playerData = enrichData(results.data);
+    prepareNbaBadgeSet(playerData);
 
     if (!playerData || playerData.length === 0) {
       document.getElementById("filter-status").textContent = "No data loaded.";

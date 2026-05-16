@@ -231,6 +231,31 @@ format:
   margin-bottom: 10px;
 }
 
+.player-name-with-badges {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.player-status-badge {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  flex: 0 0 auto;
+  vertical-align: -2px;
+}
+
+.player-name .player-status-badge {
+  width: 24px;
+  height: 24px;
+}
+
+.suggestion-name .player-status-badge,
+.peer-link .player-status-badge {
+  width: 15px;
+  height: 15px;
+}
+
 .player-meta {
   display: flex;
   flex-wrap: wrap;
@@ -1071,6 +1096,12 @@ let activeScope = "team";
 let activeMetricView = "impact";
 let activeModelView = "transfer";
 let activePeerCount = 5;
+let nbaBadgePidSet = new Set();
+
+const badgeHelp = {
+  eligibility: "Model flag: senior who is likely to leave and likely to be out of college eligibility. This is not a certainty.",
+  nba: "Model flag: likely NBA-departure profile based on strong production, low transfer probability, leave probability, and youth. This is not a certainty."
+};
 
 const scopeLabels = {
   team: "Team",
@@ -1122,6 +1153,69 @@ function parseProbability(value) {
   if (String(value).includes("%")) return clamp(parsed / 100, 0, 1);
   if (parsed > 1) return clamp(parsed / 100, 0, 1);
   return clamp(parsed, 0, 1);
+}
+
+function leaveProb(player) {
+  if (player.pred_leave !== undefined && player.pred_leave !== "") return parseProbability(player.pred_leave);
+  return clamp(1 - parseProbability(player.return_show || player.pred_return), 0, 1);
+}
+
+function isEligibilityBadgePlayer(player) {
+  return String(player.class || "").trim() === "Sr"
+    && leaveProb(player) >= 0.65
+    && parseProbability(player.transfer_show || player.transfer_prob_mean || player.pred_transfer) <= 0.45;
+}
+
+function nbaBadgeScore(player) {
+  const classNum = num(player.class_num);
+  return leaveProb(player) * 45
+    + (1 - parseProbability(player.transfer_show || player.transfer_prob_mean || player.pred_transfer)) * 20
+    + num(player.BPM) * 4
+    + num(player.PTS) * 1.3
+    + num(player.USG) * 0.35
+    + num(player.MP) * 0.15
+    + (classNum <= 1 ? 18 : classNum === 2 ? 10 : classNum === 3 ? 3 : 0);
+}
+
+function isNbaBadgeCandidate(player) {
+  return !isEligibilityBadgePlayer(player)
+    && ["Fr", "So", "Jr"].includes(String(player.class || "").trim())
+    && num(player.GP) >= 8
+    && num(player.MP) >= 15
+    && num(player.PTS) >= 8
+    && num(player.BPM) >= 6
+    && num(player.USG) >= 18
+    && leaveProb(player) >= 0.35
+    && parseProbability(player.transfer_show || player.transfer_prob_mean || player.pred_transfer) <= 0.18;
+}
+
+function prepareNbaBadgeSet(players) {
+  nbaBadgePidSet = new Set(
+    players
+      .filter(isNbaBadgeCandidate)
+      .sort((a, b) => nbaBadgeScore(b) - nbaBadgeScore(a))
+      .slice(0, 50)
+      .map(player => String(player.pid))
+  );
+}
+
+function playerBadgeType(player) {
+  if (isEligibilityBadgePlayer(player)) return "eligibility";
+  if (nbaBadgePidSet.has(String(player.pid))) return "nba";
+  return "";
+}
+
+function playerBadgeMarkup(player) {
+  const type = playerBadgeType(player);
+  if (!type) return "";
+  const src = type === "eligibility" ? "images/flag.svg" : "images/NBA.png";
+  const alt = type === "eligibility" ? "Eligibility flag" : "NBA flag";
+  const help = badgeHelp[type];
+  return `<img class="player-status-badge player-status-badge-${type}" src="${src}" alt="${alt}" title="${escapeHtml(help)}" aria-label="${escapeHtml(help)}">`;
+}
+
+function playerNameWithBadges(player, nameHtml) {
+  return `<span class="player-name-with-badges">${nameHtml}${playerBadgeMarkup(player)}</span>`;
 }
 
 function fmt(value, digits = 1) {
@@ -1883,7 +1977,7 @@ function renderPlayerSuggestions(search) {
 
   suggestions.innerHTML = visiblePlayers.slice(0, 8).map(row => `
     <button type="button" class="suggestion-option" data-pid="${escapeHtml(row.pid)}">
-      <div class="suggestion-name">${escapeHtml(row.player)}</div>
+      <div class="suggestion-name">${playerNameWithBadges(row, escapeHtml(row.player))}</div>
       <div class="suggestion-sub">${escapeHtml(row.team)} - ${escapeHtml(row.conf || "")} - ${escapeHtml(row.Role || "")} - ${fmtSigned(row.BPM)} BPM</div>
     </button>
   `).join("");
@@ -1914,7 +2008,7 @@ function renderProfile(player) {
   document.getElementById("player-select").value = player.pid;
   document.getElementById("player-suggestions").classList.remove("show");
 
-  document.getElementById("player-name").textContent = player.player;
+  document.getElementById("player-name").innerHTML = playerNameWithBadges(player, escapeHtml(player.player));
   document.getElementById("player-meta").innerHTML = [
     player.team,
     player.conf,
@@ -2250,7 +2344,7 @@ function renderPeers(player) {
       ${peers.map(row => `
         <div class="peer-row">
           <div class="peer-main">
-            <button type="button" class="peer-link" data-pid="${escapeHtml(row.pid)}">${escapeHtml(row.player)}</button>
+            <button type="button" class="peer-link" data-pid="${escapeHtml(row.pid)}">${playerNameWithBadges(row, escapeHtml(row.player))}</button>
             <div class="peer-sub">${escapeHtml(row.team)} - ${escapeHtml(row.Role || "")}</div>
           </div>
           <div class="peer-num">${fmtSigned(row.BPM)}</div>
@@ -2409,6 +2503,7 @@ Papa.parse("data/complete_2026_scored.csv", {
     allPlayers = results.data
       .filter(row => row.player && row.pid)
       .map(enrich);
+    prepareNbaBadgeSet(allPlayers);
 
     setupControls();
   },

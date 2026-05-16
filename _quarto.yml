@@ -9,6 +9,7 @@ project:
     - portal_pulse.qmd
   resources:
     - data/
+    - images/
     - favicon.ico
 
 website:
