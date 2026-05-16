@@ -400,6 +400,42 @@ ul.task-list li input[type="checkbox"] {
   border-radius: 7px;
   padding: 7px;
   min-width: 0;
+  position: relative;
+}
+
+.stat-tile.predicted {
+  background: #fff7e8;
+  border-color: #efd39d;
+}
+
+.stat-tile.predicted:hover::after,
+.stat-tile.predicted:focus-within::after {
+  content: attr(data-help);
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 7px);
+  z-index: 10;
+  width: min(220px, 72vw);
+  background: #142746;
+  color: #fff;
+  border-radius: 7px;
+  padding: 7px 9px;
+  font-size: 0.76rem;
+  font-weight: 750;
+  line-height: 1.25;
+  box-shadow: 0 8px 18px rgba(15, 31, 56, 0.2);
+  text-transform: none;
+}
+
+.stat-tile.predicted:hover::before,
+.stat-tile.predicted:focus-within::before {
+  content: "";
+  position: absolute;
+  left: 12px;
+  bottom: calc(100% + 1px);
+  border: 6px solid transparent;
+  border-top-color: #142746;
+  z-index: 11;
 }
 
 .stat-value {
@@ -895,91 +931,111 @@ function answerQuestion(question) {
 }
 
 function statTilesFor(row, metric) {
+  const stat = (label, value) => ({ label, value, predicted: false, help: "" });
+  const predicted = (label, value, help) => ({ label, value, predicted: true, help });
+
+  const transferTile = predicted(
+    "Transfer",
+    fmtPct(transferProb(row)),
+    "Model estimate of how likely this player is to enter the portal."
+  );
+  const returnTile = predicted(
+    "Return",
+    fmtPct(returnProb(row)),
+    "Model estimate of how likely this player is to stay with the current team."
+  );
+  const movementTile = predicted(
+    "Movement",
+    row.movement_show || fmtSigned(row.pred_movement_score),
+    "Model estimate of whether a transfer would be a step up, lateral move, or step down."
+  );
+
   const common = [
-    ["BPM", fmtSigned(row.BPM)],
-    ["PTS", fmt(row.PTS)]
+    stat("BPM", fmtSigned(row.BPM)),
+    stat("PTS", fmt(row.PTS))
   ];
   const profiles = {
     impact: [
-      ["PORPAG", fmt(row.PORPAG)],
-      ["USG", `${fmt(row.USG)}%`],
-      ["MPG", fmt(row.MP)],
-      ["Transfer", fmtPct(transferProb(row))]
+      stat("PORPAG", fmt(row.PORPAG)),
+      stat("USG", `${fmt(row.USG)}%`),
+      stat("MPG", fmt(row.MP))
     ],
     efficiency: [
-      ["TS", fmtPct(row["TS."])],
-      ["eFG", fmtPct(row["eFG."])],
-      ["ORTG", fmt(row.ORTG)],
-      ["USG", `${fmt(row.USG)}%`]
+      stat("TS", fmtPct(row["TS."])),
+      stat("eFG", fmtPct(row["eFG."])),
+      stat("ORTG", fmt(row.ORTG))
     ],
     shooting: [
-      ["3PT", fmtPct(row["TP."])],
-      ["3PA/G", fmt(threeAttemptsPerGame(row))],
-      ["TS", fmtPct(row["TS."])],
-      ["eFG", fmtPct(row["eFG."])]
+      stat("3PT", fmtPct(row["TP."])),
+      stat("3PA/G", fmt(threeAttemptsPerGame(row))),
+      stat("TS", fmtPct(row["TS."]))
     ],
     scoring: [
-      ["USG", `${fmt(row.USG)}%`],
-      ["TS", fmtPct(row["TS."])],
-      ["OBPM", fmtSigned(row.OBPM)],
-      ["MPG", fmt(row.MP)]
+      stat("USG", `${fmt(row.USG)}%`),
+      stat("TS", fmtPct(row["TS."])),
+      stat("MPG", fmt(row.MP))
     ],
     playmaking: [
-      ["AST", fmt(row.AST)],
-      ["AST%", `${fmt(row["AST."])}%`],
-      ["AST/TOV", fmt(row.AST_TOV)],
-      ["TO%", `${fmt(row["TO."])}%`]
+      stat("AST", fmt(row.AST)),
+      stat("AST%", `${fmt(row["AST."])}%`),
+      stat("AST/TOV", fmt(row.AST_TOV))
     ],
     rebounding: [
-      ["REB", fmt(row.REB)],
-      ["ORB", fmt(row.ORB)],
-      ["DRB", fmt(row.DRB)],
-      ["DRB%", `${fmt(row["DRB."])}%`]
+      stat("REB", fmt(row.REB)),
+      stat("ORB", fmt(row.ORB)),
+      stat("DRB%", `${fmt(row["DRB."])}%`)
     ],
     defense: [
-      ["DBPM", fmtSigned(row.DBPM)],
-      ["STL", fmt(row.STL)],
-      ["BLK", fmt(row.BLK)],
-      ["D-PORPAG", fmt(row.D_PORPAG)]
+      stat("DBPM", fmtSigned(row.DBPM)),
+      stat("STL", fmt(row.STL)),
+      stat("BLK", fmt(row.BLK))
     ],
     transfer: [
-      ["Return", fmtPct(returnProb(row))],
-      ["MPG", fmt(row.MP)],
-      ["USG", `${fmt(row.USG)}%`],
-      ["Transfer", fmtPct(transferProb(row))]
+      stat("MPG", fmt(row.MP)),
+      stat("USG", `${fmt(row.USG)}%`),
+      returnTile,
+      transferTile
     ],
     movement: [
-      ["Movement", row.movement_show || fmtSigned(row.pred_movement_score)],
-      ["Transfer", fmtPct(transferProb(row))]
+      stat("MPG", fmt(row.MP)),
+      stat("USG", `${fmt(row.USG)}%`),
+      movementTile,
+      transferTile
     ],
     underused: [
-      ["MPG", fmt(row.MP)],
-      ["USG", `${fmt(row.USG)}%`],
-      ["PORPAG", fmt(row.PORPAG)],
-      ["Transfer", fmtPct(transferProb(row))]
+      stat("MPG", fmt(row.MP)),
+      stat("USG", `${fmt(row.USG)}%`),
+      stat("PORPAG", fmt(row.PORPAG))
     ],
     similar: [
-      ["USG", `${fmt(row.USG)}%`],
-      ["MPG", fmt(row.MP)],
-      ["REB", fmt(row.REB)],
-      ["AST", fmt(row.AST)]
+      stat("USG", `${fmt(row.USG)}%`),
+      stat("MPG", fmt(row.MP)),
+      stat("REB", fmt(row.REB))
     ]
   };
   const tiles = [...common, ...(profiles[metric] || profiles.impact)];
   const queryText = row.pulseQuery || "";
   const hasTransferIntent = /\b(transfer|transfers|portal|leave|leaving|available|availability)\b/.test(queryText);
   const hasMoveIntent = hasMovementIntent(queryText);
+  const hasLabel = (items, label) => items.some(item => item.label === label);
+
   if (hasMoveIntent) {
-    const withMovement = tiles.some(([label]) => label === "Movement")
+    const withMovement = hasLabel(tiles, "Movement")
       ? tiles
-      : [...tiles, ["Movement", row.movement_show || fmtSigned(row.pred_movement_score)]];
-    return withMovement.some(([label]) => label === "Transfer")
+      : [...tiles, movementTile];
+    return hasLabel(withMovement, "Transfer")
       ? withMovement
-      : [...withMovement, ["Transfer", fmtPct(transferProb(row))]];
+      : [...withMovement, transferTile];
   }
-  if (hasTransferIntent && !tiles.some(([label]) => label === "Transfer")) {
-    return [...tiles, ["Transfer", fmtPct(transferProb(row))]];
+
+  if (hasTransferIntent && !hasLabel(tiles, "Transfer")) {
+    return [...tiles, transferTile];
   }
+
+  if (!hasLabel(tiles, "Transfer")) {
+    return [...tiles, transferTile];
+  }
+
   return tiles;
 }
 
@@ -1000,7 +1056,7 @@ function renderRows(rows, focus, metric = "impact") {
             </div>
           </div>
           <div class="stat-row">
-            ${statTilesFor(row, metric).map(([label, value]) => statTile(label, value)).join("")}
+            ${statTilesFor(row, metric).map(tile => statTile(tile)).join("")}
           </div>
         </article>
       `).join("")}
@@ -1008,11 +1064,13 @@ function renderRows(rows, focus, metric = "impact") {
   `;
 }
 
-function statTile(label, value) {
+function statTile(tile) {
+  const classes = tile.predicted ? "stat-tile predicted" : "stat-tile";
+  const help = tile.predicted ? ` data-help="${escapeHtml(tile.help)}" title="${escapeHtml(tile.help)}"` : "";
   return `
-    <div class="stat-tile">
-      <div class="stat-value">${escapeHtml(value)}</div>
-      <div class="stat-label">${escapeHtml(label)}</div>
+    <div class="${classes}"${help}>
+      <div class="stat-value">${escapeHtml(tile.value)}</div>
+      <div class="stat-label">${escapeHtml(tile.label)}</div>
     </div>
   `;
 }
