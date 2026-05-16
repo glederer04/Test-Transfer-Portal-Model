@@ -575,6 +575,14 @@ function fmtPct(value) {
   return `${valueNum.toFixed(1)}%`;
 }
 
+function movementDirection(row) {
+  return normalize(row.pred_movement_direction);
+}
+
+function movementLevel(row) {
+  return normalize(row.pred_movement_label);
+}
+
 function playerLink(row) {
   const name = escapeHtml(row.player || "Unknown player");
   const pid = encodeURIComponent(row.pid || "");
@@ -615,7 +623,7 @@ function detectMetric(query) {
   if (/\b(assist|assists|playmaker|playmaking|passer|passing|creator|creation)\b/.test(query)) return "playmaking";
   if (/\b(defense|defensive|defender|steal|steals|block|blocks|rim protector)\b/.test(query)) return "defense";
   if (/\b(score|scorer|scorers|points|ppg|bucket)\b/.test(query)) return "scoring";
-  if (/\b(transfer|transfers|portal|leave|leaving|available|availability)\b/.test(query)) return "transfer";
+  if (/\b(transfer|transfers|portal|leave|leaving|available|availability|step up|step-up|step down|step-down|lateral|move up|move down)\b/.test(query)) return "transfer";
   return "impact";
 }
 
@@ -660,7 +668,7 @@ function parseQuestion(question) {
   const role = detectRole(query);
   const metric = detectMetric(query);
   const mentionedPlayer = metric === "similar" ? findMentionedPlayer(query) : null;
-  const hasBasketballIntent = metric !== "impact" || role || team || conf || /\b(team|teams|conference|conference|player|players|guard|wing|big|bpm|usage|minutes|portal|basketball|transfer|roster|target|fit)\b/.test(query);
+  const hasBasketballIntent = metric !== "impact" || role || team || conf || /\b(team|teams|conference|conference|player|players|guard|wing|big|bpm|usage|minutes|portal|basketball|transfer|roster|target|fit|movement|step up|step down|lateral)\b/.test(query);
   return { query, team, conf, role, metric, mentionedPlayer, hasBasketballIntent };
 }
 
@@ -676,14 +684,17 @@ function filteredPlayers(parsed) {
   if (/\b(return|stay|staying)\b/.test(parsed.query)) {
     rows = rows.filter(row => returnProb(row) >= 0.25);
   }
-  if (/\b(high major|high-major)\b/.test(parsed.query)) {
-    rows = rows.filter(row => normalize(row.pred_destination_clean || row.pred_destination_tier).includes("high"));
+  if (/\b(step up|step-up|up transfer|move up|upside move)\b/.test(parsed.query)) {
+    rows = rows.filter(row => movementDirection(row) === "up" || n(row.pred_movement_score) >= 10);
   }
-  if (/\b(upper mid|upper-mid)\b/.test(parsed.query)) {
-    rows = rows.filter(row => normalize(row.pred_destination_clean || row.pred_destination_tier).includes("upper"));
+  if (/\b(lateral|similar level|same level)\b/.test(parsed.query)) {
+    rows = rows.filter(row => movementDirection(row) === "lateral" || Math.abs(n(row.pred_movement_score)) < 10);
   }
-  if (/\b(low major|low-major)\b/.test(parsed.query)) {
-    rows = rows.filter(row => normalize(row.pred_destination_clean || row.pred_destination_tier).includes("low"));
+  if (/\b(step down|step-down|move down|down transfer)\b/.test(parsed.query)) {
+    rows = rows.filter(row => movementDirection(row) === "down" || n(row.pred_movement_score) <= -10);
+  }
+  if (/\b(major step up|big step up|huge step up)\b/.test(parsed.query)) {
+    rows = rows.filter(row => movementLevel(row).includes("major step up"));
   }
   return rows;
 }

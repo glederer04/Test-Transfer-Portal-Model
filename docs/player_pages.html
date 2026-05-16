@@ -96,7 +96,7 @@ ul.task-list li input[type="checkbox"] {
   </li>  
   <li class="nav-item">
     <a class="nav-link" href="./projections.html"> 
-<span class="menu-text">Projections1</span></a>
+<span class="menu-text">Model Projections</span></a>
   </li>  
   <li class="nav-item">
     <a class="nav-link" href="./player_table.html"> 
@@ -1158,12 +1158,12 @@ ul.task-list li input[type="checkbox"] {
         <div class="panel-head">
           <div>
             <div class="panel-title">Model Outlook</div>
-            <div class="panel-kicker">Transfer probability, likely destination tier, and projected BPM by landing level.</div>
+            <div class="panel-kicker">Transfer probability, likely movement level, and projected BPM by program level.</div>
           </div>
           <div id="view-buttons" class="view-buttons"></div>
         </div>
         <div id="model-transfer" class="model-view"></div>
-        <div id="model-destination" class="model-view"></div>
+        <div id="model-movement" class="model-view"></div>
         <div id="model-bpm" class="model-view"></div>
       </div>
     </section>
@@ -1218,7 +1218,7 @@ const metricViews = {
 
 const modelViews = {
   transfer: "Transfer",
-  destination: "Destination",
+  movement: "Movement",
   bpm: "Projected BPM"
 };
 
@@ -1344,15 +1344,25 @@ function getScopeName(player, scope) {
   return "NCAA";
 }
 
-function destinationTier(row) {
-  const label = row.pred_destination_clean || row.pred_destination_tier || "";
-  if (label) return String(label).replaceAll("_", " ").replace(/\b\w/g, ch => ch.toUpperCase());
-  const probs = [
-    ["High Major", parseProbability(row.dest_prob_high)],
-    ["Upper Mid", parseProbability(row.dest_prob_upper_mid)],
-    ["Low Major", parseProbability(row.dest_prob_low)]
-  ].sort((a, b) => b[1] - a[1]);
-  return probs[0][0];
+function movementLabel(value) {
+  if (!value) return "Unknown";
+  return String(value).replaceAll("_", " ").replace(/\b\w/g, ch => ch.toUpperCase());
+}
+
+function movementDirectionText(value) {
+  const direction = String(value || "").toLowerCase();
+  if (direction === "up") return "Step up";
+  if (direction === "down") return "Step down";
+  if (direction === "lateral") return "Lateral move";
+  return "Unknown";
+}
+
+function programLevelFromStrength(value) {
+  const score = cleanNumber(value);
+  if (score === null) return "Unknown";
+  if (score >= 65) return "High-major level";
+  if (score >= 45) return "Upper-mid level";
+  return "Development level";
 }
 
 function enrich(row) {
@@ -1372,9 +1382,9 @@ function enrich(row) {
     FT_att_pg: num(row.FTA) / gp,
     transfer_prob: parseProbability(row.transfer_show || row.transfer_prob_mean || row.pred_transfer),
     return_prob: parseProbability(row.return_show || row.pred_return),
-    dest_high_prob: parseProbability(row.dest_prob_high),
-    dest_upper_prob: parseProbability(row.dest_prob_upper_mid),
-    dest_low_prob: parseProbability(row.dest_prob_low),
+    movement_score: cleanNumber(row.pred_movement_score),
+    current_program_strength_num: cleanNumber(row.current_program_strength),
+    projected_program_strength_num: cleanNumber(row.pred_projected_program_strength),
     ast_tov_calc: astTov
   };
 }
@@ -1831,17 +1841,16 @@ function drawModelPdf(pdf, player, x, y, w) {
   pdf.setTextColor(17, 24, 39);
   pdf.setFont("helvetica", "bold");
   pdf.setFontSize(13);
-  if (activeModelView === "destination") {
-    pdf.text(destinationTier(player), x, y);
-    [["High Major", player.dest_high_prob], ["Upper Mid", player.dest_upper_prob], ["Low Major", player.dest_low_prob]].forEach((row, idx) => {
-      const pct = parseProbability(row[1]) * 100;
-      pdfCompactKey(pdf, row[0], `${pct.toFixed(0)}%`, "destination probability", x + (idx % 3) * 1.12, y + 0.34, 1.02, 0.52);
+  if (activeModelView === "movement") {
+    pdf.text(movementLabel(player.pred_movement_label), x, y);
+    [["Score", fmtSigned(player.pred_movement_score)], ["Current", fmt(player.current_program_strength)], ["Projected", fmt(player.pred_projected_program_strength)]].forEach((row, idx) => {
+      pdfCompactKey(pdf, row[0], row[1], "movement model", x + (idx % 3) * 1.12, y + 0.34, 1.02, 0.52);
     });
     return;
   }
   if (activeModelView === "bpm") {
     pdf.text(fmtSigned(player.bpm_show || player.pred_BPM_low), x, y);
-    [["High", player.pred_BPM_high], ["Upper", player.pred_BPM_upper_mid], ["Low", player.pred_BPM_low]].forEach((row, idx) => {
+    [["High", player.pred_BPM_high], ["Upper", player.pred_BPM_upper_mid], ["Develop", player.pred_BPM_low]].forEach((row, idx) => {
       pdfCompactKey(pdf, row[0], fmtSigned(row[1]), "projected BPM", x + (idx % 3) * 1.12, y + 0.34, 1.02, 0.52);
     });
     return;
@@ -2054,13 +2063,13 @@ function buildSummary(player) {
   const teamGroup = getScopeGroup(player, "team");
   const bpmRank = rankInGroup(player, teamGroup, "BPM");
   const usgRank = rankInGroup(player, teamGroup, "USG");
-  const tier = destinationTier(player);
   return `
     <strong>${escapeHtml(player.player)}</strong> profiles as a ${escapeHtml(player.Role || "player")} with
     <strong>${fmtSigned(player.BPM)} BPM</strong>, <strong>${fmt(player.USG)}% usage</strong>, and
     <strong>${fmt(player.MP)} MPG</strong>. Within ${escapeHtml(player.team)}, the current data places him
-    <strong>${bpmRank}</strong> in BPM and <strong>${usgRank}</strong> in usage. Model destination lean:
-    <strong>${escapeHtml(tier)}</strong>.
+    <strong>${bpmRank}</strong> in BPM and <strong>${usgRank}</strong> in usage. Movement model read:
+    <strong>${escapeHtml(movementLabel(player.pred_movement_label))}</strong>
+    (${fmtSigned(player.pred_movement_score)}).
   `;
 }
 
@@ -2245,16 +2254,17 @@ function renderModelViews(player) {
     </div>
   `;
 
-  document.getElementById("model-destination").innerHTML = `
+  document.getElementById("model-movement").innerHTML = `
     <div class="model-score-line">
       <div>
-        <div class="big-score" style="font-size:1.9rem">${escapeHtml(destinationTier(player))}</div>
-        <div class="key-sub">Most likely tier</div>
+        <div class="big-score" style="font-size:1.9rem">${escapeHtml(movementLabel(player.pred_movement_label))}</div>
+        <div class="key-sub">${escapeHtml(movementDirectionText(player.pred_movement_direction))}</div>
       </div>
       <div>
-        ${stackedRow("High Major", player.dest_high_prob)}
-        ${stackedRow("Upper Mid", player.dest_upper_prob)}
-        ${stackedRow("Low Major", player.dest_low_prob)}
+        ${valueRow("Movement score", fmtSigned(player.pred_movement_score))}
+        ${valueRow("Current strength", fmt(player.current_program_strength))}
+        ${valueRow("Projected strength", fmt(player.pred_projected_program_strength))}
+        ${valueRow("Projected level", programLevelFromStrength(player.pred_projected_program_strength))}
       </div>
     </div>
   `;
@@ -2266,14 +2276,23 @@ function renderModelViews(player) {
         <div class="key-sub">Displayed projected BPM</div>
       </div>
       <div>
-        ${bpmProjectionRow("High Major", player.pred_BPM_high, player.pred_BPM_high_lo, player.pred_BPM_high_hi)}
-        ${bpmProjectionRow("Upper Mid", player.pred_BPM_upper_mid, player.pred_BPM_upper_mid_lo, player.pred_BPM_upper_mid_hi)}
-        ${bpmProjectionRow("Low Major", player.pred_BPM_low, player.pred_BPM_low_lo, player.pred_BPM_low_hi)}
+        ${bpmProjectionRow("High-major level", player.pred_BPM_high, player.pred_BPM_high_lo, player.pred_BPM_high_hi)}
+        ${bpmProjectionRow("Upper-mid level", player.pred_BPM_upper_mid, player.pred_BPM_upper_mid_lo, player.pred_BPM_upper_mid_hi)}
+        ${bpmProjectionRow("Development level", player.pred_BPM_low, player.pred_BPM_low_lo, player.pred_BPM_low_hi)}
       </div>
     </div>
   `;
 
   renderModelVisibility();
+}
+
+function valueRow(label, value) {
+  return `
+    <div class="stack-row">
+      <div>${escapeHtml(label)}</div>
+      <strong>${escapeHtml(value)}</strong>
+    </div>
+  `;
 }
 
 function stackedRow(label, value) {
@@ -2444,9 +2463,9 @@ function renderInsights(player) {
   notes.push(`<strong>Skill shape:</strong> Against position peers, assist production is in the ${ordinal(astPct)} percentile and rebounding is in the ${ordinal(rebPct)} percentile. Use that split to frame whether the player is creating value as a connector, finisher, floor spacer, rebounder, or multi-area contributor.`);
 
   if (transfer >= 0.45) {
-    notes.push(`<strong>Roster decision:</strong> The model flags an elevated transfer probability at ${pctProb(transfer)}, so destination level, projected BPM, and role fit should be reviewed together before treating the current production as directly portable.`);
+    notes.push(`<strong>Roster decision:</strong> The model flags an elevated transfer probability at ${pctProb(transfer)}, so movement score, projected BPM, and role fit should be reviewed together before treating the current production as directly portable.`);
   } else {
-    notes.push(`<strong>Roster decision:</strong> The model is more return-leaning at ${pctProb(player.return_prob)} return probability. If the player does move, the destination and projected BPM panels show where the current profile is most likely to translate.`);
+    notes.push(`<strong>Roster decision:</strong> The model is more return-leaning at ${pctProb(player.return_prob)} return probability. If the player does move, the movement and projected BPM panels show how the current profile is most likely to translate.`);
   }
 
   document.getElementById("insight-list").innerHTML = notes.map(note => `<div class="insight">${note}</div>`).join("");

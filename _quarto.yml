@@ -18,7 +18,7 @@ website:
     left:
       - text: Home
         file: index.qmd
-      - text: Projections1
+      - text: Model Projections
         file: projections.qmd
       - text: Player Table
         file: player_table.qmd

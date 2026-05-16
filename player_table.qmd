@@ -629,41 +629,44 @@ function headerTitle(col) {
   return `<span class="column-help" data-help="${help}">${label}</span>`;
 }
 
-function prettifyDestinationTier(tier) {
-  if (!tier) return "Unknown";
-  const t = String(tier).toLowerCase().trim();
-  if (t === "high" || t === "high_major" || t === "high major") return "High Major";
-  if (t === "upper_mid" || t === "upper mid" || t === "upper-mid") return "Upper Mid";
-  if (t === "low" || t === "low_major" || t === "low major") return "Low Major";
-  return String(tier).replaceAll("_", " ").replace(/\b\w/g, c => c.toUpperCase());
-}
-
 function modelRiskLabel(prob) {
   if (prob >= 0.7) return "High";
   if (prob >= 0.4) return "Moderate";
   return "Low";
 }
 
-function getPrimaryDestination(row) {
-  const high = row.dest_prob_high_num;
-  const upper = row.dest_prob_upper_mid_num;
-  const low = row.dest_prob_low_num;
-  const predicted = row.pred_destination_tier && String(row.pred_destination_tier).trim() !== ""
-    ? prettifyDestinationTier(row.pred_destination_tier)
-    : prettifyDestinationTier(high >= upper && high >= low ? "high" : upper >= low ? "upper_mid" : "low");
+function movementLabel(value) {
+  if (!value) return "Unknown";
+  return String(value).replaceAll("_", " ").replace(/\b\w/g, c => c.toUpperCase());
+}
 
-  let prob = low;
-  if (predicted === "High Major") prob = high;
-  if (predicted === "Upper Mid") prob = upper;
+function movementDirectionText(value) {
+  const direction = String(value || "").toLowerCase();
+  if (direction === "up") return "Step up";
+  if (direction === "down") return "Step down";
+  if (direction === "lateral") return "Lateral move";
+  return "Unknown";
+}
 
-  return { tier: predicted, prob };
+function signedMovement(value) {
+  const num = parseFloat(value);
+  if (isNaN(num)) return "-";
+  return `${num >= 0 ? "+" : ""}${num.toFixed(1)}`;
+}
+
+function programLevelFromStrength(value) {
+  const score = parseFloat(value);
+  if (isNaN(score)) return "Unknown";
+  if (score >= 65) return "High-major level";
+  if (score >= 45) return "Upper-mid level";
+  return "Development level";
 }
 
 function getPrimaryBpm(row) {
-  const destination = getPrimaryDestination(row).tier;
-  if (destination === "High Major") return { label: "High Major", value: row.pred_BPM_high };
-  if (destination === "Upper Mid") return { label: "Upper Mid", value: row.pred_BPM_upper_mid };
-  return { label: "Low Major", value: row.pred_BPM_low };
+  const projectedLevel = programLevelFromStrength(row.pred_projected_program_strength);
+  if (projectedLevel === "High-major level") return { label: "High-major level", value: row.pred_BPM_high };
+  if (projectedLevel === "Upper-mid level") return { label: "Upper-mid level", value: row.pred_BPM_upper_mid };
+  return { label: "Development level", value: row.pred_BPM_low };
 }
 
 function enrichData(data) {
@@ -690,18 +693,14 @@ function enrichData(data) {
       ? parseProbability(row.pred_leave)
       : clamp(1 - returnProb, 0, 1);
 
-    const destHigh = parseProbability(row.dest_prob_high);
-    const destUpper = parseProbability(row.dest_prob_upper_mid);
-    const destLow = parseProbability(row.dest_prob_low);
-
     const enriched = {
       ...row,
       transfer_num: transfer,
       return_num: returnProb,
       leave_num: leave,
-      dest_prob_high_num: destHigh,
-      dest_prob_upper_mid_num: destUpper,
-      dest_prob_low_num: destLow,
+      movement_score_num: toNumber(row.pred_movement_score),
+      current_program_strength_num: toNumber(row.current_program_strength),
+      projected_program_strength_num: toNumber(row.pred_projected_program_strength),
       FG_display: pctAttemptsDisplay(fgPct, fgAttemptsPerGame),
       FG_sort: fgPct === null ? 0 : fgPct,
       TP_display: pctAttemptsDisplay(row["TP."], threeAttemptsPerGame),
@@ -709,16 +708,12 @@ function enrichData(data) {
       FT_display: pctAttemptsDisplay(row["FT."], ftAttemptsPerGame),
       FT_sort: parseProbability(row["FT."]),
       primary_bpm_num: parseFloat(getPrimaryBpm({
-        ...row,
-        dest_prob_high_num: destHigh,
-        dest_prob_upper_mid_num: destUpper,
-        dest_prob_low_num: destLow
+        ...row
       }).value)
     };
 
-    if (!enriched.destination_show || String(enriched.destination_show).trim() === "") {
-      const primaryDest = getPrimaryDestination(enriched);
-      enriched.destination_show = `${primaryDest.tier} (${pct1(primaryDest.prob)})`;
+    if (!enriched.movement_show || String(enriched.movement_show).trim() === "") {
+      enriched.movement_show = `${movementLabel(enriched.pred_movement_label)} (${signedMovement(enriched.pred_movement_score)})`;
     }
 
     if (!enriched.bpm_show || String(enriched.bpm_show).trim() === "") {
@@ -1040,7 +1035,6 @@ function tierRow(label, value) {
 }
 
 function formatModelDetails(row) {
-  const primaryDest = getPrimaryDestination(row);
   const primaryBpm = getPrimaryBpm(row);
   const transfer = row.transfer_num;
   const leave = row.leave_num;
@@ -1101,21 +1095,21 @@ function formatModelDetails(row) {
           </div>
 
           <div class="model-box">
-            <div class="model-box-label">Destination Model</div>
-            <div class="model-box-value">${primaryDest.tier}</div>
-            <div class="model-box-note">${pct1(primaryDest.prob)} confidence in selected tier</div>
-            ${tierRow("High", row.dest_prob_high_num)}
-            ${tierRow("Upper", row.dest_prob_upper_mid_num)}
-            ${tierRow("Low", row.dest_prob_low_num)}
+            <div class="model-box-label">Transfer Movement Model</div>
+            <div class="model-box-value">${movementLabel(row.pred_movement_label)}</div>
+            <div class="model-box-note">${movementDirectionText(row.pred_movement_direction)} movement score: ${signedMovement(row.pred_movement_score)}</div>
+            <div class="bpm-row"><span>Current strength</span><strong>${fmt1(row.current_program_strength)}</strong></div>
+            <div class="bpm-row"><span>Projected strength</span><strong>${fmt1(row.pred_projected_program_strength)}</strong></div>
+            <div class="bpm-row"><span>Projected level</span><strong>${programLevelFromStrength(row.pred_projected_program_strength)}</strong></div>
           </div>
 
           <div class="model-box">
             <div class="model-box-label">Projected BPM Model</div>
             <div class="model-box-value">${fmtBPM(primaryBpm.value)}</div>
             <div class="model-box-note">Primary projection for ${primaryBpm.label}</div>
-            <div class="bpm-row"><span>Low Major</span><strong>${fmtBPM(row.pred_BPM_low)}</strong></div>
-            <div class="bpm-row"><span>Upper Mid</span><strong>${fmtBPM(row.pred_BPM_upper_mid)}</strong></div>
-            <div class="bpm-row"><span>High Major</span><strong>${fmtBPM(row.pred_BPM_high)}</strong></div>
+            <div class="bpm-row"><span>Development level</span><strong>${fmtBPM(row.pred_BPM_low)}</strong></div>
+            <div class="bpm-row"><span>Upper-mid level</span><strong>${fmtBPM(row.pred_BPM_upper_mid)}</strong></div>
+            <div class="bpm-row"><span>High-major level</span><strong>${fmtBPM(row.pred_BPM_high)}</strong></div>
           </div>
         </div>
       </div>
