@@ -11,6 +11,7 @@ project:
     - data/
     - images/
     - tpip-favicon-2026.png
+    - TPIP_Documentation.pdf
 
 website:
   title: "Transfer Portal Intelligence Platform"
