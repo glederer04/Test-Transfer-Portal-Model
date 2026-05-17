@@ -617,8 +617,7 @@ function isNbaBadgeCandidate(row) {
     && n(row.PTS) >= 8
     && n(row.BPM) >= 6
     && n(row.USG) >= 18
-    && leaveProb(row) >= 0.35
-    && transferProb(row) <= 0.18;
+    && leaveProb(row) >= 0.35;
 }
 
 function prepareNbaBadgeSet(rows) {
@@ -762,6 +761,22 @@ function detectMetric(query) {
   return "impact";
 }
 
+function detectBadgeFilter(query) {
+  if (/\b(non nba|non-nba|not nba|not an nba|no nba|exclude nba|without nba|not draft|non draft|non-draft)\b/.test(query)) {
+    return "non_nba";
+  }
+  if (/\b(nba|draft|pro prospect|pro prospects|likely pro|go pro|go nba|nba guys|nba guy)\b/.test(query)) {
+    return "nba";
+  }
+  if (/\b(still has eligibility|still have eligibility|has eligibility|have eligibility|eligibility remaining|without eligibility flag|no eligibility flag|not flagged|no flag|not eligibility risk)\b/.test(query)) {
+    return "eligibility_available";
+  }
+  if (/\b(eligibility risk|eligibility flag|flagged|out of eligibility|exhausted eligibility|no eligibility left)\b/.test(query)) {
+    return "eligibility_risk";
+  }
+  return "";
+}
+
 function findEntity(query, values) {
   const sorted = [...values].sort((a, b) => String(b).length - String(a).length);
   return sorted.find(value => {
@@ -802,9 +817,10 @@ function parseQuestion(question) {
   const conf = findEntity(query, confNames);
   const role = detectRole(query);
   const metric = detectMetric(query);
+  const badgeFilter = detectBadgeFilter(query);
   const mentionedPlayer = metric === "similar" ? findMentionedPlayer(query) : null;
-  const hasBasketballIntent = metric !== "impact" || role || team || conf || /\b(team|teams|conference|conference|player|players|guard|wing|big|bpm|usage|minutes|portal|basketball|transfer|roster|target|fit|movement|where|landing|location|better team|better place|better conference|worse team|worse place|worse conference|move up|move down|transfer up|transfer down|go up|go down|step up|step down|lateral)\b/.test(query);
-  return { query, team, conf, role, metric, mentionedPlayer, hasBasketballIntent };
+  const hasBasketballIntent = metric !== "impact" || role || team || conf || badgeFilter || /\b(team|teams|conference|conference|player|players|guard|wing|big|bpm|usage|minutes|portal|basketball|transfer|roster|target|fit|movement|where|landing|location|better team|better place|better conference|worse team|worse place|worse conference|move up|move down|transfer up|transfer down|go up|go down|step up|step down|lateral|nba|draft|eligibility|flag)\b/.test(query);
+  return { query, team, conf, role, metric, badgeFilter, mentionedPlayer, hasBasketballIntent };
 }
 
 function filteredPlayers(parsed) {
@@ -813,6 +829,10 @@ function filteredPlayers(parsed) {
   if (parsed.team) rows = rows.filter(row => normalize(row.team) === normalize(parsed.team));
   if (parsed.conf) rows = rows.filter(row => normalize(row.conf) === normalize(parsed.conf));
   if (parsed.role) rows = rows.filter(row => roleMatches(row, parsed.role));
+  if (parsed.badgeFilter === "nba") rows = rows.filter(row => playerBadgeType(row) === "nba");
+  if (parsed.badgeFilter === "non_nba") rows = rows.filter(row => playerBadgeType(row) !== "nba");
+  if (parsed.badgeFilter === "eligibility_available") rows = rows.filter(row => playerBadgeType(row) !== "eligibility");
+  if (parsed.badgeFilter === "eligibility_risk") rows = rows.filter(row => playerBadgeType(row) === "eligibility");
   if (parsed.metric === "transfer" || parsed.metric === "movement" || /\b(transfer|portal|available|leave|leaving)\b/.test(parsed.query)) {
     rows = rows.filter(row => transferProb(row) >= 0.08 || flag(row.pred_transfer_flag));
   }

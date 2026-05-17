@@ -1004,15 +1004,22 @@ tr.shown td.details-control::before {
   color: #111;
 }
 
+.bpm-tier-change {
+  font-size: 0.86rem;
+  font-weight: 800;
+  color: #13294b;
+}
+
 .bpm-ci-wrap {
   position: relative;
   width: 100%;
-  height: 28px;
+  height: 52px;
+  margin-top: 2px;
 }
 
 .bpm-ci-base {
   position: absolute;
-  top: 12px;
+  top: 26px;
   left: 0;
   right: 0;
   height: 4px;
@@ -1022,7 +1029,7 @@ tr.shown td.details-control::before {
 
 .bpm-ci-range {
   position: absolute;
-  top: 10px;
+  top: 24px;
   height: 8px;
   background: #8ec5ea;
   border-radius: 999px;
@@ -1030,7 +1037,7 @@ tr.shown td.details-control::before {
 
 .bpm-current-marker {
   position: absolute;
-  top: 5px;
+  top: 19px;
   width: 2px;
   height: 18px;
   background: #b7791f;
@@ -1040,7 +1047,7 @@ tr.shown td.details-control::before {
 
 .bpm-ci-dot {
   position: absolute;
-  top: 6px;
+  top: 20px;
   width: 16px;
   height: 16px;
   background: #13294b;
@@ -1048,6 +1055,29 @@ tr.shown td.details-control::before {
   transform: translateX(-50%);
   border: 2px solid #fff;
   box-shadow: 0 1px 4px rgba(0,0,0,0.18);
+}
+
+.bpm-line-label {
+  position: absolute;
+  transform: translateX(-50%);
+  max-width: 92px;
+  color: #334155;
+  font-size: 0.74rem;
+  line-height: 1.15;
+  text-align: center;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.bpm-line-label.current {
+  top: 0;
+  color: #8a5a13;
+}
+
+.bpm-line-label.projected {
+  bottom: 0;
+  color: #13294b;
+  font-weight: 800;
 }
 
 .bpm-ci-label-row {
@@ -1061,7 +1091,7 @@ tr.shown td.details-control::before {
 .bpm-tier-meta {
   margin-top: 8px;
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 12px;
   flex-wrap: wrap;
   font-size: 0.84rem;
@@ -1301,8 +1331,7 @@ function isNbaBadgeCandidate(row) {
     && toNumber(row.PTS) >= 8
     && toNumber(row.BPM) >= 6
     && toNumber(row.USG) >= 18
-    && parseProbability(row.pred_leave) >= 0.35
-    && parseProbability(row.transfer_show || row.transfer_prob_mean || row.pred_transfer) <= 0.18;
+    && parseProbability(row.pred_leave) >= 0.35;
 }
 
 function prepareNbaBadgeSet(rows) {
@@ -1648,7 +1677,7 @@ function formatBpmTierRow(label, value, change, currentBpm, axisMin, axisMax, he
     <div class="bpm-tier-box" data-help="${escapeHtml(help)}" title="${escapeHtml(help)}">
       <div class="bpm-tier-header">
         <div class="bpm-tier-name">${label}</div>
-        <div class="bpm-tier-value">${fmtBPM(safeVal)}</div>
+        <div class="bpm-tier-change">${changeText}</div>
       </div>
 
       <div class="bpm-ci-wrap">
@@ -1656,6 +1685,8 @@ function formatBpmTierRow(label, value, change, currentBpm, axisMin, axisMax, he
         <div class="bpm-ci-range" style="left:${rangeLeft}; width:${rangeWidth};"></div>
         <div class="bpm-current-marker" style="left:${currentLeft};"></div>
         <div class="bpm-ci-dot" style="left:${dotLeft};"></div>
+        <div class="bpm-line-label current" style="left:${currentLeft};">Current ${fmtBPM(safeCurrent)}</div>
+        <div class="bpm-line-label projected" style="left:${dotLeft};">Projected ${fmtBPM(safeVal)}</div>
       </div>
 
       <div class="bpm-ci-label-row">
@@ -1665,9 +1696,7 @@ function formatBpmTierRow(label, value, change, currentBpm, axisMin, axisMax, he
       </div>
 
       <div class="bpm-tier-meta">
-        <span>Current: <strong>${fmtBPM(safeCurrent)}</strong></span>
-        <span>${changeText}</span>
-        <span>Projected: <strong>${fmtBPM(safeVal)}</strong></span>
+        <span>Same scale across all three scenarios for this player.</span>
       </div>
     </div>
   `;

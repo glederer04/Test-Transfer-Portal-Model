@@ -1318,8 +1318,7 @@ function isNbaBadgeCandidate(player) {
     && num(player.PTS) >= 8
     && num(player.BPM) >= 6
     && num(player.USG) >= 18
-    && leaveProb(player) >= 0.35
-    && parseProbability(player.transfer_show || player.transfer_prob_mean || player.pred_transfer) <= 0.18;
+    && leaveProb(player) >= 0.35;
 }
 
 function prepareNbaBadgeSet(players) {
