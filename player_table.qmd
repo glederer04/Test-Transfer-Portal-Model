@@ -1250,7 +1250,6 @@ function formatModelDetails(row) {
 
           <div class="model-box">
             <div class="model-box-label">Movement-Based BPM Model</div>
-            <div class="model-box-note">Next-season BPM projection using the likely portal movement path.</div>
             <div class="bpm-mini-grid">
               <div class="bpm-mini-stat">
                 <div class="bpm-mini-label">Projected BPM</div>

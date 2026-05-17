@@ -970,6 +970,13 @@ tr.shown td.details-control::before {
   margin-bottom: 10px;
 }
 
+.bpm-section-note {
+  color: #5f6b78;
+  font-size: 0.84rem;
+  font-weight: 650;
+  margin-bottom: 8px;
+}
+
 .bpm-tier-grid {
   display: grid;
   gap: 14px;
@@ -1695,9 +1702,6 @@ function formatBpmTierRow(label, value, change, currentBpm, axisMin, axisMax, he
         <span>${fmtBPM(axisMax)}</span>
       </div>
 
-      <div class="bpm-tier-meta">
-        <span>Same scale across all three scenarios for this player.</span>
-      </div>
     </div>
   `;
 }
@@ -1725,6 +1729,7 @@ function formatBpmCard(row) {
 
         <div class="bpm-card-section">
           <div class="bpm-section-label">Projected BPM by Transfer Movement</div>
+          <div class="bpm-section-note">All three lines use the same BPM scale for this player.</div>
           <div class="bpm-tier-grid">
             ${formatBpmTierRow(
               "Step Down",
