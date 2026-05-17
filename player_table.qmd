@@ -1257,7 +1257,7 @@ function formatModelDetails(row) {
                 <div class="bpm-mini-value">${fmtBPM(primaryBpm.value)}</div>
               </div>
               <div class="bpm-mini-stat">
-                <div class="bpm-mini-label">Change From Current</div>
+                <div class="bpm-mini-label">Change</div>
                 <div class="bpm-mini-value">${bpmChangeText(primaryBpm.change)}</div>
               </div>
             </div>
