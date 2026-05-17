@@ -111,13 +111,13 @@ My name is **Gregory Lederer**, and I recently graduated from the University of 
 
 I am currently looking for a full-time role in basketball analytics, strategy, data science, or a related sports analytics position.
 
-View my **[resume](https://glederer04.github.io/Lederer_Resume.pdf)** and **[personal portfolio site](https://glederer04.github.io/#home)**.
+View my **[resume](https://glederer04.github.io/Lederer_Resume.pdf){target="_blank"}** and **[personal portfolio site](https://glederer04.github.io/#home){target="_blank"}**.
 
 ## Project Overview
 
 This site is an early-stage, rough-draft version of a college basketball transfer portal projection platform. The goal is to better understand player movement, transfer risk, destination level, and projected future performance using publicly available college basketball data.
 
-The project is built primarily from **[Bart Torvik](https://barttorvik.com/#)** data and uses only free online data sources. There are no paid APIs, paid databases, or external API connections that require cost. Because of that, this site should be viewed as a proof of concept for what can be built from public data, rather than a final version with private team, scouting, NIL, roster, or tracking data.
+The project is built primarily from **[Bart Torvik](https://barttorvik.com/#){target="_blank"}** data and uses only free online data sources. There are no paid APIs, paid databases, or external API connections that require cost. Because of that, this site should be viewed as a proof of concept for what can be built from public data, rather than a final version with private team, scouting, NIL, roster, or tracking data.
 
 The site currently focuses on three core models:
 
