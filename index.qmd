@@ -11,8 +11,8 @@ html {
 .home-toc {
   position: fixed;
   top: 115px;
-  left: 22px;
-  width: 220px;
+  left: 24px;
+  width: 230px;
   padding: 16px 18px;
   background: #ffffff;
   border: 1px solid #e5e7eb;
@@ -42,10 +42,19 @@ html {
   text-decoration: underline;
 }
 
-/* Keeps main page content from feeling crowded on wide screens */
+/* Widen homepage content and align it next to the contents box */
 @media (min-width: 1200px) {
+  body .page-columns {
+    display: block;
+  }
+
   main.content {
-    margin-left: 190px;
+    max-width: none;
+    width: calc(100vw - 330px);
+    margin-left: 300px;
+    margin-right: 30px;
+    padding-left: 0;
+    padding-right: 0;
   }
 }
 
