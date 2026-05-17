@@ -2,6 +2,72 @@
 title: "Transfer Portal Intelligence Platform"
 ---
 
+<style>
+html {
+  scroll-behavior: smooth;
+}
+
+/* Fixed left-side contents box */
+.home-toc {
+  position: fixed;
+  top: 115px;
+  left: 22px;
+  width: 220px;
+  padding: 16px 18px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.07);
+  z-index: 1000;
+  font-size: 0.9rem;
+}
+
+.home-toc-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  margin-bottom: 10px;
+  color: #111827;
+}
+
+.home-toc a {
+  display: block;
+  color: #374151;
+  text-decoration: none;
+  margin: 7px 0;
+  line-height: 1.25;
+}
+
+.home-toc a:hover {
+  color: #0d6efd;
+  text-decoration: underline;
+}
+
+/* Keeps main page content from feeling crowded on wide screens */
+@media (min-width: 1200px) {
+  main.content {
+    margin-left: 190px;
+  }
+}
+
+/* Hide contents box on smaller screens */
+@media (max-width: 1199px) {
+  .home-toc {
+    display: none;
+  }
+}
+</style>
+
+<div class="home-toc">
+  <div class="home-toc-title">Contents</div>
+  <a href="#about-me">About Me</a>
+  <a href="#project-overview">Project Overview</a>
+  <a href="#model-projections">Model Projections</a>
+  <a href="#player-table">Player Table</a>
+  <a href="#player-pages">Player Pages</a>
+  <a href="#portal-pulse">Portal Pulse</a>
+  <a href="#why-i-built-this">Why I Built This</a>
+</div>
+
 ## About Me
 
 My name is **Gregory Lederer**, and I recently graduated from the University of North Carolina at Chapel Hill with a degree in **Statistics & Analytics**. I have experience in basketball analytics with **UNC Women’s Basketball**, the **Miami HEAT / 601 Analytics**, the **Sacramento Kings**, and the **NBA Future Analytics Stars Program**.
