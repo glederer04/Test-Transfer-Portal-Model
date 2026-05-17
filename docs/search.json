@@ -16,9 +16,9 @@
   {
     "objectID": "index.html",
     "href": "index.html",
-    "title": "Transfer Portal Projections",
+    "title": "Transfer Portal Intelligence Platform",
     "section": "",
-    "text": "This is an extreme rough draft of my transfer portal projections site.\nRight now, this site will be used to display player data and projections.\nIn the future I hope for it to be much more interactive and much easier to understand including: player profile pages with historic data, future predictions, and the reasoning/confidence behind everything. However, as for right now, this primarily acts as a start to build upon and improve upon.\nThis project is built using publicly available college basketball data scraped from Bart Torvik, with player and team-level metrics such as usage, efficiency (BPM, ORTG), minutes share, and advanced impact stats. From this data, I’ve engineered additional features to capture player role, team context, and performance relative to teammates and within their conference.\nThe current version of the models use a combination of logistic and regression-based approaches to estimate outcomes such as transfer likelihood, transfer movement level, and projected post-transfer performance. While still in an early stage, the goal is to iteratively build toward a more robust and refined system, continuing to expand the feature set, improve model performance, and push the depth of the analysis even further."
+    "text": "My name is Gregory Lederer, and I recently graduated from the University of North Carolina at Chapel Hill with a degree in Statistics & Analytics. I have experience in basketball analytics with UNC Women’s Basketball, the Miami HEAT / 601 Analytics, the Sacramento Kings, and the NBA Future Analytics Stars Program.\nI am currently looking for a full-time role in basketball analytics, strategy, data science, or a related sports analytics position.\nView my resume and personal portfolio site."
   },
   {
     "objectID": "index.html#welcome",
@@ -39,6 +39,59 @@
     "href": "player_pages.html",
     "title": "Player Pages",
     "section": "",
+<<<<<<< HEAD
     "text": "Player Analytics Profile\n    Start with a player name, or narrow by team, conference, position, and year. Each box is searchable, so typing part of a value will bring the right options forward.\n\n    \n      \n        Player Search\n        \n          \n          \n        \n      \n      \n        Team\n        \n        \n      \n      \n        Conference\n        \n        \n      \n      \n        Position / Role\n        \n        \n      \n      \n        Year\n        \n        \n      \n    \n\n    \n      \n        Matching Players\n        \n      \n      Load Player\n    \n  \n\n  Select a player to open a profile. The dashboard will compare that player against teammates, conference peers, class year, role group, and the full NCAA pool.\n\n  \n    \n      \n        \n          Download PDF\n        \n        \n        \n        \n        \n      \n\n      \n        \n          \n            Read On The Player\n            Executive analytical summary for role, value, translation, and roster decision context.\n          \n        \n        \n      \n\n      \n        \n          \n            Comparison Snapshot\n            Percentiles update when you change the comparison group.\n          \n          \n        \n        \n          \n          \n        \n      \n    \n\n    \n      \n        \n          \n            Production Shape\n            Switch the lens to see where the player creates value.\n          \n          \n        \n        \n      \n\n      \n        \n          \n            Model Outlook\n            Transfer probability, likely movement level, and movement-aware projected BPM.\n          \n          \n        \n        \n        \n        \n      \n    \n\n    \n      \n        \n          \n            Team And Rank Context\n            Ranks are most useful as role indicators: where the staff already leaned on the player, and where production separated.\n          \n        \n        \n      \n\n      \n        \n          \n            Similar Player Neighborhood\n            Nearest statistical neighbors from the NCAA pool. Click a player name to open that player page."
+=======
+    "text": "Player Analytics Profile\n    Start with a player name, or narrow by team, conference, position, and year. Each box is searchable, so typing part of a value will bring the right options forward.\n\n    \n      \n        Player Search\n        \n          \n          \n        \n      \n      \n        Team\n        \n        \n      \n      \n        Conference\n        \n        \n      \n      \n        Position / Role\n        \n        \n      \n      \n        Year\n        \n        \n      \n    \n\n    \n      \n        Matching Players\n        \n      \n      Load Player\n    \n  \n\n  Select a player to open a profile. The dashboard will compare that player against teammates, conference peers, class year, role group, and the full NCAA pool.\n\n  \n    \n      \n        \n          Download PDF\n        \n        \n        \n        \n        \n      \n\n      \n        \n          \n            Read On The Player\n            Executive analytical summary for role, value, translation, and roster decision context.\n          \n        \n        \n      \n\n      \n        \n          \n            Comparison Snapshot\n            Percentiles update when you change the comparison group.\n          \n          \n        \n        \n          \n          \n        \n      \n    \n\n    \n      \n        \n          \n            Production Shape\n            Switch the lens to see where the player creates value.\n          \n          \n        \n        \n      \n\n      \n        \n          \n            Model Outlook\n            Transfer probability, likely movement level, and projected BPM by program level.\n          \n          \n        \n        \n        \n        \n      \n    \n\n    \n      \n        \n          \n            Team And Rank Context\n            Ranks are most useful as role indicators: where the staff already leaned on the player, and where production separated.\n          \n        \n        \n      \n\n      \n        \n          \n            Similar Player Neighborhood\n            Nearest statistical neighbors from the NCAA pool. Click a player name to open that player page."
+  },
+  {
+    "objectID": "index.html#about-me",
+    "href": "index.html#about-me",
+    "title": "Transfer Portal Intelligence Platform",
+    "section": "",
+    "text": "My name is Gregory Lederer, and I recently graduated from the University of North Carolina at Chapel Hill with a degree in Statistics & Analytics. I have experience in basketball analytics with UNC Women’s Basketball, the Miami HEAT / 601 Analytics, the Sacramento Kings, and the NBA Future Analytics Stars Program.\nI am currently looking for a full-time role in basketball analytics, strategy, data science, or a related sports analytics position.\nView my resume and personal portfolio site."
+  },
+  {
+    "objectID": "index.html#project-overview",
+    "href": "index.html#project-overview",
+    "title": "Transfer Portal Intelligence Platform",
+    "section": "Project Overview",
+    "text": "Project Overview\nThis site is an early-stage, rough-draft version of a college basketball transfer portal projection platform. The goal is to better understand player movement, transfer risk, destination level, and projected future performance using publicly available college basketball data.\nThe project is built primarily from Bart Torvik data and uses only free online data sources. There are no paid APIs, paid databases, or external API connections that require cost. Because of that, this site should be viewed as a proof of concept for what can be built from public data, rather than a final version with private team, scouting, NIL, roster, or tracking data.\nThe site currently focuses on three core models:\n\nTransfer Likelihood Model\nPredicts how likely a player is to enter the transfer portal based on role, production, efficiency, team context, conference context, class year, and other engineered features.\nTransfer Movement / Destination Tier Model\nPredicts the level a player may move to if they transfer, helping identify players who may move up, move laterally, or move down based on their current profile.\nProjected Post-Transfer BPM Model\nProjects a player’s future BPM after transferring, with the goal of estimating how production may translate into a new environment or conference tier.\n\nThe site was built to show the full process: data collection, cleaning, feature engineering, modeling, player-level projections, interactive tables, player pages, and a more conversational search tool."
+  },
+  {
+    "objectID": "index.html#model-projections",
+    "href": "index.html#model-projections",
+    "title": "Transfer Portal Intelligence Platform",
+    "section": "Model Projections",
+    "text": "Model Projections\nThe model projections tab is the main place to view the model outputs.\nThis page shows projection tables for transfer likelihood, transfer movement, and projected future BPM. It is designed to give a quick overview of how the model views different players across the transfer portal landscape.\nThis tab can help identify:\n\nplayers most likely to transfer\nplayers projected to move up or down a level\nplayers with strong projected future performance\nplayers who may be undervalued based on role, team context, or conference level\n\nThe goal of this page is to make the model results easy to scan, compare, and use for player evaluation."
+  },
+  {
+    "objectID": "index.html#player-table",
+    "href": "index.html#player-table",
+    "title": "Transfer Portal Intelligence Platform",
+    "section": "Player Table",
+    "text": "Player Table\nThe player table tab is a larger searchable database of players.\nThis page allows users to filter and explore the broader player pool, not just the final model outputs. It includes player information, team context, conference context, production stats, efficiency metrics, role indicators, and model-related fields.\nThis tab can be used to:\n\nsearch for specific players\nfilter by team, conference, role, or player type\ncompare players across different stats and model outputs\nfind players who fit a certain roster need\nidentify potential transfer targets or transfer-risk candidates\n\nThe purpose of this page is to make the project feel more like an interactive player evaluation tool instead of just a static model table."
+  },
+  {
+    "objectID": "index.html#player-pages",
+    "href": "index.html#player-pages",
+    "title": "Transfer Portal Intelligence Platform",
+    "section": "Player Pages",
+    "text": "Player Pages\nThe player pages tab turns the data into individual player profiles.\nInstead of only viewing a player as one row in a table, this page organizes a player’s statistical profile, model outlook, team context, role, production shape, and similar-player comparisons into a more readable report-style format.\nThis tab can be used to:\n\nlook up an individual player\nview their model outlook\nunderstand their role and production profile\ncompare them to similar players\ncreate a more digestible player-level summary\n\nThis was built because model results are more useful when they can be communicated clearly. In a real basketball setting, this type of page could support scouting, roster planning, and transfer target evaluation."
+  },
+  {
+    "objectID": "index.html#portal-pulse",
+    "href": "index.html#portal-pulse",
+    "title": "Transfer Portal Intelligence Platform",
+    "section": "Portal Pulse",
+    "text": "Portal Pulse\nThe portal pulse tab is one of the more experimental and interactive parts of the site.\nThis page works almost like a lightweight basketball data chatbot or guided search tool. Instead of only sorting through tables manually, users can ask questions or use preset prompts to explore the data in a more natural way.\nPortal Pulse is designed to help answer questions like:\n\nWho are the best guards likely to transfer?\nWhich efficient players are in the ACC?\nWho are the best shooters in a specific conference?\nWhich rebounders may be transfer candidates?\nWhich players are projected to move up?\nWhich players are statistically similar to another player?\n\nThis feature is still a rough draft, but it shows the direction of the project well. The idea is to make the model outputs more accessible for people who may not want to dig through large tables or manually build filters.\nTo me, this is one of the most important parts of the site because it pushes the project closer to an actual decision-support tool: something searchable, interactive, and easier to use in a basketball workflow."
+  },
+  {
+    "objectID": "index.html#why-i-built-this",
+    "href": "index.html#why-i-built-this",
+    "title": "Transfer Portal Intelligence Platform",
+    "section": "Why I Built This",
+    "text": "Why I Built This\nI built this project to explore how public college basketball data can be used to better understand the transfer portal. With player movement becoming a major part of roster building, I wanted to create a tool that could help evaluate transfer risk, likely movement level, and future performance translation.\nThe project is still a rough draft, but it shows the foundation of a larger transfer portal evaluation platform:\n\npublic data collection and cleaning\nplayer, team, and conference-level feature engineering\npredictive modeling\ninteractive tables\nplayer-level reports\nsimilar-player comparisons\nchatbot-style data exploration through Portal Pulse\n\nWith access to more complete data, this type of project could be expanded with film tags, recruiting history, NIL context, scholarship availability, roster needs, coaching changes, academic status, and internal scouting grades.\nFor now, the site is meant to show what can be built from one free public database, basketball-focused modeling, and a product-style approach to presenting the results."
+>>>>>>> d7828de (home page)
   }
 ]

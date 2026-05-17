@@ -2,22 +2,38 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://glederer04.github.io/Test-Transfer-Portal-Model/portal_pulse.html</loc>
+<<<<<<< HEAD
     <lastmod>2026-05-16T23:41:29.176Z</lastmod>
   </url>
   <url>
     <loc>https://glederer04.github.io/Test-Transfer-Portal-Model/player_table.html</loc>
     <lastmod>2026-05-16T23:40:10.220Z</lastmod>
+=======
+    <lastmod>2026-05-16T21:48:54.989Z</lastmod>
+  </url>
+  <url>
+    <loc>https://glederer04.github.io/Test-Transfer-Portal-Model/player_table.html</loc>
+    <lastmod>2026-05-16T21:48:54.989Z</lastmod>
+>>>>>>> d7828de (home page)
   </url>
   <url>
     <loc>https://glederer04.github.io/Test-Transfer-Portal-Model/index.html</loc>
-    <lastmod>2026-05-16T21:46:51.634Z</lastmod>
+    <lastmod>2026-05-17T00:58:07.478Z</lastmod>
   </url>
   <url>
     <loc>https://glederer04.github.io/Test-Transfer-Portal-Model/projections.html</loc>
+<<<<<<< HEAD
     <lastmod>2026-05-16T23:40:51.383Z</lastmod>
   </url>
   <url>
     <loc>https://glederer04.github.io/Test-Transfer-Portal-Model/player_pages.html</loc>
     <lastmod>2026-05-16T23:41:19.675Z</lastmod>
+=======
+    <lastmod>2026-05-16T21:48:54.989Z</lastmod>
+  </url>
+  <url>
+    <loc>https://glederer04.github.io/Test-Transfer-Portal-Model/player_pages.html</loc>
+    <lastmod>2026-05-16T21:48:54.988Z</lastmod>
+>>>>>>> d7828de (home page)
   </url>
 </urlset>

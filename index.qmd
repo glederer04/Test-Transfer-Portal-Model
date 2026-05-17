@@ -1,15 +1,114 @@
 ---
-title: "Transfer Portal Projections"
+title: "Transfer Portal Intelligence Platform"
 ---
 
-## Welcome
+## About Me
 
-This is an extreme rough draft of my transfer portal projections site.
+My name is **Gregory Lederer**, and I recently graduated from the University of North Carolina at Chapel Hill with a degree in **Statistics & Analytics**. I have experience in basketball analytics with **UNC Women’s Basketball**, the **Miami HEAT / 601 Analytics**, the **Sacramento Kings**, and the **NBA Future Analytics Stars Program**.
 
-Right now, this site will be used to display player data and projections.
+I am currently looking for a full-time role in basketball analytics, strategy, data science, or a related sports analytics position.
 
-In the future I hope for it to be much more interactive and much easier to understand including: player profile pages with historic data, future predictions, and the reasoning/confidence behind everything. However, as for right now, this primarily acts as a start to build upon and improve upon.
+View my **[resume](https://glederer04.github.io/Lederer_Resume.pdf)** and **[personal portfolio site](https://glederer04.github.io/#home)**.
 
-This project is built using publicly available college basketball data scraped from [Bart Torvik](https://barttorvik.com/#), with player and team-level metrics such as usage, efficiency (BPM, ORTG), minutes share, and advanced impact stats. From this data, I've engineered additional features to capture player role, team context, and performance relative to teammates and within their conference. 
+## Project Overview
 
-The current version of the models use a combination of logistic and regression-based approaches to estimate outcomes such as transfer likelihood, transfer movement level, and projected post-transfer performance. While still in an early stage, the goal is to iteratively build toward a more robust and refined system, continuing to expand the feature set, improve model performance, and push the depth of the analysis even further.
+This site is an early-stage, rough-draft version of a college basketball transfer portal projection platform. The goal is to better understand player movement, transfer risk, destination level, and projected future performance using publicly available college basketball data.
+
+The project is built primarily from **[Bart Torvik](https://barttorvik.com/#)** data and uses only free online data sources. There are no paid APIs, paid databases, or external API connections that require cost. Because of that, this site should be viewed as a proof of concept for what can be built from public data, rather than a final version with private team, scouting, NIL, roster, or tracking data.
+
+The site currently focuses on three core models:
+
+1. **Transfer Likelihood Model**  
+   Predicts how likely a player is to enter the transfer portal based on role, production, efficiency, team context, conference context, class year, and other engineered features.
+
+2. **Transfer Movement / Destination Tier Model**  
+   Predicts the level a player may move to if they transfer, helping identify players who may move up, move laterally, or move down based on their current profile.
+
+3. **Projected Post-Transfer BPM Model**  
+   Projects a player’s future BPM after transferring, with the goal of estimating how production may translate into a new environment or conference tier.
+
+The site was built to show the full process: data collection, cleaning, feature engineering, modeling, player-level projections, interactive tables, player pages, and a more conversational search tool.
+
+## [Model Projections](projections.html)
+
+The model projections tab is the main place to view the model outputs.
+
+This page shows projection tables for transfer likelihood, transfer movement, and projected future BPM. It is designed to give a quick overview of how the model views different players across the transfer portal landscape.
+
+This tab can help identify:
+
+- players most likely to transfer
+- players projected to move up or down a level
+- players with strong projected future performance
+- players who may be undervalued based on role, team context, or conference level
+
+The goal of this page is to make the model results easy to scan, compare, and use for player evaluation.
+
+## [Player Table](player_table.html)
+
+The player table tab is a larger searchable database of players.
+
+This page allows users to filter and explore the broader player pool, not just the final model outputs. It includes player information, team context, conference context, production stats, efficiency metrics, role indicators, and model-related fields.
+
+This tab can be used to:
+
+- search for specific players
+- filter by team, conference, role, or player type
+- compare players across different stats and model outputs
+- find players who fit a certain roster need
+- identify potential transfer targets or transfer-risk candidates
+
+The purpose of this page is to make the project feel more like an interactive player evaluation tool instead of just a static model table.
+
+## [Player Pages](player_pages.html)
+
+The player pages tab turns the data into individual player profiles.
+
+Instead of only viewing a player as one row in a table, this page organizes a player’s statistical profile, model outlook, team context, role, production shape, and similar-player comparisons into a more readable report-style format.
+
+This tab can be used to:
+
+- look up an individual player
+- view their model outlook
+- understand their role and production profile
+- compare them to similar players
+- create a more digestible player-level summary
+
+This was built because model results are more useful when they can be communicated clearly. In a real basketball setting, this type of page could support scouting, roster planning, and transfer target evaluation.
+
+## [Portal Pulse](portal_pulse.html)
+
+The portal pulse tab is one of the more experimental and interactive parts of the site.
+
+This page works almost like a lightweight basketball data chatbot or guided search tool. Instead of only sorting through tables manually, users can ask questions or use preset prompts to explore the data in a more natural way.
+
+Portal Pulse is designed to help answer questions like:
+
+- Who are the best guards likely to transfer?
+- Which efficient players are in the ACC?
+- Who are the best shooters in a specific conference?
+- Which rebounders may be transfer candidates?
+- Which players are projected to move up?
+- Which players are statistically similar to another player?
+
+This feature is still a rough draft, but it shows the direction of the project well. The idea is to make the model outputs more accessible for people who may not want to dig through large tables or manually build filters.
+
+To me, this is one of the most important parts of the site because it pushes the project closer to an actual decision-support tool: something searchable, interactive, and easier to use in a basketball workflow.
+
+## Why I Built This
+
+I built this project to explore how public college basketball data can be used to better understand the transfer portal. With player movement becoming a major part of roster building, I wanted to create a tool that could help evaluate transfer risk, likely movement level, and future performance translation.
+
+The project is still a rough draft, but it shows the foundation of a larger transfer portal evaluation platform:
+
+- public data collection and cleaning
+- player, team, and conference-level feature engineering
+- predictive modeling
+- interactive tables
+- player-level reports
+- similar-player comparisons
+- chatbot-style data exploration through Portal Pulse
+
+With access to more complete data, this type of project could be expanded with film tags, recruiting history, NIL context, scholarship availability, roster needs, coaching changes, academic status, and internal scouting grades.
+
+For now, the site is meant to show what can be built from one free public database, basketball-focused modeling, and a product-style approach to presenting the results.

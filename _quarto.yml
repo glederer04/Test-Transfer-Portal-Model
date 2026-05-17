@@ -13,7 +13,7 @@ project:
     - favicon.ico
 
 website:
-  title: "Transfer Portal Projections"
+  title: "Transfer Portal Intelligence Platform"
   site-url: "https://glederer04.github.io/Test-Transfer-Portal-Model/"
   navbar:
     left:
