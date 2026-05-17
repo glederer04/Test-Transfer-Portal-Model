@@ -894,19 +894,62 @@ function detectMetric(query) {
 }
 
 function detectBadgeFilter(query) {
-  if (/\b(non nba|non-nba|not nba|not an nba|no nba|exclude nba|without nba|not draft|non draft|non-draft)\b/.test(query)) {
+  if (/\b(non nba|non-nba|not nba|not an nba|no nba|exclude nba|without nba|not draft|non draft|non-draft|not likely to go nba|unlikely to go nba|not likely nba|non pro|non-pro|not pro)\b/.test(query)) {
     return "non_nba";
   }
-  if (/\b(nba|draft|pro prospect|pro prospects|likely pro|go pro|go nba|nba guys|nba guy)\b/.test(query)) {
+  if (/\b(nba|draft|pro prospect|pro prospects|likely pro|go pro|go nba|likely to go nba|nba guys|nba guy|nba icon|draft icon|pro upside)\b/.test(query)) {
     return "nba";
   }
-  if (/\b(still has eligibility|still have eligibility|has eligibility|have eligibility|eligibility remaining|without eligibility flag|no eligibility flag|not flagged|no flag|not eligibility risk)\b/.test(query)) {
+  if (/\b(still has eligibility|still have eligibility|has eligibility|have eligibility|more eligibility|eligibility remaining|remaining eligibility|with eligibility|without eligibility flag|no eligibility flag|not flagged|no flag|not eligibility risk|eligible next year)\b/.test(query)) {
     return "eligibility_available";
   }
-  if (/\b(eligibility risk|eligibility flag|flagged|out of eligibility|exhausted eligibility|no eligibility left)\b/.test(query)) {
+  if (/\b(eligibility risk|eligibility flag|flagged|with flag|has flag|out of eligibility|exhausted eligibility|no eligibility left|no eligibility|without eligibility|not eligible next year)\b/.test(query)) {
     return "eligibility_risk";
   }
   return "";
+}
+
+function findConferenceEntity(query) {
+  const aliasMap = [
+    [/(\bbig\s*10\b|\bbig\s*ten\b|\bb10\b|\bbigten\b)/, "Big Ten"],
+    [/(\bbig\s*12\b|\bbig\s*twelve\b|\bb12\b|\bbigtwelve\b)/, "Big 12"],
+    [/(\bacc\b|\batlantic coast\b)/, "ACC"],
+    [/(\bsec\b|\bsoutheastern\b)/, "SEC"],
+    [/(\bbig east\b|\bbe\b)/, "Big East"],
+    [/(\bpac\s*12\b|\bpac-12\b|\bp12\b)/, "Pac-12"],
+    [/(\ba\s*10\b|\ba-10\b|\batlantic 10\b|\batlantic ten\b)/, "A-10"],
+    [/(\baac\b|\bamerican\b)/, "American"],
+    [/(\bmwc\b|\bmountain west\b)/, "MWC"],
+    [/(\bwcc\b|\bwest coast\b)/, "WCC"],
+    [/(\bmvc\b|\bmissouri valley\b)/, "MVC"],
+    [/(\bwac\b|\bwestern athletic\b)/, "WAC"],
+    [/(\bcaa\b|\bcoastal athletic\b|\bcolonial\b)/, "CAA"],
+    [/(\bivy\b|\bivy league\b)/, "Ivy"],
+    [/(\bmac\b|\bmid american\b|\bmid-american\b)/, "MAC"],
+    [/(\bcusa\b|\bc-usa\b|\bconference usa\b)/, "C-USA"],
+    [/(\bae\b|\bamerica east\b)/, "AE"],
+    [/(\basun\b|\ba-sun\b)/, "ASUN"],
+    [/(\bbig south\b|\bbsth\b)/, "Big South"],
+    [/(\bbig sky\b|\bbsky\b)/, "Big Sky"],
+    [/(\bbig west\b|\bbw\b)/, "Big West"],
+    [/(\bhorizon\b|\bhorz\b)/, "Horizon"],
+    [/(\bmaac\b)/, "MAAC"],
+    [/(\bmeac\b)/, "MEAC"],
+    [/(\bnec\b)/, "NEC"],
+    [/(\bovc\b|\bohio valley\b)/, "OVC"],
+    [/(\bpatriot\b|\bpat\b)/, "Patriot"],
+    [/(\bsun belt\b|\bsb\b)/, "Sun Belt"],
+    [/(\bsocon\b|\bso con\b|\bsouthern conference\b)/, "SoCon"],
+    [/(\bsouthland\b|\bslnd\b)/, "Southland"],
+    [/(\bsummit\b|\bsum\b)/, "Summit"],
+    [/(\bswac\b)/, "SWAC"]
+  ];
+
+  for (const [pattern, label] of aliasMap) {
+    if (pattern.test(query) && confNames.includes(label)) return label;
+  }
+
+  return findEntity(query, confNames);
 }
 
 function findEntity(query, values) {
@@ -946,12 +989,12 @@ function findMentionedPlayer(query) {
 function parseQuestion(question) {
   const query = normalize(question);
   const team = findEntity(query, teamNames);
-  const conf = findEntity(query, confNames);
+  const conf = findConferenceEntity(query);
   const role = detectRole(query);
   const metric = detectMetric(query);
   const badgeFilter = detectBadgeFilter(query);
   const mentionedPlayer = metric === "similar" ? findMentionedPlayer(query) : null;
-  const hasBasketballIntent = metric !== "impact" || role || team || conf || badgeFilter || /\b(team|teams|conference|conference|player|players|guard|wing|big|bpm|usage|minutes|portal|basketball|transfer|roster|target|fit|movement|where|landing|location|better team|better place|better conference|worse team|worse place|worse conference|move up|move down|transfer up|transfer down|go up|go down|step up|step down|lateral|nba|draft|eligibility|flag)\b/.test(query);
+  const hasBasketballIntent = metric !== "impact" || role || team || conf || badgeFilter || /\b(team|teams|conference|conference|player|players|guard|wing|big|bpm|usage|minutes|portal|basketball|transfer|roster|target|fit|movement|where|landing|location|better team|better place|better conference|worse team|worse place|worse conference|move up|move down|transfer up|transfer down|go up|go down|step up|step down|lateral|nba|draft|eligibility|flag|big10|big12|b10|b12|a10|cusa|mwc|wcc|mvc|wac)\b/.test(query);
   return { query, team, conf, role, metric, badgeFilter, mentionedPlayer, hasBasketballIntent };
 }
 
