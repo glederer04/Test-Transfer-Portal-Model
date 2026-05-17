@@ -10,7 +10,7 @@ project:
   resources:
     - data/
     - images/
-    - favicon.png
+    - tpip-favicon-2026.png
 
 website:
   title: "Transfer Portal Intelligence Platform"
@@ -27,7 +27,7 @@ website:
         file: player_pages.qmd
       - text: Portal Pulse
         file: portal_pulse.qmd
-  favicon: favicon.png
+  favicon: tpip-favicon-2026.png
 
 format:
   html:
