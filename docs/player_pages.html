@@ -1947,24 +1947,25 @@ function drawScatterPdf(pdf, player, x, y, w, h) {
 }
 
 function drawModelPdf(pdf, player, x, y, w) {
+  const modelContentY = activeModelView === "movement" || activeModelView === "bpm" ? y + 0.16 : y;
   pdf.setTextColor(17, 24, 39);
   pdf.setFont("helvetica", "bold");
   pdf.setFontSize(13);
   if (activeModelView === "movement") {
-    pdf.text(movementDisplayLabel(player), x, y);
+    pdf.text(movementDisplayLabel(player), x, modelContentY);
     [["Score", fmtSigned(player.pred_movement_score)], ["Current", fmt(player.current_program_strength)], ["Projected", fmt(player.pred_projected_program_strength)]].forEach((row, idx) => {
-      pdfCompactKey(pdf, row[0], row[1], "movement model", x + (idx % 3) * 1.12, y + 0.34, 1.02, 0.52);
+      pdfCompactKey(pdf, row[0], row[1], "movement model", x + (idx % 3) * 1.12, modelContentY + 0.34, 1.02, 0.52);
     });
     return;
   }
   if (activeModelView === "bpm") {
-    pdf.text(fmtSigned(player.new_bpm_pred_likely_context || player.new_bpm_likely_show), x, y);
+    pdf.text(fmtSigned(player.new_bpm_pred_likely_context || player.new_bpm_likely_show), x, modelContentY);
     [
       ["Current", player.BPM],
       ["Projected", player.new_bpm_pred_likely_context],
       ["Change", player.new_bpm_change_likely_context]
     ].forEach((row, idx) => {
-      pdfCompactKey(pdf, row[0], fmtSigned(row[1]), "movement BPM", x + (idx % 3) * 1.12, y + 0.34, 1.02, 0.52);
+      pdfCompactKey(pdf, row[0], fmtSigned(row[1]), "movement BPM", x + (idx % 3) * 1.12, modelContentY + 0.34, 1.02, 0.52);
     });
     return;
   }

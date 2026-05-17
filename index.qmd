@@ -73,6 +73,10 @@ main.content,
   box-sizing: border-box;
 }
 
+.home-doc-mobile {
+  display: none;
+}
+
 .home-doc-eyebrow {
   font-size: 0.72rem;
   font-weight: 800;
@@ -152,6 +156,16 @@ main.content,
   .home-toc,
   .home-doc-card {
     display: none;
+  }
+
+  .home-doc-mobile {
+    display: block;
+    margin: 30px 0 10px;
+    padding: 18px;
+    background: #ffffff;
+    border: 1px solid #dbe3ee;
+    border-radius: 12px;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
   }
 
   main.content {
@@ -295,3 +309,5 @@ The project is still a rough draft, but it shows the foundation of a larger tran
 With access to more complete data, this type of project could be expanded with film tags, recruiting history, NIL context, scholarship availability, roster needs, coaching changes, academic status, and internal scouting grades.
 
 For now, the site is meant to show what can be built from one free public database, basketball-focused modeling, and a product-style approach to presenting the results.
+
+<div class="home-doc-mobile" aria-label="TPIP documentation"><div class="home-doc-eyebrow">Documentation</div><div class="home-doc-title">Model Methodology PDF</div><div class="home-doc-text">Model accuracy and methodology.</div><a class="home-doc-link" href="TPIP_Documentation.pdf" target="_blank" rel="noopener">Open PDF</a><div class="home-doc-meta">Opens in a new tab for full-screen reading.</div></div>
