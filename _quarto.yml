@@ -11,6 +11,9 @@ project:
     - data/
     - images/
     - tpip-favicon-2026.png
+    - favicon.png
+    - favicon.ico
+    - apple-touch-icon.png
     - TPIP_Documentation.pdf
 
 website:
@@ -34,3 +37,4 @@ format:
   html:
     theme: cosmo
     toc: false
+    include-in-header: favicon-links.html
