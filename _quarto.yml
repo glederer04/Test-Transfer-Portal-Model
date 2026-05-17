@@ -10,6 +10,7 @@ project:
   resources:
     - data/
     - images/
+    - tpip-favicon-may17-v2.png
     - tpip-favicon-2026.png
     - favicon.png
     - favicon.ico
@@ -31,7 +32,7 @@ website:
         file: player_pages.qmd
       - text: Portal Pulse
         file: portal_pulse.qmd
-  favicon: tpip-favicon-2026.png
+  favicon: tpip-favicon-may17-v2.png
 
 format:
   html:
